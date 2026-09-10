@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import AppError from "../utils/appError";
 
 const errorMiddleware = (
   error: unknown,
@@ -8,11 +9,11 @@ const errorMiddleware = (
 ) => {
   console.error(error);
 
-  if (error instanceof Error) {
-    return res.status(500).json({
+  if (error instanceof AppError) {
+    return res.status(error.statusCode).json({
       success: false,
       error: {
-        code: "INTERNAL_SERVER_ERROR",
+        code: error.code,
         message: error.message,
       },
     });

@@ -6,6 +6,12 @@ interface IUser extends Document {
   displayName: string;
   bio?: string;
   profileImage?: string;
+  passwordHash?: string;
+  firebaseUid?: string;
+  authProviders: ("password" | "google")[];
+  emailVerifiedAt?: Date;
+  role: "user" | "admin";
+  status: "active" | "suspended" | "deleted";
 }
 
 const userSchema = new Schema<IUser>(
@@ -38,6 +44,40 @@ const userSchema = new Schema<IUser>(
 
     profileImage: {
       type: String,
+    },
+
+    passwordHash: {
+      type: String,
+      select: false,
+    },
+
+    firebaseUid: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    authProviders: {
+      type: [String],
+      enum: ["password", "google"],
+      required: true,
+      default: ["password"],
+    },
+
+    emailVerifiedAt: {
+      type: Date,
+    },
+
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
+    status: {
+      type: String,
+      enum: ["active", "suspended", "deleted"],
+      default: "active",
     },
   },
   {
