@@ -4,7 +4,12 @@ import {
   loginUser,
   refreshUserSession,
   logoutUser,
+  verifyEmail as verifyEmailService,
+  resendVerificationEmail,
+  forgotPassword as forgotPasswordService,
+  resetPassword as resetPasswordService,
 } from "../services/auth.service";
+
 import AppError from "../utils/appError";
 
 const REFRESH_COOKIE_OPTIONS = {
@@ -25,6 +30,43 @@ const register = async (
     return res.status(201).json({
       success: true,
       data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await verifyEmailService(req.body.token);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await resendVerificationEmail(req.body.email);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        message:
+          "If the account exists and is not verified, a verification email has been sent",
+      },
     });
   } catch (error) {
     next(error);
@@ -111,4 +153,46 @@ const logout = async (
   }
 };
 
-export { register, login, refresh, logout };
+const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await forgotPasswordService(req.body.email);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        message:
+          "If the account exists, a password reset email has been sent",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await resetPasswordService(
+      req.body.token,
+      req.body.newPassword
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        message: "Password reset successfully",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { register, verifyEmail, resendVerification, login, refresh, logout, forgotPassword, resetPassword, }; 

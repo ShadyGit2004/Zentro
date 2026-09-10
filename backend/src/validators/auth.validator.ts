@@ -38,4 +38,24 @@ const loginSchema = z.object({
     .max(72, "Password cannot exceed 72 characters"),
 });
 
-export { registerSchema, loginSchema };
+const verifyEmailSchema = z.object({
+  token: z.string().min(1, "Verification token is required"),
+});
+
+const resendVerificationSchema = z.object({
+  email: z.string().email("Invalid email address").trim().toLowerCase(),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address").trim().toLowerCase(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password cannot exceed 72 characters"),
+});
+
+export { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, forgotPasswordSchema,  resetPasswordSchema,};

@@ -1,12 +1,27 @@
+// Packages
 import bcrypt from "bcrypt";
+
+// Models
 import User from "../models/user.model";
 import Session from "../models/session.model";
+import VerificationToken from "../models/verification-token.model";
+import PasswordResetToken from "../models/password-reset-token.model";
+
+// Utility Functions
 import AppError from "../utils/appError";
+
 import {
   generateAccessToken,
   generateRefreshToken,
   hashRefreshToken,
+  generateVerificationToken,
+  hashVerificationToken,
+  generatePasswordResetToken,
+  hashPasswordResetToken,
 } from "../utils/token";
+
+// Services & Configs
+import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service";
 import { REFRESH_TOKEN_EXPIRES_IN_DAYS } from "../config/auth";
 
 interface RegisterData {
@@ -57,6 +72,21 @@ const registerUser = async (data: RegisterData) => {
     authProviders: ["password"],
   });
 
+  // Generate verification token
+  const verificationToken = generateVerificationToken();  
+  const tokenHash = hashVerificationToken(verificationToken);
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hrs
+
+  await VerificationToken.create({
+    user: user._id,
+    tokenHash,
+    expiresAt,
+  });
+
+  // Send email
+  await sendVerificationEmail(user.email, verificationToken);
+
   return {
     id: user._id,
     email: user.email,
@@ -64,6 +94,88 @@ const registerUser = async (data: RegisterData) => {
     displayName: user.displayName,
     authProviders: user.authProviders,
   };
+};
+
+const verifyEmail = async (token: string) => {
+  const tokenHash = hashVerificationToken(token);
+
+  const verificationToken = await VerificationToken.findOne({
+    tokenHash,
+  });
+
+  if (
+    !verificationToken ||
+    verificationToken.usedAt ||
+    verificationToken.expiresAt <= new Date()
+  ) {
+    throw new AppError(
+      400,
+      "INVALID_VERIFICATION_TOKEN",
+      "Invalid or expired verification token"
+    );
+  }
+
+  const user = await User.findById(verificationToken.user);
+
+  if (!user || user.status !== "active") {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  if (user.emailVerifiedAt) {
+    throw new AppError(
+      409,
+      "EMAIL_ALREADY_VERIFIED",
+      "Email is already verified"
+    );
+  }
+
+  user.emailVerifiedAt = new Date();
+  await user.save();
+
+  verificationToken.usedAt = new Date();
+  await verificationToken.save();
+
+  return {
+    message: "Email verified successfully",
+  };
+};
+
+const resendVerificationEmail = async (email: string) => {
+  const user = await User.findOne({ email });
+
+  // Don't reveal whether email exists
+  if (!user || user.status !== "active") {
+    return;
+  }
+
+  // Already verified → nothing to resend
+  if (user.emailVerifiedAt) {
+    return;
+  }
+
+  // Invalidate existing unused tokens
+  await VerificationToken.updateMany(
+    {
+      user: user._id,
+      usedAt: { $exists: false },
+    },
+    {
+      $set: { usedAt: new Date() },
+    }
+  );
+
+  const verificationToken = generateVerificationToken();
+  const tokenHash = hashVerificationToken(verificationToken);
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hrs
+
+  await VerificationToken.create({
+    user: user._id,
+    tokenHash,
+    expiresAt,
+  });
+
+  await sendVerificationEmail(user.email, verificationToken);
 };
 
 const loginUser = async (
@@ -134,6 +246,92 @@ const loginUser = async (
       profileImage: user.profileImage,
     },
   };
+};
+
+const forgotPassword = async (email: string) => {
+  const user = await User.findOne({ email });
+
+  // Always return normally to prevent account enumeration
+  if (!user || user.status !== "active") {
+    return;
+  }
+
+  // Invalidate previous reset tokens
+  await PasswordResetToken.updateMany(
+    {
+      user: user._id,
+      usedAt: { $exists: false },
+    },
+    {
+      $set: { usedAt: new Date() },
+    }
+  );
+
+  const resetToken = generatePasswordResetToken();
+  const tokenHash = hashPasswordResetToken(resetToken);
+
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+
+  await PasswordResetToken.create({
+    user: user._id,
+    tokenHash,
+    expiresAt,
+  });
+
+  await sendPasswordResetEmail(user.email, resetToken);
+};
+
+const resetPassword = async (
+  token: string,
+  newPassword: string
+) => {
+  const tokenHash = hashPasswordResetToken(token);
+
+  const resetToken = await PasswordResetToken.findOne({
+    tokenHash,
+  });
+
+  if (
+    !resetToken ||
+    resetToken.usedAt ||
+    resetToken.expiresAt <= new Date()
+  ) {
+    throw new AppError(
+      400,
+      "INVALID_RESET_TOKEN",
+      "Invalid or expired password reset token"
+    );
+  }
+
+  const user = await User.findById(resetToken.user);
+
+  if (!user || user.status !== "active") {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+
+  user.passwordHash = passwordHash;
+
+  if (!user.authProviders.includes("password")) {
+    user.authProviders.push("password");
+  }
+
+  await user.save();
+
+  resetToken.usedAt = new Date();
+  await resetToken.save();
+
+  // Invalidate all existing sessions
+  await Session.updateMany(
+    {
+      user: user._id,
+      revokedAt: { $exists: false },
+    },
+    {
+      $set: { revokedAt: new Date() },
+    }
+  );
 };
 
 const refreshUserSession = async (
@@ -210,4 +408,4 @@ const logoutUser = async (refreshToken: string) => {
   );
 };
 
-export { registerUser, loginUser, refreshUserSession, logoutUser };
+export { registerUser,  verifyEmail, resendVerificationEmail, loginUser, refreshUserSession, logoutUser, forgotPassword, resetPassword, };
