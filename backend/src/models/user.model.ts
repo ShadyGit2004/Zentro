@@ -12,6 +12,8 @@ interface IUser extends Document {
   emailVerifiedAt?: Date;
   role: "user" | "admin";
   status: "active" | "suspended" | "deleted";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const userSchema = new Schema<IUser>(
