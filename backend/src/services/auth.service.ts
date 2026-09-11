@@ -1,6 +1,7 @@
 // Packages
 import bcrypt from "bcrypt";
 
+
 // Models
 import User from "../models/user.model";
 import Session from "../models/session.model";
@@ -8,8 +9,8 @@ import VerificationToken from "../models/verification-token.model";
 import PasswordResetToken from "../models/password-reset-token.model";
 
 // Utility Functions
+import { hasMailServer } from "../utils/email";
 import AppError from "../utils/appError";
-
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -23,6 +24,9 @@ import {
 // Services & Configs
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service";
 import { REFRESH_TOKEN_EXPIRES_IN_DAYS } from "../config/auth";
+
+import { getAuth } from "firebase-admin/auth";
+import firebaseAdminApp from "../config/firebase";
 
 interface RegisterData {
   email: string;
@@ -41,7 +45,21 @@ interface SessionMetadata {
   ipAddress?: string;
 }
 
+interface GoogleLoginData {
+  idToken: string;
+}
+
 const registerUser = async (data: RegisterData) => {
+  const mailServerExists = await hasMailServer(data.email);
+
+  if (!mailServerExists) {
+    throw new AppError(
+      422,
+      "INVALID_EMAIL_DOMAIN",
+      "Email domain cannot receive emails"
+    );
+  }
+
   const existingUser = await User.findOne({
     $or: [{ email: data.email }, { username: data.username }],
   });
@@ -73,19 +91,37 @@ const registerUser = async (data: RegisterData) => {
   });
 
   // Generate verification token
-  const verificationToken = generateVerificationToken();  
-  const tokenHash = hashVerificationToken(verificationToken);
+  try {
+    const verificationToken = generateVerificationToken();
+    const tokenHash = hashVerificationToken(verificationToken);
 
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hrs
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  await VerificationToken.create({
-    user: user._id,
-    tokenHash,
-    expiresAt,
-  });
+    await VerificationToken.create({
+      user: user._id,
+      tokenHash,
+      expiresAt,
+    });
 
-  // Send email
-  await sendVerificationEmail(user.email, verificationToken);
+    // Send email
+    await sendVerificationEmail(user.email, verificationToken);
+
+  } catch (error) {
+    // Cleanup if email/token process fails
+    await VerificationToken.deleteMany({
+      user: user._id,
+    });
+
+    await User.deleteOne({
+      _id: user._id,
+    });
+
+    throw new AppError(
+      503,
+      "VERIFICATION_EMAIL_FAILED",
+      "Unable to send verification email. Please try again later."
+    );
+  }
 
   return {
     id: user._id,
@@ -334,6 +370,69 @@ const resetPassword = async (
   );
 };
 
+const updatePassword = async (
+  userId: string,
+  currentPassword: string | undefined,
+  newPassword: string
+) => {
+  const user = await User.findById(userId).select("+passwordHash");
+
+  if (!user) {
+    throw new AppError(
+      401,
+      "UNAUTHORIZED",
+      "Authentication required"
+    );
+  }
+
+  if (user.status !== "active") {
+    throw new AppError(
+      403,
+      "ACCOUNT_UNAVAILABLE",
+      "Account is not available"
+    );
+  }
+
+  // Password already exists → current password required
+  if (user.passwordHash) {
+    if (!currentPassword) {
+      throw new AppError(
+        400,
+        "CURRENT_PASSWORD_REQUIRED",
+        "Current password is required"
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.passwordHash
+    );
+
+    if (!isPasswordValid) {
+      throw new AppError(
+        401,
+        "INVALID_CURRENT_PASSWORD",
+        "Current password is incorrect"
+      );
+    }
+    
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+
+  user.passwordHash = passwordHash;
+
+  if (!user.authProviders.includes("password")) {
+    user.authProviders.push("password");
+  }
+
+  await user.save();
+
+  return {
+    message: "Password updated successfully",
+  };
+};
+
 const refreshUserSession = async (
   refreshToken: string,
   metadata: SessionMetadata
@@ -408,4 +507,135 @@ const logoutUser = async (refreshToken: string) => {
   );
 };
 
-export { registerUser,  verifyEmail, resendVerificationEmail, loginUser, refreshUserSession, logoutUser, forgotPassword, resetPassword, };
+const googleLoginUser = async (
+  idToken: string,
+  metadata: SessionMetadata
+) => {
+  let decodedToken;
+
+  try {
+    decodedToken = await getAuth(firebaseAdminApp).verifyIdToken(idToken);
+  } catch {
+    throw new AppError(
+      401,
+      "INVALID_FIREBASE_TOKEN",
+      "Invalid Google authentication token"
+    );
+  }
+
+  const firebaseUid = decodedToken.uid;
+  const email = decodedToken.email?.trim().toLowerCase();
+
+  if (!email || decodedToken.email_verified !== true) {
+    throw new AppError(
+      401,
+      "GOOGLE_EMAIL_NOT_VERIFIED",
+      "Google email is not verified"
+    );
+  }
+
+  let user = await User.findOne({
+    $or: [{ firebaseUid }, { email }],
+  });
+
+  // Existing account
+  if (user) {
+    if (user.status !== "active") {
+      throw new AppError(
+        403,
+        "ACCOUNT_UNAVAILABLE",
+        "Account is not available"
+      );
+    }
+
+    // Existing password account → link Google
+    if (!user.firebaseUid) {
+      user.firebaseUid = firebaseUid;
+    }
+
+    // Different Google account already linked
+    if (user.firebaseUid !== firebaseUid) {
+      throw new AppError(
+        409,
+        "GOOGLE_ACCOUNT_CONFLICT",
+        "This Google account is already linked to another account"
+      );
+    }
+
+    if (!user.authProviders.includes("google")) {
+      user.authProviders.push("google");
+    }
+
+    // Google has already verified the email
+    if (!user.emailVerifiedAt) {
+      user.emailVerifiedAt = new Date();
+    }
+
+    await user.save();
+  }
+
+  /*
+     * New Google account.
+     *
+     * Firebase doesn't give us a guaranteed unique username
+     * suitable for Zentro, so generate one.
+  */
+  if (!user) {
+    const baseUsername =
+      decodedToken.name
+        ?.toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 20) || "user";
+
+    let username = baseUsername;
+    let counter = 1;
+
+    while (await User.exists({ username })) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    user = await User.create({
+      email,
+      username,
+      displayName: decodedToken.name || username,
+      profileImage: decodedToken.picture,
+      firebaseUid,
+      authProviders: ["google"],
+      emailVerifiedAt: new Date(),
+    });
+  }
+
+  // Issue Zentro's own tokens
+  const accessToken = generateAccessToken(user._id.toString());
+
+  const refreshToken = generateRefreshToken();
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+
+  const expiresAt = new Date(
+    Date.now() + REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000
+  );
+
+  await Session.create({
+    user: user._id,
+    refreshTokenHash,
+    expiresAt,
+    lastUsedAt: new Date(),
+    userAgent: metadata.userAgent,
+    ipAddress: metadata.ipAddress,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      displayName: user.displayName,
+      profileImage: user.profileImage,
+    },
+  };
+};
+
+export { registerUser, verifyEmail, resendVerificationEmail, googleLoginUser, loginUser, refreshUserSession, logoutUser, forgotPassword, updatePassword, resetPassword, };

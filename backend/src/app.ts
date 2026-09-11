@@ -1,5 +1,6 @@
 // Packages
 import express from "express";
+import cors from "cors"
 import cookieParser from "cookie-parser";
 
 // Routes
@@ -16,6 +17,12 @@ const app = express();
 
 // Application Middlewares
 app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(loggerMiddleware);
 

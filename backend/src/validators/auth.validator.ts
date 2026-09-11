@@ -58,4 +58,16 @@ const resetPasswordSchema = z.object({
     .max(72, "Password cannot exceed 72 characters"),
 });
 
-export { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, forgotPasswordSchema,  resetPasswordSchema,};
+const updatePasswordSchema = z.object({
+  currentPassword: z.string().optional(),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be at most 72 characters"),
+});
+
+const googleAuthSchema = z.object({
+  idToken: z.string().min(1, "Firebase ID token is required"),
+});
+
+export { registerSchema, loginSchema, verifyEmailSchema, resendVerificationSchema, forgotPasswordSchema,  resetPasswordSchema, updatePasswordSchema, googleAuthSchema,};

@@ -8,6 +8,8 @@ import {
   resendVerificationEmail,
   forgotPassword as forgotPasswordService,
   resetPassword as resetPasswordService,
+  googleLoginUser,
+  updatePassword
 } from "../services/auth.service";
 
 import AppError from "../utils/appError";
@@ -195,4 +197,65 @@ const resetPassword = async (
   }
 };
 
-export { register, verifyEmail, resendVerification, login, refresh, logout, forgotPassword, resetPassword, }; 
+const updateUserPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(
+        401,
+        "UNAUTHORIZED",
+        "Authentication required"
+      );
+    }
+
+    const result = await updatePassword(
+      req.user.userId,
+      req.body.currentPassword,
+      req.body.newPassword
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const googleLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await googleLoginUser(
+      req.body.idToken,
+      {
+        userAgent: req.get("user-agent"),
+        ipAddress: req.ip,
+      }
+    );
+
+    res.cookie(
+      "refreshToken",
+      result.refreshToken,
+      REFRESH_COOKIE_OPTIONS
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { register, googleLogin, verifyEmail, resendVerification, login, refresh, logout, forgotPassword, resetPassword, updateUserPassword}; 
