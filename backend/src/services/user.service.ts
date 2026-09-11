@@ -2,6 +2,9 @@ import mongoose from "mongoose";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
 
+// Services
+import { uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
+
 const getCurrentUser = async (userId: string) => {
   const user = await User.findById(userId).select(
     "-passwordHash"
@@ -113,4 +116,35 @@ const updateCurrentUser = async (
   };
 };
 
-export { getCurrentUser, getPublicUserProfile, updateCurrentUser, };
+const updateProfileImage = async (
+  userId: string,
+  file: Express.Multer.File
+) => {
+  const user = await User.findById(userId);
+
+  if (!user || user.status !== "active") {
+    throw new AppError(
+      401,
+      "UNAUTHORIZED",
+      "Authentication required"
+    );
+  }
+
+  const result = await uploadToCloudinary(
+    file.buffer,
+    userId
+  );
+
+  user.profileImage = {
+    url: result.secure_url,
+    publicId: result.public_id,
+  };
+
+  await user.save();
+
+  return {
+    profileImage: user.profileImage,
+  };
+};
+
+export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage};

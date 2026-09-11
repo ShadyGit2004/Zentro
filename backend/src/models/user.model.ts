@@ -5,7 +5,10 @@ interface IUser extends Document {
   username: string;
   displayName: string;
   bio?: string;
-  profileImage?: string;
+  profileImage?: {
+    url: string;
+    publicId?: string;
+  };
   passwordHash?: string;
   firebaseUid?: string;
   authProviders: ("password" | "google")[];
@@ -45,7 +48,12 @@ const userSchema = new Schema<IUser>(
     },
 
     profileImage: {
-      type: String,
+      url: {
+        type: String,
+      },
+      publicId: {
+        type: String,
+      },
     },
 
     passwordHash: {

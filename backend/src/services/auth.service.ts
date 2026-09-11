@@ -599,7 +599,7 @@ const googleLoginUser = async (
       email,
       username,
       displayName: decodedToken.name || username,
-      profileImage: decodedToken.picture,
+      profileImage: decodedToken.picture ? { url: decodedToken.picture, } : undefined,
       firebaseUid,
       authProviders: ["google"],
       emailVerifiedAt: new Date(),

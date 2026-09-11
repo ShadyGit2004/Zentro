@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { getCurrentUser,
   getPublicUserProfile, 
   updateCurrentUser as updateCurrentUserService,
+  updateProfileImage as updateProfileImageService
  } from "../services/user.service";
 import AppError from "../utils/appError";
 
@@ -85,4 +86,40 @@ const updateUserProfile = async (
   }
 };
 
-export { getMe, getUserProfile, updateUserProfile };
+const updateProfileImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(
+        401,
+        "UNAUTHORIZED",
+        "Authentication required"
+      );
+    }
+
+    if (!req.file) {
+      throw new AppError(
+        422,
+        "IMAGE_REQUIRED",
+        "Profile image is required"
+      );
+    }
+
+    const result = await updateProfileImageService(
+      req.user.userId,
+      req.file
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { getMe, getUserProfile, updateUserProfile, updateProfileImage };
