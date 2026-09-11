@@ -4,6 +4,8 @@ import requireVerifiedEmail from "../middlewares/require-verified-email.middlewa
 import {
   follow,
   unfollow,
+  followers,
+  following,
 } from "../controllers/follow.controller";
 
 const router = Router();
@@ -20,6 +22,16 @@ router.delete(
   authMiddleware,
   requireVerifiedEmail,
   unfollow
+);
+
+router.get(
+  "/users/:userId/followers",
+  followers
+);
+
+router.get(
+  "/users/:userId/following",
+  following
 );
 
 export default router;

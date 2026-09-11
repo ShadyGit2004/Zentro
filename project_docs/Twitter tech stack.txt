@@ -1,0 +1,60 @@
+🚀 Twitter/X Clone — Tech Stack
+
+Frontend
+
+Next.js
+TypeScript
+Tailwind CSS
+shadcn/ui
+TanStack Query
+Axios
+React Hook Form
+Zod
+
+Authentication
+
+Firebase Authentication
+Google Sign-In
+Email/Password
+Firebase Admin SDK — backend par token verification
+
+Backend
+
+Node.js
+Express.js
+TypeScript
+REST API
+Mongoose
+
+Database
+
+MongoDB / MongoDB Atlas
+
+Media
+
+Cloudinary
+
+Security
+
+Helmet
+CORS
+Rate Limiting
+Firebase token verification
+Authentication + Authorization
+Input validation
+Ownership checks
+
+Development / Testing
+
+Git + GitHub
+Postman / Hoppscotch
+ESLint
+Prettier
+
+Deployment
+
+Next.js → Vercel
+Express → backend hosting
+MongoDB → Atlas
+Cloudinary → media
+Firebase → authentication

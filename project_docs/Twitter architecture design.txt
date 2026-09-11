@@ -1,0 +1,1074 @@
+🏗️ Twitter/X Clone — Software Architecture Design
+
+Version: 1.0
+Project: Twitter/X Inspired Social Media Platform
+Architecture Style: Client–Server + REST API
+Frontend: Next.js + TypeScript
+Backend: Node.js + Express + TypeScript
+Database: MongoDB
+Authentication: Firebase Authentication
+Server State: TanStack Query
+
+1. Architecture ka Purpose
+
+Architecture ka purpose ye define karna hai ki:
+
+System ke different components ek dusre ke saath kaise communicate karenge aur responsibility kis component ki hogi.
+
+SRS mein humne define kiya:
+
+WHAT the system should do
+
+Architecture define karega:
+
+HOW the system will be structured to do it
+
+Example:
+
+Requirement
+
+User post create kar sakta hai.
+
+Architecture batayegi:
+
+Next.js UI
+    ↓
+TanStack Query
+    ↓
+Axios
+    ↓
+Express API
+    ↓
+Authentication Middleware
+    ↓
+Post Controller
+    ↓
+Post Service
+    ↓
+Mongoose
+    ↓
+MongoDB
+2. High-Level System Architecture
+
+Complete system ko hum roughly is tarah divide karenge:
+
+                           ┌───────────────┐
+                           │     USER      │
+                           └───────┬───────┘
+                                   │
+                                   ▼
+                     ┌────────────────────────┐
+                     │       NEXT.JS          │
+                     │       FRONTEND         │
+                     │                        │
+                     │ UI                     │
+                     │ Components             │
+                     │ TanStack Query         │
+                     │ Axios                  │
+                     │ Firebase Client SDK    │
+                     └───────────┬────────────┘
+                                 │
+                         HTTP / REST API
+                                 │
+                                 ▼
+                     ┌────────────────────────┐
+                     │      EXPRESS.JS        │
+                     │       BACKEND          │
+                     │                        │
+                     │ Routes                 │
+                     │ Middleware             │
+                     │ Controllers            │
+                     │ Services               │
+                     │ Validation             │
+                     │ Mongoose               │
+                     └───────────┬────────────┘
+                                 │
+                                 ▼
+                     ┌────────────────────────┐
+                     │       MONGODB          │
+                     │       DATABASE          │
+                     └────────────────────────┘
+
+
+Additional Services:
+
+Firebase Authentication
+        ↑
+        │
+     Next.js
+
+Cloudinary
+        ↑
+        │
+     Next.js / Backend
+3. Major System Components
+
+System mein major components:
+
+1. Next.js Frontend
+2. Firebase Authentication
+3. Express Backend
+4. Authentication Middleware
+5. Controllers
+6. Services
+7. Validation Layer
+8. Mongoose Models
+9. MongoDB
+10. Cloudinary
+11. TanStack Query
+
+Har component ka single responsibility hoga.
+
+4. Frontend Architecture
+
+Frontend ka responsibility:
+
+UI render karna
+User interaction handle karna
+Forms handle karna
+Authentication initiate karna
+API requests karna
+Server data cache/manage karna
+Loading/error states show karna
+
+Frontend directly MongoDB se baat nahi karega.
+
+Correct:
+
+Next.js → Express → MongoDB
+
+Incorrect:
+
+Next.js → MongoDB
+5. Frontend Internal Architecture
+Next.js
+│
+├── app/
+│
+├── components/
+│
+├── features/
+│
+├── hooks/
+│
+├── lib/
+│
+├── providers/
+│
+├── types/
+│
+└── utils/
+app/
+
+Pages/routes ke liye.
+
+Example:
+
+app/
+├── login/
+├── register/
+├── home/
+├── profile/
+└── post/
+
+Next.js App Router routing handle karega.
+
+6. Components
+
+Reusable UI components:
+
+components/
+│
+├── ui/
+├── layout/
+├── navbar/
+├── post/
+├── feed/
+├── profile/
+└── comments/
+
+Example:
+
+PostCard
+CommentList
+LikeButton
+FollowButton
+Navbar
+Sidebar
+
+Components ka goal:
+
+UI ko reusable aur maintainable rakhna.
+
+7. Feature-Based Architecture
+
+Business functionality ko features mein organize karenge.
+
+features/
+│
+├── auth/
+│
+├── posts/
+│
+├── comments/
+│
+├── likes/
+│
+├── follows/
+│
+├── users/
+│
+└── feed/
+
+Example:
+
+features/posts/
+├── api.ts
+├── hooks.ts
+├── types.ts
+└── components/
+
+Iska benefit:
+
+Agar kal Post functionality mein bug aaye toh poora project search nahi karna padega.
+
+8. TanStack Query Architecture
+
+TanStack Query server state manage karega.
+
+Server state matlab:
+
+Jo data backend/database se aa raha hai.
+
+Examples:
+
+Posts
+Comments
+User profile
+Followers
+Following
+Feed
+Notifications
+
+Flow:
+
+Component
+    ↓
+TanStack Query
+    ↓
+Axios
+    ↓
+Express API
+    ↓
+MongoDB
+Query
+
+Data fetch karne ke liye:
+
+GET /api/posts/feed
+Mutation
+
+Data change karne ke liye:
+
+POST /api/posts
+POST /api/posts/:id/like
+DELETE /api/posts/:id
+
+Important learning rule:
+
+TanStack Query pehle theory mein samjhenge, uske baad actual Feed/Post API par implement karenge.
+
+9. Backend Architecture
+
+Backend mein layered architecture use karenge:
+
+Request
+   ↓
+Route
+   ↓
+Middleware
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Mongoose Model
+   ↓
+MongoDB
+
+Ye hamare project ka important architectural decision hai.
+
+10. Routes
+
+Routes decide karenge:
+
+Kaunsi URL kis functionality ko execute karegi?
+
+Example:
+
+GET    /api/posts
+GET    /api/posts/:id
+POST   /api/posts
+PATCH  /api/posts/:id
+DELETE /api/posts/:id
+
+Auth:
+
+GET /api/users/me
+
+Interactions:
+
+POST   /api/posts/:id/like
+DELETE /api/posts/:id/like
+
+POST /api/posts/:id/comments
+
+POST   /api/users/:id/follow
+DELETE /api/users/:id/follow
+
+Exact API contract hum API Design phase mein finalize karenge.
+
+11. Middleware Layer
+
+Middleware request aur controller ke beech ka security/processing layer hai.
+
+Example:
+
+Request
+   ↓
+Authentication Middleware
+   ↓
+Validation Middleware
+   ↓
+Controller
+
+Authentication middleware:
+
+Firebase ID Token
+       ↓
+Firebase Admin SDK
+       ↓
+Token Verify
+       ↓
+Authenticated User
+       ↓
+Controller
+Authentication vs Authorization
+
+Authentication:
+
+Tum kaun ho?
+
+Authorization:
+
+Tumhe ye kaam karne ki permission hai?
+
+Example:
+
+User A
+   ↓
+DELETE
+   ↓
+User B's Post
+
+Authentication successful ho sakti hai.
+
+But authorization fail hogi because:
+
+User A, User B ki post delete nahi kar sakta.
+
+12. Controller Layer
+
+Controller HTTP-related responsibility handle karega.
+
+Example:
+
+POST /api/posts
+        ↓
+postController.createPost()
+
+Controller:
+
+request read karega
+required data service ko dega
+response return karega
+appropriate HTTP status bhejega
+
+Controller mein heavy business logic nahi rakhenge.
+
+13. Service Layer
+
+Service mein actual business logic hoga.
+
+Example:
+
+postService.createPost()
+
+Service decide karegi:
+
+Is user authenticated?
+Is content valid?
+Kya user allowed hai?
+Post kaise create hogi?
+Database ko kya data dena hai?
+Why?
+
+Agar business logic controller mein bhar diya:
+
+Controller = 300+ lines
+
+Project difficult maintain hoga.
+
+Layering se:
+
+Controller
+    ↓
+Service
+    ↓
+Database
+
+clear responsibility rahegi.
+
+14. Database Architecture
+
+MongoDB mein initial collections:
+
+users
+posts
+comments
+likes
+follows
+
+Conceptually:
+
+User
+ │
+ ├────── creates ──────> Posts
+ │
+ ├────── writes ───────> Comments
+ │
+ ├────── likes ────────> Posts
+ │
+ └────── follows ──────> Users
+15. User Architecture
+
+Firebase user identity aur application user alag concepts hain.
+
+Firebase User
+     │
+     │ firebaseUid
+     ▼
+MongoDB User
+
+MongoDB user roughly:
+
+User
+├── firebaseUid
+├── username
+├── displayName
+├── bio
+├── profileImage
+├── followers
+├── following
+├── createdAt
+└── updatedAt
+
+Firebase password management karega.
+
+MongoDB mein password store nahi karenge.
+
+16. Authentication Flow
+Login
+User
+ ↓
+Next.js Login
+ ↓
+Firebase Authentication
+ ↓
+Firebase verifies user
+ ↓
+Firebase ID Token
+ ↓
+Next.js
+ ↓
+Express API
+ ↓
+Firebase Admin SDK
+ ↓
+Verify ID Token
+ ↓
+Find/Create MongoDB User
+ ↓
+Request continues
+
+Ye architecture third-party identity ko application user se connect karta hai.
+
+17. Post Creation Flow
+
+Ye hamara important end-to-end flow hoga.
+
+User
+ ↓
+Create Post Form
+ ↓
+Next.js
+ ↓
+TanStack Mutation
+ ↓
+Axios
+ ↓
+POST /api/posts
+ ↓
+Express Route
+ ↓
+Auth Middleware
+ ↓
+Validation
+ ↓
+Post Controller
+ ↓
+Post Service
+ ↓
+Post Model
+ ↓
+MongoDB
+ ↓
+Response
+ ↓
+TanStack Query
+ ↓
+Invalidate/Update Feed
+ ↓
+UI Updated
+18. Feed Flow
+User opens Home
+        ↓
+Next.js Feed Page
+        ↓
+TanStack Query
+        ↓
+GET /api/posts/feed
+        ↓
+Axios
+        ↓
+Express
+        ↓
+Auth Middleware
+        ↓
+Feed Controller
+        ↓
+Feed Service
+        ↓
+MongoDB
+        ↓
+Posts
+        ↓
+API Response
+        ↓
+TanStack Query Cache
+        ↓
+Feed UI
+
+Initial feed:
+
+Chronological feed
+
+Advanced recommendation algorithm initially nahi banayenge.
+
+19. Like Flow
+User clicks Like
+       ↓
+TanStack Mutation
+       ↓
+POST /api/posts/:id/like
+       ↓
+Express
+       ↓
+Auth Middleware
+       ↓
+Like Controller
+       ↓
+Like Service
+       ↓
+MongoDB
+       ↓
+Success
+       ↓
+Query Cache Update/Invalidation
+       ↓
+UI
+
+Business rule:
+
+Same user same post ko duplicate like nahi kar sakta.
+
+20. Comment Flow
+Comment Form
+     ↓
+TanStack Mutation
+     ↓
+POST /api/posts/:id/comments
+     ↓
+Express
+     ↓
+Authentication
+     ↓
+Validation
+     ↓
+Comment Service
+     ↓
+MongoDB
+     ↓
+Response
+     ↓
+Comments Query Update
+21. Follow Flow
+Follow Button
+     ↓
+Mutation
+     ↓
+POST /api/users/:id/follow
+     ↓
+Authentication
+     ↓
+Authorization / Business Rules
+     ↓
+Follow Service
+     ↓
+MongoDB
+
+Rules:
+
+User cannot follow themselves.
+
+Duplicate follow not allowed.
+
+Invalid target user not allowed.
+22. Media Architecture
+
+Profile image/post image ke liye Cloudinary.
+
+Basic flow:
+
+User selects image
+       ↓
+Next.js
+       ↓
+Cloudinary Upload
+       ↓
+Cloudinary URL
+       ↓
+Backend
+       ↓
+MongoDB
+
+MongoDB mein actual image file nahi rakhenge.
+
+Store:
+
+profileImage:
+"https://cloudinary...."
+
+Reason:
+
+Database ko heavy media files se unnecessarily load nahi karna.
+
+Exact upload security architecture implementation ke time decide karenge.
+
+23. Validation Architecture
+
+Validation multiple levels par hogi.
+
+Frontend
+   ↓
+Zod
+   ↓
+Backend
+   ↓
+Zod
+   ↓
+Database
+
+Frontend validation user experience improve karti hai.
+
+Backend validation security ke liye mandatory hai.
+
+Example:
+
+Frontend:
+"Post empty hai → error"
+
+Backend:
+"Request directly API se aayi → phir bhi validate karo"
+
+Backend ko frontend par trust nahi karna chahiye.
+
+24. Error Handling Architecture
+
+Standard response approach rakhenge.
+
+Examples:
+
+400 Bad Request
+401 Unauthorized
+403 Forbidden
+404 Not Found
+409 Conflict
+422 Validation Error
+500 Internal Server Error
+
+Example:
+
+DELETE someone else's post
+        ↓
+403 Forbidden
+
+Invalid post ID:
+
+404 Not Found
+
+Duplicate follow:
+
+409 Conflict
+25. Security Architecture
+
+Basic security layers:
+
+                    API
+                     │
+              Rate Limiting
+                     │
+                  CORS
+                     │
+                 Helmet
+                     │
+              Authentication
+                     │
+               Authorization
+                     │
+                Validation
+                     │
+             Business Rules
+                     │
+                  MongoDB
+
+Important:
+
+Rate Limiting
+
+Ek user bahut rapidly API requests na bhej sake.
+
+CORS
+
+Kaunse origins API ko access kar sakte hain, control karta hai.
+
+Helmet
+
+HTTP security-related headers configure karne mein help karta hai.
+
+Authorization
+
+User ko unauthorized operation karne se rokta hai.
+
+26. API Communication
+
+Frontend aur backend ke beech:
+
+HTTP
++
+JSON
++
+REST
+
+Example:
+
+Request
+
+POST /api/posts
+Content-Type: application/json
+Authorization: Bearer <token>
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    ...
+  }
+}
+
+Exact response format API Design stage mein standardize karenge.
+
+27. Project Folder Architecture
+
+Overall:
+
+twitter-clone/
+│
+├── frontend/
+│   │
+│   ├── app/
+│   ├── components/
+│   ├── features/
+│   ├── hooks/
+│   ├── lib/
+│   ├── providers/
+│   ├── types/
+│   └── utils/
+│
+├── backend/
+│   │
+│   └── src/
+│       ├── config/
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── models/
+│       ├── middleware/
+│       ├── validators/
+│       ├── utils/
+│       ├── types/
+│       └── app.ts
+│
+├── README.md
+├── .gitignore
+└── docs/
+    ├── SRS.md
+    └── ARCHITECTURE.md
+28. Why Separate Frontend and Backend?
+
+Hum Next.js ke andar API routes bana sakte the.
+
+But hum separate Express backend choose kar rahe hain.
+
+Reason
+
+Tumhara learning goal hai:
+
+Backend architecture
+REST API
+Middleware
+Controllers
+Services
+MongoDB
+Authentication
+Authorization
+API security
+
+Separate Express backend se ye concepts properly practice honge.
+
+Alternative
+Next.js
+ └── API Routes
+      └── MongoDB
+
+Ye valid production architecture ho sakta hai.
+
+But hamare learning objective ke liye separate Express better hai.
+
+29. Technology Responsibility Map
+Next.js
+→ Frontend framework
+
+TypeScript
+→ Type safety
+
+Tailwind
+→ Styling
+
+shadcn
+→ UI components
+
+TanStack Query
+→ Server state
+
+Axios
+→ HTTP communication
+
+Firebase
+→ Authentication
+
+Firebase Admin SDK
+→ Backend token verification
+
+Express
+→ API server
+
+Mongoose
+→ MongoDB interaction
+
+MongoDB
+→ Persistent application data
+
+Cloudinary
+→ Media storage
+
+Zod
+→ Validation
+30. Deployment Architecture
+
+Production mein:
+
+                    USER
+                     │
+                     ▼
+                  Vercel
+                     │
+                 Next.js
+                     │
+                     │ HTTPS API
+                     ▼
+              Backend Hosting
+                     │
+                 Express
+                     │
+                     ▼
+               MongoDB Atlas
+
+Firebase ───────── Authentication
+
+Cloudinary ─────── Media
+31. Architectural Principles
+
+Project mein hum ye principles follow karenge:
+
+1. Separation of Concerns
+
+Har layer ka clear responsibility.
+
+2. Single Responsibility
+
+Ek component ideally ek major responsibility handle kare.
+
+3. Don't Trust the Client
+
+Frontend validation enough nahi hai.
+
+4. Authentication ≠ Authorization
+
+Login hone ka matlab ye nahi ki user sab kuch kar sakta hai.
+
+5. Business Logic in Service Layer
+
+Controllers ko unnecessarily complex nahi banayenge.
+
+6. Server State ≠ UI State
+
+Server data → TanStack Query.
+
+Local UI state → React state/hooks.
+
+7. API First Thinking
+
+Frontend banane se pehle API contract understand/design karenge.
+
+8. Security from Beginning
+
+Security ko end mein add nahi karenge.
+
+32. Architecture Decision Summary
+Decision	Choice	Reason
+Frontend	Next.js	Modern React framework
+Backend	Express	Backend architecture learning
+Database	MongoDB	Flexible document DB
+Auth	Firebase	Managed identity/authentication
+Server State	TanStack Query	Caching + synchronization
+API	REST	Simple and widely used
+ODM	Mongoose	MongoDB modeling
+Media	Cloudinary	External media storage
+Validation	Zod	Type-safe validation
+Architecture	Layered	Maintainability
+33. Final End-to-End Architecture
+
+Sabko ek diagram mein dekho:
+
+                         USER
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │     Next.js     │
+                  │    Frontend     │
+                  └────────┬────────┘
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+              ▼                         ▼
+       Firebase Auth              TanStack Query
+              │                         │
+              │                         ▼
+              │                       Axios
+              │                         │
+              │                         ▼
+              │                ┌─────────────────┐
+              │                │    Express.js   │
+              │                │     Backend     │
+              │                └────────┬────────┘
+              │                         │
+              │                    Middleware
+              │                         │
+              │                    Controllers
+              │                         │
+              │                      Services
+              │                         │
+              │                      Mongoose
+              │                         │
+              │                         ▼
+              │                ┌─────────────────┐
+              │                │     MongoDB     │
+              │                └─────────────────┘
+              │
+              ▼
+       Firebase Admin SDK
+       Token Verification
+
+
+       Next.js ───────────────► Cloudinary
+                                  │
+                                  ▼
+                              Media URL
+                                  │
+                                  ▼
+                               MongoDB
+🔥 Architecture ke baad actual development flow
+
+Ab hamara actual engineering sequence hoga:
+
+SRS ✅
+  ↓
+Architecture Design ✅
+  ↓
+Database Design
+  ↓
+API Design
+  ↓
+Project Setup
+  ↓
+Firebase Setup
+  ↓
+Backend Foundation
+  ↓
+User/Auth
+  ↓
+Post API
+  ↓
+TanStack Query THEORY
+  ↓
+Feed/Post Frontend
+  ↓
+Like
+  ↓
+Comment
+  ↓
+Follow
+  ↓
+Profile
+  ↓
+Pagination
+  ↓
+Testing
+  ↓
+Security Review
+  ↓
+Deployment
+  ↓
+Documentation

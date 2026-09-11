@@ -1,0 +1,1181 @@
+API Design v1.0 — Twitter/X Clone
+1. API Overview
+
+Style: REST API
+Data format: JSON
+Base path:
+
+/api/v1
+
+Example:
+
+GET /api/v1/users/me
+POST /api/v1/posts
+Authentication
+
+Protected requests:
+
+Authorization: Bearer <firebase-id-token>
+
+Firebase ID token = Firebase login ke baad milne wala token. Backend Firebase Admin SDK se verify karega.
+
+2. Common API Rules
+Headers
+
+JSON request ke liye:
+
+Content-Type: application/json
+
+Authenticated request:
+
+Authorization: Bearer <firebase-id-token>
+3. Standard Success Response
+
+Single resource:
+
+{
+  "success": true,
+  "data": {}
+}
+
+Collection:
+
+{
+  "success": true,
+  "data": [],
+  "pagination": {}
+}
+4. Standard Error Response
+
+Har API error ko predictable rakhenge:
+
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {}
+  }
+}
+
+details optional hai.
+
+Example:
+
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {
+      "content": "Content is required"
+    }
+  }
+}
+5. HTTP Status Codes
+Status	Meaning
+200	Successful request
+201	Resource created
+204	Successful deletion/no body
+400	Bad request
+401	Not authenticated
+403	Not authorized
+404	Resource not found
+409	Conflict
+422	Validation failed
+429	Rate limit exceeded
+500	Internal server error
+6. Pagination Standard
+
+Initial implementation:
+
+?page=1&limit=20
+
+Rules:
+
+page >= 1
+limit >= 1
+limit <= 100
+
+Example:
+
+GET /api/v1/feed?page=1&limit=20
+
+Response:
+
+{
+  "success": true,
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 125,
+    "totalPages": 7,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+Why limit max 100?
+
+Client ko accidentally:
+
+?limit=1000000
+
+bhej kar database par huge query nahi karne deni.
+
+Later large-scale feed ke liye cursor-based pagination consider karenge.
+
+7. USER APIs
+7.1 Get Current User
+GET /api/v1/users/me
+Authentication
+
+Required.
+
+Request
+
+No body.
+
+Success
+200 OK
+{
+  "success": true,
+  "data": {
+    "id": "user_id",
+    "username": "rajat",
+    "displayName": "Rajat Pandey",
+    "email": "user@example.com",
+    "bio": "Full Stack Developer",
+    "profileImage": null,
+    "createdAt": "2026-08-01T10:00:00.000Z",
+    "updatedAt": "2026-08-01T10:00:00.000Z"
+  }
+}
+Errors
+401 AUTHENTICATION_REQUIRED
+404 USER_NOT_FOUND
+500 INTERNAL_SERVER_ERROR
+7.2 Get User Profile
+GET /api/v1/users/:userId
+Path parameter
+userId → MongoDB User ID
+Authentication
+
+Required.
+
+Request body
+
+None.
+
+Success
+200 OK
+{
+  "success": true,
+  "data": {
+    "id": "user_id",
+    "username": "rajat",
+    "displayName": "Rajat Pandey",
+    "bio": "Full Stack Developer",
+    "profileImage": null,
+    "followersCount": 120,
+    "followingCount": 80,
+    "postsCount": 45,
+    "createdAt": "2026-08-01T10:00:00.000Z"
+  }
+}
+Validation
+
+userId must be a valid MongoDB ObjectId.
+
+Errors
+400 INVALID_USER_ID
+401 AUTHENTICATION_REQUIRED
+404 USER_NOT_FOUND
+7.3 Update Own Profile
+PATCH /api/v1/users/me
+Authentication
+
+Required.
+
+Body
+{
+  "username": "rajat",
+  "displayName": "Rajat Pandey",
+  "bio": "Full Stack Developer"
+}
+
+All fields optional because this is PATCH.
+
+Validation
+username
+optional
+string
+trimmed
+3–30 characters
+allowed: letters, numbers, underscore
+unique
+displayName
+optional
+string
+trimmed
+1–50 characters
+bio
+optional
+string
+trimmed
+maximum 160 characters
+Success
+200 OK
+{
+  "success": true,
+  "data": {
+    "id": "user_id",
+    "username": "rajat",
+    "displayName": "Rajat Pandey",
+    "bio": "Full Stack Developer",
+    "profileImage": null,
+    "updatedAt": "2026-08-10T10:00:00.000Z"
+  }
+}
+Errors
+400 INVALID_REQUEST
+401 AUTHENTICATION_REQUIRED
+409 USERNAME_ALREADY_EXISTS
+422 VALIDATION_ERROR
+8. POSTS APIs
+8.1 Create Post
+POST /api/v1/posts
+Authentication
+
+Required.
+
+Headers
+Authorization: Bearer <firebase-id-token>
+Content-Type: application/json
+Body
+{
+  "content": "Hello world!"
+}
+
+Media future mein add kar sakte hain:
+
+{
+  "content": "Hello world!",
+  "media": []
+}
+Validation
+content:
+- required
+- string
+- trim whitespace
+- minimum 1 character
+- maximum 280 characters
+
+At least meaningful content/media requirement future media implementation ke time finalize karenge.
+
+Success
+201 Created
+{
+  "success": true,
+  "data": {
+    "id": "post_id",
+    "content": "Hello world!",
+    "author": {
+      "id": "user_id",
+      "username": "rajat",
+      "displayName": "Rajat Pandey",
+      "profileImage": null
+    },
+    "createdAt": "2026-08-10T10:00:00.000Z",
+    "updatedAt": "2026-08-10T10:00:00.000Z"
+  }
+}
+Errors
+401 AUTHENTICATION_REQUIRED
+422 VALIDATION_ERROR
+429 RATE_LIMIT_EXCEEDED
+8.2 Get Single Post
+GET /api/v1/posts/:postId
+Authentication
+
+Required.
+
+Validation
+
+postId valid MongoDB ObjectId.
+
+Success
+200 OK
+{
+  "success": true,
+  "data": {
+    "id": "post_id",
+    "content": "Hello world!",
+    "author": {
+      "id": "user_id",
+      "username": "rajat",
+      "displayName": "Rajat Pandey",
+      "profileImage": null
+    },
+    "likesCount": 10,
+    "commentsCount": 4,
+    "likedByCurrentUser": false,
+    "createdAt": "2026-08-10T10:00:00.000Z",
+    "updatedAt": "2026-08-10T10:00:00.000Z"
+  }
+}
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+404 POST_NOT_FOUND
+8.3 Update Own Post
+PATCH /api/v1/posts/:postId
+Body
+{
+  "content": "Updated post content"
+}
+Authorization
+Authenticated user == post.author
+Validation
+content:
+required
+string
+trimmed
+1–280 characters
+Success
+200 OK
+{
+  "success": true,
+  "data": {
+    "id": "post_id",
+    "content": "Updated post content",
+    "author": {},
+    "createdAt": "2026-08-10T10:00:00.000Z",
+    "updatedAt": "2026-08-10T11:00:00.000Z"
+  }
+}
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+403 POST_UPDATE_FORBIDDEN
+404 POST_NOT_FOUND
+422 VALIDATION_ERROR
+8.4 Delete Own Post
+DELETE /api/v1/posts/:postId
+Authorization
+
+Only post owner.
+
+Success
+204 No Content
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+403 POST_DELETE_FORBIDDEN
+404 POST_NOT_FOUND
+
+Initial design uses hard delete.
+
+9. FEED API
+9.1 Get Feed
+GET /api/v1/feed?page=1&limit=20
+Authentication
+
+Required.
+
+Query parameters
+page
+limit
+Validation
+page → integer >= 1
+limit → integer 1–100
+Initial business logic
+
+Feed initially:
+
+current user's posts
++
+posts from followed users
+
+ordered:
+
+createdAt DESC
+Success
+200 OK
+{
+  "success": true,
+  "data": [
+    {
+      "id": "post_id",
+      "content": "Hello!",
+      "author": {
+        "id": "user_id",
+        "username": "rajat",
+        "displayName": "Rajat Pandey",
+        "profileImage": null
+      },
+      "likesCount": 10,
+      "commentsCount": 3,
+      "likedByCurrentUser": false,
+      "createdAt": "2026-08-10T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 125,
+    "totalPages": 7,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+Errors
+401 AUTHENTICATION_REQUIRED
+422 INVALID_PAGINATION
+10. LIKE APIs
+10.1 Like Post
+POST /api/v1/posts/:postId/like
+Authentication
+
+Required.
+
+Body
+
+None.
+
+Authorization
+
+Authenticated user.
+
+Validation
+
+Post ID valid and post exists.
+
+Business rules
+User can like a post only once.
+Success
+201 Created
+{
+  "success": true,
+  "data": {
+    "liked": true,
+    "postId": "post_id"
+  }
+}
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+404 POST_NOT_FOUND
+409 POST_ALREADY_LIKED
+10.2 Unlike Post
+DELETE /api/v1/posts/:postId/like
+Authentication
+
+Required.
+
+Success
+204 No Content
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+404 POST_NOT_FOUND
+404 LIKE_NOT_FOUND
+11. COMMENT APIs
+11.1 Create Comment
+POST /api/v1/posts/:postId/comments
+Body
+{
+  "content": "Nice post!"
+}
+Validation
+content:
+required
+string
+trimmed
+1–280 characters
+Success
+201 Created
+{
+  "success": true,
+  "data": {
+    "id": "comment_id",
+    "content": "Nice post!",
+    "author": {
+      "id": "user_id",
+      "username": "rajat",
+      "displayName": "Rajat Pandey",
+      "profileImage": null
+    },
+    "postId": "post_id",
+    "createdAt": "2026-08-10T10:00:00.000Z"
+  }
+}
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+404 POST_NOT_FOUND
+422 VALIDATION_ERROR
+429 RATE_LIMIT_EXCEEDED
+11.2 Get Comments
+GET /api/v1/posts/:postId/comments?page=1&limit=20
+Authentication
+
+Required.
+
+Pagination
+
+Same standard:
+
+page >= 1
+limit 1–100
+Success
+{
+  "success": true,
+  "data": [
+    {
+      "id": "comment_id",
+      "content": "Nice post!",
+      "author": {
+        "id": "user_id",
+        "username": "rajat",
+        "displayName": "Rajat Pandey"
+      },
+      "createdAt": "2026-08-10T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "totalPages": 3,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+Errors
+400 INVALID_POST_ID
+401 AUTHENTICATION_REQUIRED
+404 POST_NOT_FOUND
+422 INVALID_PAGINATION
+12. FOLLOW APIs
+12.1 Follow User
+POST /api/v1/users/:userId/follow
+Authentication
+
+Required.
+
+Validation
+
+Target user:
+
+valid ObjectId
+must exist
+Business rules
+Cannot follow yourself.
+Cannot follow same user twice.
+Success
+201 Created
+{
+  "success": true,
+  "data": {
+    "following": true,
+    "userId": "target_user_id"
+  }
+}
+Errors
+400 INVALID_USER_ID
+401 AUTHENTICATION_REQUIRED
+404 USER_NOT_FOUND
+409 CANNOT_FOLLOW_SELF
+409 ALREADY_FOLLOWING
+12.2 Unfollow User
+DELETE /api/v1/users/:userId/follow
+Success
+204 No Content
+Errors
+400 INVALID_USER_ID
+401 AUTHENTICATION_REQUIRED
+404 USER_NOT_FOUND
+404 FOLLOW_NOT_FOUND
+12.3 Get Followers
+GET /api/v1/users/:userId/followers?page=1&limit=20
+Success
+{
+  "success": true,
+  "data": [
+    {
+      "id": "user_id",
+      "username": "john",
+      "displayName": "John",
+      "profileImage": null
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 120,
+    "totalPages": 6,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+Errors
+400 INVALID_USER_ID
+401 AUTHENTICATION_REQUIRED
+404 USER_NOT_FOUND
+422 INVALID_PAGINATION
+12.4 Get Following
+GET /api/v1/users/:userId/following?page=1&limit=20
+
+Same pagination and validation rules as followers.
+
+13. Complete API Table
+Method	Endpoint	Auth	Pagination
+GET	/users/me	✅	❌
+GET	/users/:userId	✅	❌
+PATCH	/users/me	✅	❌
+POST	/users/:userId/follow	✅	❌
+DELETE	/users/:userId/follow	✅	❌
+GET	/users/:userId/followers	✅	✅
+GET	/users/:userId/following	✅	✅
+POST	/posts	✅	❌
+GET	/posts/:postId	✅	❌
+PATCH	/posts/:postId	✅	❌
+DELETE	/posts/:postId	✅	❌
+POST	/posts/:postId/like	✅	❌
+DELETE	/posts/:postId/like	✅	❌
+POST	/posts/:postId/comments	✅	❌
+GET	/posts/:postId/comments	✅	✅
+GET	/feed	✅	✅
+14. Business Rules
+
+Ye API design ka bahut important part hai.
+
+BR-01: User must be authenticated for protected APIs.
+
+BR-02: Firebase ID token must be verified server-side.
+
+BR-03: Firebase UID maps to MongoDB User.
+
+BR-04: User cannot follow themselves.
+
+BR-05: Duplicate follows are forbidden.
+
+BR-06: Duplicate likes are forbidden.
+
+BR-07: User can edit only their own posts.
+
+BR-08: User can delete only their own posts.
+
+BR-09: Post must belong to an existing user.
+
+BR-10: Comment must belong to an existing post and user.
+
+BR-11: Like must belong to an existing post and user.
+
+BR-12: Follow must reference existing users.
+
+BR-13: Backend validates every client input.
+
+BR-14: Frontend validation does not replace backend validation.
+
+BR-15: Passwords are never stored in MongoDB.
+
+BR-16: Pagination limits must be enforced server-side.
+15. Security Requirements
+
+Request pipeline conceptually:
+
+Request
+   ↓
+Rate Limiter
+   ↓
+CORS
+   ↓
+Helmet
+   ↓
+Authentication Middleware
+   ↓
+Validation
+   ↓
+Authorization
+   ↓
+Controller
+   ↓
+Service
+   ↓
+MongoDB
+Important terminology
+
+Rate Limiting → ek user/IP kitni requests limited time mein kar sakta hai.
+
+CORS → kaunse frontend origins API ko access kar sakte hain.
+
+Helmet → Express responses mein common security-related HTTP headers configure karta hai.
+
+Authentication → user kaun hai?
+
+Authorization → user ko ye action karne ki permission hai ya nahi?
+
+Validation → input expected format mein hai ya nahi?
+
+Ownership Check → resource actually current user ka hai ya nahi?
+
+16. Error Code Catalog
+
+Hum random messages nahi banayenge. Consistent error codes rakhenge.
+
+AUTHENTICATION_REQUIRED
+INVALID_TOKEN
+USER_NOT_FOUND
+INVALID_USER_ID
+
+POST_NOT_FOUND
+INVALID_POST_ID
+POST_UPDATE_FORBIDDEN
+POST_DELETE_FORBIDDEN
+
+VALIDATION_ERROR
+INVALID_REQUEST
+INVALID_PAGINATION
+
+USERNAME_ALREADY_EXISTS
+
+POST_ALREADY_LIKED
+LIKE_NOT_FOUND
+
+ALREADY_FOLLOWING
+CANNOT_FOLLOW_SELF
+FOLLOW_NOT_FOUND
+
+RATE_LIMIT_EXCEEDED
+
+INTERNAL_SERVER_ERROR
+17. API Design Status
+
+Ab bhai API Design v1.0 genuinely complete maan sakte hain. ✅
+
+SRS
+  ↓
+Architecture
+  ↓
+Database Design
+  ↓
+API Design v1.0
+  ✅
+
+
+API Design v1.1
+
+Base URL
+
+/api/v1
+
+Format: REST + JSON
+
+1. Authentication APIs
+Register
+POST /api/v1/auth/register
+
+Body:
+
+{
+  "email": "user@example.com",
+  "username": "rajat",
+  "displayName": "Rajat",
+  "password": "********"
+}
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "user": {},
+    "accessToken": "..."
+  }
+}
+
+Refresh token → HttpOnly Secure cookie.
+
+Login
+POST /api/v1/auth/login
+
+Body:
+
+{
+  "email": "user@example.com",
+  "password": "********"
+}
+
+Returns application accessToken and sets refresh-token cookie.
+
+Google Login
+POST /api/v1/auth/google
+
+Body:
+
+{
+  "idToken": "<firebase-id-token>"
+}
+
+Flow:
+
+Firebase ID Token
+      ↓
+Backend verifies
+      ↓
+Find/Create User
+      ↓
+Create Session
+      ↓
+Our Access + Refresh Token
+Refresh
+POST /api/v1/auth/refresh
+
+Refresh token cookie automatically sent.
+
+Backend:
+
+Validate session
+      ↓
+Rotate refresh token
+      ↓
+Create new access token
+      ↓
+Set new refresh cookie
+Logout
+POST /api/v1/auth/logout
+
+Backend revokes current session and clears refresh cookie.
+
+Verify Email
+POST /api/v1/auth/verify-email
+
+Body:
+
+{
+  "token": "verification-token"
+}
+Resend Verification
+POST /api/v1/auth/resend-verification
+
+Authenticated user.
+
+Rate limited.
+
+Forgot Password
+POST /api/v1/auth/forgot-password
+
+Body:
+
+{
+  "email": "user@example.com"
+}
+
+Important: Response should not reveal whether that email exists.
+
+Reset Password
+POST /api/v1/auth/reset-password
+
+Body:
+
+{
+  "token": "reset-token",
+  "newPassword": "********"
+}
+
+After successful reset, existing sessions should be revoked as a security measure.
+
+Change Password
+PATCH /api/v1/auth/password
+
+Protected.
+
+Body:
+
+{
+  "currentPassword": "********",
+  "newPassword": "********"
+}
+2. User APIs
+Get Current User
+GET /api/v1/users/me
+
+Protected.
+
+Get User
+GET /api/v1/users/:userId
+Update Current User
+PATCH /api/v1/users/me
+
+Body:
+
+{
+  "displayName": "Rajat",
+  "bio": "Full Stack Developer"
+}
+
+Protected.
+
+Followers
+GET /api/v1/users/:userId/followers?page=1&limit=20
+Following
+GET /api/v1/users/:userId/following?page=1&limit=20
+3. Follow APIs
+Follow
+POST /api/v1/users/:userId/follow
+
+Protected.
+
+Rules:
+
+Cannot follow yourself
+Target user must exist
+Duplicate follow → 409
+Unfollow
+DELETE /api/v1/users/:userId/follow
+
+Protected.
+
+4. Post APIs
+Create Post
+POST /api/v1/posts
+
+Protected.
+
+Body:
+
+{
+  "content": "Hello Twitter clone!"
+}
+Get Post
+GET /api/v1/posts/:postId
+Update Post
+PATCH /api/v1/posts/:postId
+
+Protected.
+
+Only author can update.
+
+Delete Post
+DELETE /api/v1/posts/:postId
+
+Protected.
+
+Only author can delete.
+
+5. Feed
+GET /api/v1/feed?page=1&limit=20
+
+Protected.
+
+Initial algorithm:
+
+Current user
++
+Users they follow
+        ↓
+Posts
+        ↓
+createdAt DESC
+
+Later recommendation algorithm can replace this.
+
+6. Like APIs
+Like
+POST /api/v1/posts/:postId/like
+
+Protected.
+
+Duplicate like → 409.
+
+Unlike
+DELETE /api/v1/posts/:postId/like
+
+Protected.
+
+7. Comment APIs
+Create Comment
+POST /api/v1/posts/:postId/comments
+
+Body:
+
+{
+  "content": "Nice post!"
+}
+
+Protected.
+
+Get Comments
+GET /api/v1/posts/:postId/comments?page=1&limit=20
+8. Standard Success Response
+
+Single resource:
+
+{
+  "success": true,
+  "data": {}
+}
+
+Collection:
+
+{
+  "success": true,
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+9. Standard Error Response
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request data",
+    "details": {}
+  }
+}
+
+Common codes:
+
+Status	Meaning
+400	Bad Request
+401	Unauthenticated
+403	Forbidden
+404	Resource not found
+409	Conflict
+422	Validation error
+429	Rate limit exceeded
+500	Internal server error
+10. Authentication Header
+
+Protected APIs:
+
+Authorization: Bearer <access-token>
+
+Backend flow:
+
+Request
+ ↓
+Auth Middleware
+ ↓
+Verify Access JWT
+ ↓
+Extract userId
+ ↓
+Controller
+ ↓
+Service
+11. Authorization
+
+Authentication:
+
+Who are you?
+
+Authorization:
+
+Are you allowed to do this?
+
+Example:
+
+User A
+ ↓
+DELETE /posts/postB
+ ↓
+Backend checks:
+post.author === currentUser._id ?
+ ↓
+NO
+ ↓
+403 Forbidden
+12. Pagination
+
+Default:
+
+page = 1
+limit = 20
+
+Maximum:
+
+limit = 100
+
+Future optimization can move from page-based pagination to cursor-based pagination for large feeds.
+
+13. Security Requirements
+
+API must implement:
+
+Rate Limiting
+     ↓
+CORS
+     ↓
+Helmet
+     ↓
+Authentication
+     ↓
+Authorization
+     ↓
+Validation
+     ↓
+Business Rules
+     ↓
+Database
+
+Additional auth protections:
+
+Password hashing
+Refresh-token rotation
+Refresh-session revocation
+HttpOnly/Secure cookie
+Generic password-recovery responses
+Login rate limiting
+Verification/reset token expiry
+Never return password hash
+Never trust frontend authorization
+14. Final API Structure
+/api/v1
+│
+├── /auth
+│   ├── POST register
+│   ├── POST login
+│   ├── POST google
+│   ├── POST refresh
+│   ├── POST logout
+│   ├── POST verify-email
+│   ├── POST resend-verification
+│   ├── POST forgot-password
+│   ├── POST reset-password
+│   └── PATCH password
+│
+├── /users
+│   ├── GET me
+│   ├── PATCH me
+│   ├── GET :userId
+│   ├── GET :userId/followers
+│   ├── GET :userId/following
+│   ├── POST :userId/follow
+│   └── DELETE :userId/follow
+│
+├── /posts
+│   ├── POST
+│   ├── GET :postId
+│   ├── PATCH :postId
+│   ├── DELETE :postId
+│   └── :postId
+│       ├── POST like
+│       ├── DELETE like
+│       └── /comments
+│           ├── POST
+│           └── GET
+│
+└── /feed
+    └── GET
+Status
+
+API Design v1.1 → ✅ FINAL

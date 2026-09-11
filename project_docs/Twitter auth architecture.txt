@@ -1,0 +1,798 @@
+Authentication & Authorization Architecture v1.0
+1. Objective
+
+System ko securely identify karna hai ki:
+
+User kaun hai?
+
+aur phir verify karna hai:
+
+User ko requested action karne ki permission hai ya nahi?
+
+Is architecture mein hum authentication concepts khud implement/understand karenge, while Google authentication ke liye Firebase use karenge.
+
+2. Authentication Methods
+
+Our system supports:
+
+Authentication
+├── Email + Password
+└── Google Sign-In
+Email + Password
+
+Is flow mein hum khud seekhenge:
+
+password hashing
+password verification
+authentication
+JWT
+access token
+refresh token
+auth middleware
+protected routes
+Google Sign-In
+
+Google identity verification ke liye:
+
+Google
+   ↓
+Firebase Authentication
+   ↓
+Firebase ID Token
+   ↓
+Express Backend
+   ↓
+Firebase Admin SDK
+
+Firebase yahan OAuth/Google identity ka complex part handle karega.
+
+3. High-Level Architecture
+                         USER
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+             ▼                         ▼
+      Email + Password            Google Sign-In
+             │                         │
+             ▼                         ▼
+      Express Backend          Firebase Authentication
+             │                         │
+       bcrypt hashing                  │
+             │                         ▼
+             │                  Firebase ID Token
+             │                         │
+             └────────────┬────────────┘
+                          ▼
+                   Express Backend
+                          │
+                          ▼
+                Authentication Layer
+                          │
+                          ▼
+                    User Identity
+                          │
+                          ▼
+                 Authorization Layer
+                          │
+                          ▼
+                  Controller / Service
+                          │
+                          ▼
+                       MongoDB
+4. Email/Password Registration Flow
+
+User:
+
+Email
+Password
+Username
+Display Name
+
+Request:
+
+Next.js
+   ↓
+POST /api/v1/auth/register
+   ↓
+Express
+   ↓
+Validate input
+   ↓
+Check existing user
+   ↓
+Hash password using bcrypt
+   ↓
+Create User
+   ↓
+Generate authentication tokens
+   ↓
+Return authentication result
+Important
+
+MongoDB mein plain password kabhi store nahi hoga.
+
+Instead:
+
+password
+   ↓
+bcrypt
+   ↓
+passwordHash
+
+Database:
+
+{
+  "email": "user@example.com",
+  "passwordHash": "$2b$..."
+}
+5. Why bcrypt?
+
+Password ko simple hash se store karna enough nahi hai.
+
+bcrypt specifically password hashing ke liye designed hai.
+
+Example concept:
+
+"mypassword"
+      ↓
+    bcrypt
+      ↓
+"$2b$10$..."
+
+Same password ka hash bhi different salt ki wajah se different ho sakta hai.
+
+Backend password ko decrypt nahi karta.
+
+Instead:
+
+Login password
+      ↓
+bcrypt.compare()
+      ↓
+matches?
+6. Email/Password Login Flow
+User
+ ↓
+Email + Password
+ ↓
+POST /api/v1/auth/login
+ ↓
+Validate input
+ ↓
+Find user
+ ↓
+Compare password with bcrypt
+ ↓
+Valid?
+ ├── NO → 401
+ │
+ └── YES
+       ↓
+Generate tokens
+       ↓
+Return authentication result
+
+Wrong credentials:
+
+401 Unauthorized
+
+Hum response mein ye nahi batayenge ki:
+
+"Email exists but password wrong"
+
+Instead generic:
+
+Invalid email or password
+
+Isse attacker ko user existence guess karna harder hota hai.
+
+7. JWT Architecture
+
+Hum JWT-based authentication use karenge for our custom email/password authentication.
+
+JWT = JSON Web Token.
+
+Concept:
+
+Login successful
+      ↓
+Server generates JWT
+      ↓
+Client receives token
+      ↓
+Client sends token with protected request
+      ↓
+Server verifies token
+8. Access Token
+
+Access token short-lived hoga.
+
+Example conceptual lifetime:
+
+15 minutes
+
+Request:
+
+Authorization: Bearer <access-token>
+
+Backend:
+
+Verify JWT
+   ↓
+Extract user identity
+   ↓
+req.user
+
+Example payload conceptually:
+
+{
+  "sub": "user_id",
+  "type": "access",
+  "iat": 1750000000,
+  "exp": 1750000900
+}
+
+sub = user identity.
+
+9. Refresh Token
+
+Access token short-lived hai, toh user ko har 15 minutes login nahi karwana.
+
+Isliye:
+
+Access Token
++
+Refresh Token
+
+Flow:
+
+Access token expired
+        ↓
+Refresh token
+        ↓
+POST /api/v1/auth/refresh
+        ↓
+Server validates refresh token
+        ↓
+New access token
+
+Refresh token longer-lived hoga.
+
+Example:
+
+7 days
+
+Exact expiry implementation phase mein configuration se finalize karenge.
+
+10. Token Storage
+
+Security ke liye browser mein authentication tokens ko casually:
+
+localStorage
+
+mein store nahi karenge.
+
+Preferred architecture:
+
+Access Token
+→ short-lived
+
+Refresh Token
+→ HttpOnly + Secure Cookie
+
+HttpOnly ka matlab JavaScript directly cookie read nahi kar sakta.
+
+Secure ka matlab cookie HTTPS connection par hi send hogi.
+
+Development aur production environment ke according cookie settings configure hongi.
+
+11. Google Authentication Flow
+
+Google login:
+
+User
+ ↓
+"Continue with Google"
+ ↓
+Firebase Authentication
+ ↓
+Google authentication
+ ↓
+Firebase ID Token
+ ↓
+Next.js
+ ↓
+Express API
+ ↓
+Firebase Admin SDK
+ ↓
+Verify Firebase token
+ ↓
+Get Firebase UID
+ ↓
+Find/Create MongoDB User
+
+Firebase yahan identity provider hai.
+
+12. Firebase UID → MongoDB User
+
+MongoDB User:
+
+User
+├── _id
+├── firebaseUid
+├── email
+├── username
+├── displayName
+└── ...
+
+Google user:
+
+Firebase UID
+      ↓
+MongoDB
+      ↓
+firebaseUid
+
+Example:
+
+Firebase:
+uid = abc123
+
+MongoDB:
+
+{
+  "_id": "mongo456",
+  "firebaseUid": "abc123",
+  "email": "rajat@example.com"
+}
+
+Isse Firebase identity aur hamari application identity connect hoti hai.
+
+13. Authentication Middleware
+
+Protected API:
+
+GET /api/v1/feed
+Authorization: Bearer <token>
+
+Request pipeline:
+
+Request
+ ↓
+authMiddleware
+ ↓
+Extract token
+ ↓
+Verify token
+ ↓
+Identify user
+ ↓
+Attach user to request
+ ↓
+Controller
+
+Invalid/missing token:
+
+401 Unauthorized
+
+Important:
+
+Frontend ka isLoggedIn === true backend ke liye proof nahi hai.
+
+Backend khud token verify karega.
+
+14. Authorization Architecture
+
+Authentication ke baad authorization.
+
+Example:
+
+User A
+ ↓
+DELETE /api/v1/posts/123
+ ↓
+Authenticated? YES
+ ↓
+Post exists? YES
+ ↓
+post.author == User A?
+ ↓
+YES → allow
+
+Agar User B try kare:
+
+Authenticated? YES
+Post exists? YES
+Owner? NO
+      ↓
+403 Forbidden
+15. Ownership Authorization
+
+Initially hamara main authorization model:
+
+Resource Ownership
+
+Examples:
+
+Edit Post
+post.author === currentUser._id
+Delete Post
+post.author === currentUser._id
+Edit Profile
+currentUser._id === targetUser._id
+
+User kisi aur ka post modify nahi kar sakta.
+
+16. RBAC
+
+Future extensibility ke liye roles:
+
+USER
+ADMIN
+
+Later:
+
+USER
+TEACHER
+MODERATOR
+ADMIN
+
+Authorization example:
+
+USER
+ ↓
+Can create post
+Can like
+Can comment
+
+ADMIN
+ ↓
+Can moderate content
+Can manage users
+
+Initial Twitter clone mein normal user functionality priority hogi.
+
+RBAC ko architecture mein supportable rakhenge, but unnecessary admin system abhi build nahi karenge.
+
+17. Authentication vs Authorization
+
+Isko strongly remember kar:
+
+AUTHENTICATION
+"Who are you?"
+       ↓
+Firebase / Password + JWT
+AUTHORIZATION
+"What are you allowed to do?"
+       ↓
+Ownership / Roles / Permissions
+
+Example:
+
+Rajat logged in
+       ↓
+Authentication ✅
+       ↓
+Delete John's post
+       ↓
+Authorization ❌
+       ↓
+403
+18. Logout
+
+Logout ka behavior:
+
+Custom Email Authentication
+Client
+ ↓
+POST /api/v1/auth/logout
+ ↓
+Invalidate/remove refresh token
+ ↓
+Clear authentication cookie
+
+Access token short-lived hone ki wajah se eventually expire ho jayega.
+
+Google/Firebase
+
+Frontend Firebase session sign-out karega.
+
+Server-side APIs still require valid authentication.
+
+19. Auth API Endpoints
+
+Ab hamare API design mein authentication endpoints bhi add honge.
+
+Register
+POST /api/v1/auth/register
+
+Body:
+
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!",
+  "username": "rajat",
+  "displayName": "Rajat Pandey"
+}
+Login
+POST /api/v1/auth/login
+
+Body:
+
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+Refresh
+POST /api/v1/auth/refresh
+
+Refresh token cookie se identify hoga.
+
+Logout
+POST /api/v1/auth/logout
+Current User
+GET /api/v1/users/me
+
+Protected.
+
+20. Google Login API
+
+Google authentication Firebase ke through hogi.
+
+Frontend:
+
+Firebase Google Sign-In
+       ↓
+Firebase ID Token
+       ↓
+Express
+
+Backend endpoint:
+
+POST /api/v1/auth/google
+
+Request:
+
+{
+  "idToken": "<firebase-id-token>"
+}
+
+Backend:
+
+Firebase Admin SDK
+        ↓
+verifyIdToken()
+        ↓
+firebaseUid
+        ↓
+find/create MongoDB User
+        ↓
+application authentication
+21. Account Linking Consideration
+
+Ye real-world important case hai.
+
+Suppose:
+
+Email account:
+rajat@gmail.com
+
+aur same email Google se login karta hai.
+
+System ko blindly duplicate user create nahi karna chahiye.
+
+Identity strategy:
+
+Firebase UID
++
+Email
++
+Provider information
+
+Account linking rules implementation phase mein explicitly handle karenge.
+
+Goal:
+
+One real user
+       ↓
+One application User
+
+instead of:
+
+Same person
+ ↓
+User A
+User B
+22. Security Layers
+
+Final auth architecture:
+
+                    REQUEST
+                       ↓
+                 Rate Limiting
+                       ↓
+                     CORS
+                       ↓
+                    Helmet
+                       ↓
+             Authentication
+               Middleware
+                       ↓
+                  Validation
+                       ↓
+                Authorization
+                       ↓
+                Business Rules
+                       ↓
+                  Controller
+                       ↓
+                   Service
+                       ↓
+                   MongoDB
+23. Complete Email/Password Flow
+             REGISTER
+                │
+                ▼
+       Email + Password
+                │
+                ▼
+          Express API
+                │
+                ▼
+           Validate
+                │
+                ▼
+       bcrypt(password)
+                │
+                ▼
+          MongoDB User
+                │
+                ▼
+       Access + Refresh
+                │
+                ▼
+              Client
+
+Login:
+
+Email + Password
+       ↓
+Express
+       ↓
+Find User
+       ↓
+bcrypt.compare()
+       ↓
+Valid
+       ↓
+Access + Refresh Token
+       ↓
+Authenticated
+24. Complete Google Flow
+Google
+   ↓
+Firebase Authentication
+   ↓
+Firebase ID Token
+   ↓
+Next.js
+   ↓
+Express
+   ↓
+Firebase Admin SDK
+   ↓
+Verify Token
+   ↓
+Firebase UID
+   ↓
+MongoDB User
+   ↓
+Application Identity
+   ↓
+Authorization
+25. Complete Protected Request
+
+Example:
+
+DELETE /api/v1/posts/abc123
+Authorization: Bearer <access-token>
+
+Flow:
+
+Request
+  ↓
+JWT Verification
+  ↓
+User identified
+  ↓
+Post fetched
+  ↓
+Ownership check
+  ↓
+Owner?
+ ├── YES → Delete
+ └── NO  → 403
+
+Yahi flow hum actual project mein implement karenge.
+
+26. Important Learning Goals
+
+Is project ke through tu practically ye concepts seekhega:
+
+✅ Authentication
+✅ Authorization
+✅ Password hashing
+✅ bcrypt
+✅ JWT
+✅ Access token
+✅ Refresh token
+✅ Token expiry
+✅ HttpOnly cookies
+✅ Authentication middleware
+✅ Protected routes
+✅ Ownership authorization
+✅ RBAC
+✅ OAuth / Google Sign-In
+✅ Firebase Admin token verification
+✅ Identity mapping
+✅ Account linking concepts
+✅ Rate limiting
+27. Architecture Decision
+
+Final decision:
+
+Email/Password authentication will be implemented through our Express backend so that authentication fundamentals are learned practically. Google Sign-In will use Firebase Authentication for identity verification. Express will remain the application's security boundary and will perform authentication verification and authorization for protected resources.
+
+Iska matlab Firebase hamare backend ko replace nahi karega.
+
+Firebase
+→ Google identity
+
+Our Backend
+→ Application authentication
+→ Authorization
+→ Business rules
+→ Users
+→ Posts
+→ Permissions
+28. Final Project Architecture
+                         NEXT.JS
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+       Email/Password                  Google
+             │                             │
+             ▼                             ▼
+        Express API              Firebase Authentication
+             │                             │
+             │                       Firebase ID Token
+             │                             │
+             └──────────────┬──────────────┘
+                            ▼
+                    EXPRESS BACKEND
+                            │
+                 ┌──────────┴──────────┐
+                 │                     │
+          Authentication        Authorization
+                 │                     │
+        ┌────────┴────────┐      ┌─────┴─────┐
+        │                 │      │           │
+      JWT              Firebase Ownership   RBAC
+        │              Verification
+        │
+        └──────────────┬──────────────┘
+                       ▼
+                    Services
+                       │
+                       ▼
+                    Mongoose
+                       │
+                       ▼
+                    MongoDB
+Status
+SRS                              ✅
+Architecture                     ✅
+Database Design                  ✅
+API Design v1.0                  ✅
+Auth & Authorization Design v1.0 ✅
