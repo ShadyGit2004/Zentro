@@ -7,6 +7,7 @@ import validate from "../middlewares/validate.middleware";
 import {
   createPostSchema,
   updatePostSchema,
+  searchPostsSchema
 } from "../validators/post.validator";
 
 import {
@@ -14,6 +15,7 @@ import {
   getById,
   update,
   remove,
+  search
 } from "../controllers/post.controller";
 
 const router = Router();
@@ -24,6 +26,12 @@ router.post(
   requireVerifiedEmail,
   validate(createPostSchema),
   create
+);
+
+router.get(
+  "/search",
+  validate(searchPostsSchema, "query"),
+  search
 );
 
 router.route("/:postId")

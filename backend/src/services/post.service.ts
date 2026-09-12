@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Post from "../models/post.model";
+import Post, {IPost} from "../models/post.model";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
 
@@ -144,9 +144,76 @@ const deletePost = async (
   };
 };
 
+const searchPosts = async (
+  query: string,
+  limit: number,
+  cursor?: string
+) => {
+  const searchQuery = query.trim();
+
+  if (searchQuery.length < 2) {
+    throw new AppError(
+      400,
+      "INVALID_SEARCH_QUERY",
+      "Search query must be at least 2 characters"
+    );
+  }
+
+  if (cursor && !mongoose.isValidObjectId(cursor)) {
+    throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
+  }
+
+  const searchRegex = new RegExp(
+    searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    "i"
+  );
+
+  const dbQuery: mongoose.QueryFilter<IPost> = {
+    content: searchRegex,
+  };
+
+  if (cursor) {
+    dbQuery._id = {
+      $lt: new mongoose.Types.ObjectId(cursor),
+    };
+  }
+
+  const posts = await Post.find(dbQuery)
+    .sort({ _id: -1 })
+    .limit(limit + 1)
+    .populate({
+      path: "author",
+      select: "_id username displayName bio profileImage",
+      match: { status: "active" },
+    })
+    .lean();
+
+  const hasNextPage = posts.length > limit;
+
+  if (hasNextPage) {
+    posts.pop();
+  }
+
+  const data = posts.filter((post) => post.author);
+
+  const nextCursor =
+    hasNextPage && posts.length > 0
+      ? posts[posts.length - 1]._id.toString()
+      : null;
+
+  return {
+    data,
+    pagination: {
+      nextCursor,
+      hasNextPage,
+    },
+  };
+};
+
 export {
   createPost,
   getPostById,
   updatePost,
   deletePost,
+  searchPosts
 };

@@ -6,6 +6,7 @@ import {
   getPostById,
   updatePost,
   deletePost,
+  searchPosts
 } from "../services/post.service";
 
 const create = async (
@@ -140,9 +141,57 @@ const remove = async (
   }
 };
 
+const search = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const query = req.query.q;
+
+    if (typeof query !== "string") {
+      throw new AppError(
+        400,
+        "INVALID_SEARCH_QUERY",
+        "Search query is required"
+      );
+    }
+
+    const limitValue = Number(req.query.limit);
+
+    const limit = req.query.limit
+      ? Math.min(Math.max(limitValue, 1), 50)
+      : 20;
+
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new AppError(
+        400,
+        "INVALID_LIMIT",
+        "Limit must be a positive integer"
+      );
+    }
+
+    const cursor =
+      typeof req.query.cursor === "string"
+        ? req.query.cursor
+        : undefined;
+
+    const result = await searchPosts(query, limit, cursor);
+
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   create,
   getById,
   update,
   remove,
+  search
 };
