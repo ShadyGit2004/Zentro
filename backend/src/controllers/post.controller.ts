@@ -25,7 +25,8 @@ const create = async (
 
     const result = await createPost(
       req.user.userId,
-      req.body.content
+      req.body.content,
+      req.file
     );
 
     return res.status(201).json({
@@ -91,7 +92,8 @@ const update = async (
     const result = await updatePost(
       req.user.userId,
       postId,
-      req.body.content
+      req.body.content,
+      req.file
     );
 
     return res.status(200).json({

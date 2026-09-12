@@ -1,9 +1,12 @@
 import { Router } from "express";
 
+// Middlewares
 import authMiddleware from "../middlewares/auth.middleware";
 import requireVerifiedEmail from "../middlewares/require-verified-email.middleware";
 import validate from "../middlewares/validate.middleware";
+import uploadImage from "../middlewares/upload.middleware";
 
+// Schemas
 import {
   createPostSchema,
   updatePostSchema,
@@ -24,6 +27,7 @@ router.post(
   "/",
   authMiddleware,
   requireVerifiedEmail,
+  uploadImage.single("image"),
   validate(createPostSchema),
   create
 );
@@ -41,6 +45,7 @@ router.route("/:postId")
 .patch( 
   authMiddleware,
   requireVerifiedEmail,
+  uploadImage.single("image"),
   validate(updatePostSchema),
   update
 )

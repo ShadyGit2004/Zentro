@@ -2,7 +2,11 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IPost extends Document {
   author: mongoose.Types.ObjectId;
-  content: string;
+  content?: string;
+  media?: {
+    url: string;
+    publicId: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,11 +19,20 @@ const postSchema = new Schema<IPost>(
       required: true,
       index: true,
     },
+
     content: {
       type: String,
-      required: true,
       trim: true,
       maxlength: 280,
+    },
+
+    media: {
+      url: {
+        type: String,
+      },
+      publicId: {
+        type: String,
+      },
     },
   },
   {

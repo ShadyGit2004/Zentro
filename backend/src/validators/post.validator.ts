@@ -4,16 +4,17 @@ export const createPostSchema = z.object({
   content: z
     .string()
     .trim()
-    .min(1, "Post content is required")
-    .max(280, "Post content must be at most 280 characters"),
+    .max(280, "Post content must be at most 280 characters")
+    .optional(),
 });
 
 export const updatePostSchema = z.object({
   content: z
     .string()
     .trim()
-    .min(1, "Post content is required")
-    .max(280, "Post content must be at most 280 characters"),
+    .min(1, "Post content cannot be empty")
+    .max(280, "Post content must be at most 280 characters")
+    .optional(),
 });
 
 export const searchPostsSchema = z.object({

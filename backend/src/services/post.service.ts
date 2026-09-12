@@ -2,10 +2,12 @@ import mongoose from "mongoose";
 import Post, {IPost} from "../models/post.model";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
+import { uploadPostImage, deletePostImage } from "./cloudinary.service";
 
 const createPost = async (
   userId: string,
-  content: string
+  content?: string,
+  file?: Express.Multer.File
 ) => {
   const user = await User.findOne({
     _id: userId,
@@ -22,15 +24,52 @@ const createPost = async (
     );
   }
 
+  if (!content && !file) {
+    throw new AppError(
+      400,
+      "EMPTY_POST",
+      "Post must contain text or an image"
+    );
+  }
+
   const post = await Post.create({
     author: userId,
     content,
   });
 
+  if (file) {
+    let uploadedPublicId: string | undefined;
+
+    try {
+      const uploadedImage = await uploadPostImage(
+        file.buffer,
+        post._id.toString()
+      );
+
+      uploadedPublicId = uploadedImage.public_id;
+
+      post.media = {
+        url: uploadedImage.secure_url,
+        publicId: uploadedImage.public_id,
+      };
+
+      await post.save();
+    } catch (error) {
+      await Post.deleteOne({ _id: post._id });
+
+      if (uploadedPublicId) {
+        await deletePostImage(uploadedPublicId);
+      }
+
+      throw error;
+    }
+  }
+
   return {
     id: post._id,
     author: userId,
     content: post.content,
+    media: post.media,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
   };
@@ -67,7 +106,8 @@ const getPostById = async (postId: string) => {
 const updatePost = async (
   userId: string,
   postId: string,
-  content: string
+  content?: string,
+  file?: Express.Multer.File
 ) => {
   if (!mongoose.isValidObjectId(postId)) {
     throw new AppError(
@@ -95,13 +135,52 @@ const updatePost = async (
     );
   }
 
-  post.content = content;
-  await post.save();
+ if (content === undefined && !file) {
+    throw new AppError(
+      400,
+      "NO_UPDATE_DATA",
+      "Provide content or image to update"
+    );
+  }
+
+  const oldPublicId = post.media?.publicId;
+
+  if (content !== undefined) {
+    post.content = content;
+  }
+
+  if (file) {
+    const uploadedImage = await uploadPostImage(
+      file.buffer,
+      post._id.toString()
+    );
+
+    const newMedia = {
+      url: uploadedImage.secure_url,
+      publicId: uploadedImage.public_id,
+    };
+
+    try {
+      post.media = newMedia;
+
+      await post.save();
+    } catch (error) {
+      await deletePostImage(newMedia.publicId);
+      throw error;
+    }
+
+    if (oldPublicId) {
+      await deletePostImage(oldPublicId);
+    }
+  } else {
+    await post.save();
+  }
 
   return {
     id: post._id,
     author: post.author,
     content: post.content,
+    media: post.media,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
   };
@@ -135,6 +214,10 @@ const deletePost = async (
       "FORBIDDEN",
       "You are not allowed to delete this post"
     );
+  }
+
+  if (post.media?.publicId) {
+    await deletePostImage(post.media.publicId);
   }
 
   await Post.deleteOne({ _id: postId });

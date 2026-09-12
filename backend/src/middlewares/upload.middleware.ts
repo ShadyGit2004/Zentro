@@ -9,6 +9,7 @@ const fileFilter: multer.Options["fileFilter"] = (
   callback
 ) => {
   const allowedTypes = [
+    "image/jpg",
     "image/jpeg",
     "image/png",
     "image/webp",
@@ -19,7 +20,7 @@ const fileFilter: multer.Options["fileFilter"] = (
       new AppError(
         422,
         "INVALID_IMAGE_TYPE",
-        "Only JPEG, PNG and WebP images are allowed"
+        "Only JPG, JPEG, PNG and WebP images are allowed"
       )
     );
   }
@@ -27,7 +28,7 @@ const fileFilter: multer.Options["fileFilter"] = (
   callback(null, true);
 };
 
-const uploadProfileImage = multer({
+const uploadImage = multer({
   storage,
   fileFilter,
   limits: {
@@ -36,4 +37,4 @@ const uploadProfileImage = multer({
   },
 });
 
-export default uploadProfileImage;
+export default uploadImage;
