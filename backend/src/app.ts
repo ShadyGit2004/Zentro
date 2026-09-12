@@ -8,6 +8,7 @@ import healthRouter from "./routes/health.routes";
 import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import followRouter from "./routes/follow.routes";
+import postRouter from "./routes/post.routes";
 
 // Middlewares
 import loggerMiddleware from "./middlewares/logger.middleware";
@@ -29,9 +30,10 @@ app.use(loggerMiddleware);
 
 // APIs Routes
 app.use("/api/v1", healthRouter);
-app.use("/api/v1", followRouter); 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter); 
+app.use("/api/v1/users/:userId", followRouter); 
+app.use("/api/v1/posts", postRouter); 
 
 // Error Middlewares
 app.use(notFoundMiddleware);

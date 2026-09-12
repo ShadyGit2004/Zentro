@@ -8,29 +8,27 @@ import {
   following,
 } from "../controllers/follow.controller";
 
-const router = Router();
+const router = Router({ mergeParams:true });
 
-router.post(
-  "/users/:userId/follow",
+router.route("/follow")
+.post(
   authMiddleware,
   requireVerifiedEmail,
   follow
-);
-
-router.delete(
-  "/users/:userId/follow",
+)
+.delete(
   authMiddleware,
   requireVerifiedEmail,
   unfollow
 );
 
 router.get(
-  "/users/:userId/followers",
+  "/followers",
   followers
 );
 
 router.get(
-  "/users/:userId/following",
+  "/following",
   following
 );
 
