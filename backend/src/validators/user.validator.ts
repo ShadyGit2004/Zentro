@@ -22,3 +22,7 @@ export const updateProfileSchema = z.object({
     .max(160, "Bio must be at most 160 characters")
     .optional(),
 });
+
+export const searchUsersSchema = z.object({
+  q: z.string().trim().min(2).max(50),
+});

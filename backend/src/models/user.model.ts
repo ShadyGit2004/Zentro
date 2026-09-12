@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-interface IUser extends Document {
+export interface IUser extends Document {
   email: string;
   username: string;
   displayName: string;
@@ -94,6 +94,8 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
   }
 );
+
+userSchema.index({ displayName: 1 });
 
 const User = mongoose.model<IUser>("User", userSchema);
 

@@ -8,10 +8,11 @@ import requireVerifiedEmail from "../middlewares/require-verified-email.middlewa
 import uploadProfileImage from "../middlewares/upload.middleware";
 
 // Schema validator
+import { searchUsersSchema } from "../validators/user.validator";
 import { updateProfileSchema } from "../validators/user.validator";
 
 // Controllers
-import { getMe, getUserProfile, updateUserProfile } from "../controllers/user.controller";
+import { getMe, getUserProfile, updateUserProfile, search } from "../controllers/user.controller";
 import { updateProfileImage } from "../controllers/user.controller";
 
 const router = Router();
@@ -37,6 +38,12 @@ router.patch(
   requireVerifiedEmail,
   uploadProfileImage.single("profileImage"),
   updateProfileImage
+);
+
+router.get(
+  "/search",
+  validate(searchUsersSchema, "query"),
+  search
 );
 
 router.get(

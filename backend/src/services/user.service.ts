@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "../models/user.model";
+import User, {IUser} from "../models/user.model";
 import AppError from "../utils/appError";
 
 // Services
@@ -147,4 +147,68 @@ const updateProfileImage = async (
   };
 };
 
-export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage};
+const searchUsers = async (
+  query: string,
+  limit: number,
+  cursor?: string
+) => {
+  const searchQuery = query.trim();
+
+  if (searchQuery.length < 2) {
+    throw new AppError(
+      400,
+      "INVALID_SEARCH_QUERY",
+      "Search query must be at least 2 characters"
+    );
+  }
+
+  if (cursor && !mongoose.isValidObjectId(cursor)) {
+    throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
+  }
+
+  const searchRegex = new RegExp(
+    searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    "i"
+  );
+
+  const dbQuery: mongoose.QueryFilter<IUser> = {
+    status: "active",
+    $or: [
+      { username: searchRegex },
+      { displayName: searchRegex },
+    ],
+  };
+
+  if (cursor) {
+    dbQuery._id = {
+      $lt: new mongoose.Types.ObjectId(cursor),
+    };
+  }
+
+  const users = await User.find(dbQuery)
+    .select("_id username displayName bio profileImage")
+    .sort({ _id: -1 })
+    .limit(limit + 1)
+    .lean();
+
+  const hasNextPage = users.length > limit;
+
+  if (hasNextPage) {
+    users.pop();
+  }
+
+  const nextCursor =
+    hasNextPage && users.length > 0
+      ? users[users.length - 1]._id.toString()
+      : null;
+
+  return {
+    data: users,
+    pagination: {
+      nextCursor,
+      hasNextPage,
+    },
+  };
+};
+
+export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers};
