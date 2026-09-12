@@ -51,6 +51,11 @@ const createComment = async (
     content,
   });
 
+  await Post.updateOne(
+    { _id: postId },
+    { $inc: { commentsCount: 1 } }
+  );
+
   const populatedComment = await Comment.findById(
     comment._id
   )
@@ -183,6 +188,11 @@ const deleteComment = async (
   }
 
   await Comment.deleteOne({ _id: commentId });
+
+  await Post.updateOne(
+    { _id: postId },
+    { $inc: { commentsCount: -1 } }
+  );
 
   return {
     message: "Comment deleted successfully",

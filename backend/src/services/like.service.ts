@@ -64,6 +64,11 @@ const likePost = async (
       user: userId,
       post: postId,
     });
+
+    await Post.updateOne(
+      { _id: postId },
+      { $inc: { likesCount: 1 } }
+    );
   } catch (error: unknown) {
     if (
       error &&
@@ -114,6 +119,11 @@ const unlikePost = async (
     user: userId,
     post: postId,
   });
+
+  await Post.updateOne(
+    { _id: postId },
+    { $inc: { likesCount: -1 } }
+  );
 
   if (!deletedLike) {
     throw new AppError(
