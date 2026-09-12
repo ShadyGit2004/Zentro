@@ -6,6 +6,8 @@ import Post from "../models/post.model";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
 
+import { createNotification } from "./notification.service";
+
 const likePost = async (
   userId: string,
   postId: string
@@ -33,7 +35,7 @@ const likePost = async (
   }
 
   const post = await Post.findById(postId)
-    .select("_id")
+    .select("_id author")
     .lean();
 
   if (!post) {
@@ -62,6 +64,13 @@ const likePost = async (
   try {
     await Like.create({
       user: userId,
+      post: postId,
+    });
+
+    await createNotification({
+      recipient: post.author.toString(),
+      actor: userId,
+      type: "like",
       post: postId,
     });
 

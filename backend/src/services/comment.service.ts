@@ -5,6 +5,8 @@ import Post from "../models/post.model";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
 
+import { createNotification } from "./notification.service";
+
 const createComment = async (
   userId: string,
   postId: string,
@@ -34,7 +36,7 @@ const createComment = async (
   }
 
   const post = await Post.findById(postId)
-    .select("_id")
+    .select("_id author")
     .lean();
 
   if (!post) {
@@ -49,6 +51,14 @@ const createComment = async (
     post: postId,
     author: userId,
     content,
+  });
+
+  await createNotification({
+    recipient: post.author.toString(),
+    actor: userId,
+    type: "comment",
+    post: postId,
+    comment: comment._id.toString(),
   });
 
   await Post.updateOne(

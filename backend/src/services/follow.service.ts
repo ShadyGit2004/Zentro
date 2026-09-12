@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Follow from "../models/follow.model";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
+import { createNotification } from "./notification.service";
 
 const followUser = async (
   followerId: string,
@@ -51,6 +52,12 @@ const followUser = async (
   await Follow.create({
     follower: followerId,
     following: followingId,
+  });
+
+  await createNotification({
+    recipient: followingId,
+    actor: followerId,
+    type: "follow",
   });
 
   return {
