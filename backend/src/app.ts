@@ -10,6 +10,7 @@ import userRouter from "./routes/user.routes";
 import followRouter from "./routes/follow.routes";
 import postRouter from "./routes/post.routes";
 import likeRouter from "./routes/like.routes";
+import commentRouter from "./routes/comment.routes";
 
 // Middlewares
 import loggerMiddleware from "./middlewares/logger.middleware";
@@ -35,7 +36,8 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter); 
 app.use("/api/v1/users/:userId", followRouter); 
 app.use("/api/v1/posts", postRouter); 
-app.use("/api/v1/posts/:postId", likeRouter);
+app.use("/api/v1/posts/:postId/like", likeRouter);
+app.use("/api/v1/posts/:postId/comments", commentRouter);
 
 // Error Middlewares
 app.use(notFoundMiddleware);

@@ -11,7 +11,7 @@ import {
 const router = Router({ mergeParams: true });
 
 router
-  .route("/like")
+  .route("/")
   .post(
     authMiddleware,
     requireVerifiedEmail,
