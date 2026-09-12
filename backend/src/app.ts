@@ -9,6 +9,7 @@ import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import followRouter from "./routes/follow.routes";
 import postRouter from "./routes/post.routes";
+import likeRouter from "./routes/like.routes";
 
 // Middlewares
 import loggerMiddleware from "./middlewares/logger.middleware";
@@ -34,6 +35,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter); 
 app.use("/api/v1/users/:userId", followRouter); 
 app.use("/api/v1/posts", postRouter); 
+app.use("/api/v1/posts/:postId", likeRouter);
 
 // Error Middlewares
 app.use(notFoundMiddleware);
