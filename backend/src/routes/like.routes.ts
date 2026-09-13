@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import authMiddleware from "../middlewares/auth.middleware";
 import requireVerifiedEmail from "../middlewares/require-verified-email.middleware";
+import requireActiveUser from "../middlewares/require-active-user.middleware";
 
 import {
   like,
@@ -14,11 +15,13 @@ router
   .route("/")
   .post(
     authMiddleware,
+    requireActiveUser,
     requireVerifiedEmail,
     like
   )
   .delete(
     authMiddleware,
+    requireActiveUser,
     requireVerifiedEmail,
     unlike
   );

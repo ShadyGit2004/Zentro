@@ -3,7 +3,8 @@ import { getCurrentUser,
   getPublicUserProfile, 
   updateCurrentUser as updateCurrentUserService,
   updateProfileImage as updateProfileImageService,
-  searchUsers
+  searchUsers,
+  deleteCurrentUser
  } from "../services/user.service";
 import AppError from "../utils/appError";
 
@@ -170,4 +171,25 @@ const search = async (
   }
 };
 
-export { getMe, getUserProfile, updateUserProfile, updateProfileImage, search };
+const deleteUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
+
+    const result = await deleteCurrentUser(req.user.userId);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, deleteUser };

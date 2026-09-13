@@ -3,6 +3,7 @@ import Follow from "../models/follow.model";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
 import { createNotification } from "./notification.service";
+import Notification from "../models/notification.model";
 
 const followUser = async (
   followerId: string,
@@ -92,7 +93,7 @@ const unfollowUser = async (
   const deletedFollow = await Follow.findOneAndDelete({
     follower: followerId,
     following: followingId,
-  });
+  });  
 
   if (!deletedFollow) {
     throw new AppError(
@@ -101,6 +102,12 @@ const unfollowUser = async (
       "You are not following this user"
     );
   }
+
+  await Notification.deleteMany({
+    recipient: followingId,
+    actor: followerId,
+    type: "follow",
+  });
 
   return {
     message: "User unfollowed successfully",

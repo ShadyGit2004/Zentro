@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import authMiddleware from "../middlewares/auth.middleware";
 import requireVerifiedEmail from "../middlewares/require-verified-email.middleware";
+import requireActiveUser from "../middlewares/require-active-user.middleware";
 import validate from "../middlewares/validate.middleware";
 
 import {
@@ -20,6 +21,7 @@ router
   .route("/")
   .post(
     authMiddleware,
+    requireActiveUser,
     requireVerifiedEmail,
     validate(createCommentSchema),
     create
@@ -29,6 +31,7 @@ router
 router.delete(
   "/:commentId",
   authMiddleware,
+  requireActiveUser,
   requireVerifiedEmail,
   remove
 );

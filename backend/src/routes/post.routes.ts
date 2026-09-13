@@ -3,6 +3,7 @@ import { Router } from "express";
 // Middlewares
 import authMiddleware from "../middlewares/auth.middleware";
 import requireVerifiedEmail from "../middlewares/require-verified-email.middleware";
+import requireActiveUser from "../middlewares/require-active-user.middleware";
 import validate from "../middlewares/validate.middleware";
 import uploadImage from "../middlewares/upload.middleware";
 
@@ -26,6 +27,7 @@ const router = Router();
 router.post(
   "/",
   authMiddleware,
+  requireActiveUser,
   requireVerifiedEmail,
   uploadImage.single("image"),
   validate(createPostSchema),
@@ -44,6 +46,7 @@ router.route("/:postId")
 )
 .patch( 
   authMiddleware,
+  requireActiveUser,
   requireVerifiedEmail,
   uploadImage.single("image"),
   validate(updatePostSchema),
@@ -51,6 +54,7 @@ router.route("/:postId")
 )
 .delete(
   authMiddleware,
+  requireActiveUser,
   requireVerifiedEmail,
   remove
 );

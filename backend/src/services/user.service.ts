@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 import User, {IUser} from "../models/user.model";
+import Post from "../models/post.model";
+import Like from "../models/like.model";
+import Comment from "../models/comment.model";
+import Follow from "../models/follow.model";
+import Notification from "../models/notification.model";
+import Session from "../models/session.model";
+import VerificationToken from "../models/verification-token.model";
+import PasswordResetToken from "../models/password-reset-token.model";
 import AppError from "../utils/appError";
 
 // Services
@@ -211,4 +219,86 @@ const searchUsers = async (
   };
 };
 
-export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers};
+const deleteCurrentUser = async (userId: string) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
+  }
+
+  const user = await User.findById(userId)
+    .select("_id status")
+    .lean();
+
+  if (!user || user.status === "deleted") {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  const posts = await Post.find({
+    author: userId,
+  })
+    .select("_id")
+    .lean();
+
+  const postIds = posts.map((post) => post._id);
+
+  if (postIds.length > 0) {
+    await Like.deleteMany({
+      post: { $in: postIds },
+    });
+
+    await Comment.deleteMany({
+      post: { $in: postIds },
+    });
+
+    await Notification.deleteMany({
+      post: { $in: postIds },
+    });
+
+    await Post.deleteMany({
+      author: userId,
+    });
+  }
+
+  await Like.deleteMany({
+    user: userId,
+  });
+
+  await Comment.deleteMany({
+    author: userId,
+  });
+
+  await Follow.deleteMany({
+    $or: [
+      { follower: userId },
+      { following: userId },
+    ],
+  });
+
+  await Notification.deleteMany({
+    $or: [
+      { recipient: userId },
+      { actor: userId },
+    ],
+  });
+
+  await Session.deleteMany({
+    user: userId,
+  });
+
+  await VerificationToken.deleteMany({
+    user: userId,
+  });
+
+  await PasswordResetToken.deleteMany({
+    user: userId,
+  });
+
+  await User.deleteOne({
+    _id: userId,
+  });
+
+  return {
+    message: "Account deleted successfully",
+  };
+};
+
+export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers, deleteCurrentUser};

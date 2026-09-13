@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Comment from "../models/comment.model";
 import Post from "../models/post.model";
 import User from "../models/user.model";
+import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
 
 import { createNotification } from "./notification.service";
@@ -196,6 +197,8 @@ const deleteComment = async (
       "You can only delete your own comment"
     );
   }
+  
+  await Notification.deleteMany({ comment: commentId });
 
   await Comment.deleteOne({ _id: commentId });
 

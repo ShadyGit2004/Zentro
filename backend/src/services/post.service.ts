@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import Post, {IPost} from "../models/post.model";
 import User from "../models/user.model";
+import Like from "../models/like.model";
+import Comment from "../models/comment.model";
+import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
 import { uploadPostImage, deletePostImage } from "./cloudinary.service";
 
@@ -186,36 +189,27 @@ const updatePost = async (
   };
 };
 
-const deletePost = async (
-  userId: string,
-  postId: string
-) => {
+const deletePost = async (userId: string, postId: string) => {
   if (!mongoose.isValidObjectId(postId)) {
-    throw new AppError(
-      400,
-      "INVALID_POST_ID",
-      "Invalid post ID"
-    );
+    throw new AppError(400, "INVALID_POST_ID", "Invalid post ID");
   }
 
-  const post = await Post.findById(postId);
+  const post = await Post.findById(postId).select("_id author media").lean();
 
   if (!post) {
-    throw new AppError(
-      404,
-      "POST_NOT_FOUND",
-      "Post not found"
-    );
+    throw new AppError(404, "POST_NOT_FOUND", "Post not found");
   }
 
   if (post.author.toString() !== userId) {
-    throw new AppError(
-      403,
-      "FORBIDDEN",
-      "You are not allowed to delete this post"
-    );
+    throw new AppError(403, "FORBIDDEN", "You can only delete your own post");
   }
 
+  // Delete related data
+  await Like.deleteMany({ post: postId });
+  await Comment.deleteMany({ post: postId });
+  await Notification.deleteMany({ post: postId });
+
+  // Delete media from Cloudinary if present
   if (post.media?.publicId) {
     await deletePostImage(post.media.publicId);
   }
