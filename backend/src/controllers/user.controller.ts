@@ -4,7 +4,9 @@ import { getCurrentUser,
   updateCurrentUser as updateCurrentUserService,
   updateProfileImage as updateProfileImageService,
   searchUsers,
-  deleteCurrentUser
+  deleteCurrentUser,
+  suspendUser,
+  unsuspendUser,
  } from "../services/user.service";
 import AppError from "../utils/appError";
 
@@ -171,6 +173,78 @@ const search = async (
   }
 };
 
+const suspend = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(
+        401,
+        "UNAUTHORIZED",
+        "Authentication required"
+      );
+    }
+
+    if (typeof req.params.userId !== "string") {
+      throw new AppError(
+        400,
+        "INVALID_USER_ID",
+        "Invalid user ID"
+      );
+    }
+
+    const result = await suspendUser(
+      req.user.userId,
+      req.params.userId
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const unsuspend = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(
+        401,
+        "UNAUTHORIZED",
+        "Authentication required"
+      );
+    }
+    
+    if (typeof req.params.userId !== "string") {
+      throw new AppError(
+        400,
+        "INVALID_USER_ID",
+        "Invalid user ID"
+      );
+    }
+
+    const result = await unsuspendUser(
+      req.user.userId,
+      req.params.userId
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteUser = async (
   req: Request,
   res: Response,
@@ -192,4 +266,4 @@ const deleteUser = async (
   }
 };
 
-export { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, deleteUser };
+export { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, deleteUser, suspend, unsuspend };

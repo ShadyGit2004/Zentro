@@ -13,7 +13,7 @@ import { searchUsersSchema } from "../validators/user.validator";
 import { updateProfileSchema } from "../validators/user.validator";
 
 // Controllers
-import { getMe, getUserProfile, updateUserProfile, search, deleteUser } from "../controllers/user.controller";
+import { getMe, getUserProfile, updateUserProfile, search, deleteUser, suspend, unsuspend } from "../controllers/user.controller";
 import { updateProfileImage } from "../controllers/user.controller";
 
 const router = Router();
@@ -58,6 +58,18 @@ router.get(
 router.get(
   "/:userId",
   getUserProfile
+);
+
+router.patch(
+  "/:userId/suspend",
+  authMiddleware,
+  suspend
+);
+
+router.patch(
+  "/:userId/unsuspend",
+  authMiddleware,
+  unsuspend
 );
 
 export default router;

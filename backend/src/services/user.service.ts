@@ -219,6 +219,131 @@ const searchUsers = async (
   };
 };
 
+const suspendUser = async (adminId: string, userId: string) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
+  }
+
+   // Admin cannot suspend himself
+  if (adminId === userId) {
+    throw new AppError(
+      400,
+      "SELF_SUSPEND_NOT_ALLOWED",
+      "You cannot suspend yourself"
+    );
+  }
+
+  // Check admin
+  const admin = await User.findOne({
+    _id: adminId,
+    role: "admin",
+    status: "active",
+  })
+    .select("_id")
+    .lean();
+
+  if (!admin) {
+    throw new AppError(403, "FORBIDDEN", "Admin access required");
+  } 
+
+  const user = await User.findById(userId)
+    .select("_id status role")
+    .lean();
+
+  if (!user || user.status === "deleted") {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  // Don't allow suspending another admin
+  if (user.role === "admin") {
+    throw new AppError(
+      403,
+      "ADMIN_SUSPEND_NOT_ALLOWED",
+      "Admin users cannot be suspended"
+    );
+  }
+
+  if (user.status === "suspended") {
+    throw new AppError(
+      409,
+      "USER_ALREADY_SUSPENDED",
+      "User is already suspended"
+    );
+  }
+
+  await User.updateOne(
+    { _id: userId },
+    { $set: { status: "suspended" } }
+  );
+
+  // Revoke all active sessions
+  await Session.updateMany(
+    {
+      user: userId,
+      revokedAt: null,
+    },
+    {
+      $set: { revokedAt: new Date() },
+    }
+  );
+
+  return {
+    message: "User suspended successfully",
+  };
+};
+
+const unsuspendUser = async (adminId: string, userId: string) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
+  }
+
+    // Admin cannot suspend himself
+  if (adminId === userId) {
+    throw new AppError(
+      400,
+      "SELF_UNSUSPEND_NOT_ALLOWED",
+      "You cannot unsuspend yourself"
+    );
+  }
+
+  const admin = await User.findOne({
+    _id: adminId,
+    role: "admin",
+    status: "active",
+  })
+    .select("_id")
+    .lean();
+
+  if (!admin) {
+    throw new AppError(403, "FORBIDDEN", "Admin access required");
+  }
+
+  const user = await User.findById(userId)
+    .select("_id status")
+    .lean();
+
+  if (!user || user.status === "deleted") {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  if (user.status === "active") {
+    throw new AppError(
+      409,
+      "USER_ALREADY_ACTIVE",
+      "User is already active"
+    );
+  }
+
+  await User.updateOne(
+    { _id: userId },
+    { $set: { status: "active" } }
+  );
+
+  return {
+    message: "User unsuspended successfully",
+  };
+};
+
 const deleteCurrentUser = async (userId: string) => {
   if (!mongoose.isValidObjectId(userId)) {
     throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
@@ -301,4 +426,4 @@ const deleteCurrentUser = async (userId: string) => {
   };
 };
 
-export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers, deleteCurrentUser};
+export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers, deleteCurrentUser,suspendUser, unsuspendUser};
