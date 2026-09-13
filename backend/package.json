@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "admin:bootstrap": "tsx scripts/bootstrap-admin.ts"
   },
   "keywords": [],
   "author": "Rajat Pandey",
