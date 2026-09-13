@@ -370,6 +370,7 @@ const deleteCurrentUser = async (userId: string) => {
     throw new AppError(404, "USER_NOT_FOUND", "User not found");
   }
 
+  // Collect posts and media IDs before deleting anything
   const posts = await Post.find({
     author: userId,
   })
@@ -378,73 +379,101 @@ const deleteCurrentUser = async (userId: string) => {
 
   const postIds = posts.map((post) => post._id);
 
-  if (postIds.length > 0) {
-    await Like.deleteMany({
-      post: { $in: postIds },
-    });
+  const session = await mongoose.startSession();
 
-    await Comment.deleteMany({
-      post: { $in: postIds },
-    });
+  try {
+    session.startTransaction();
 
-    await Notification.deleteMany({
-      post: { $in: postIds },
-    });
+    if (postIds.length > 0) {
+      await Like.deleteMany(
+        { post: { $in: postIds } },
+        { session }
+      );
 
-    // Delete post images from Cloudinary
-    for (const post of posts) {
-      if(post.media?.publicId){
-        await deleteCloudinaryImage(post.media.publicId);
-      }
+      await Comment.deleteMany(
+        { post: { $in: postIds } },
+        { session }
+      );
+
+      await Notification.deleteMany(
+        { post: { $in: postIds } },
+        { session }
+      );
+
+      await Post.deleteMany(
+        { author: userId },
+        { session }
+      );
     }
 
-    await Post.deleteMany({
-      author: userId,
-    });
+    await Like.deleteMany(
+      { user: userId },
+      { session }
+    );
+
+    await Comment.deleteMany(
+      { author: userId },
+      { session }
+    );
+
+    await Follow.deleteMany(
+      {
+        $or: [
+          { follower: userId },
+          { following: userId },
+        ],
+      },
+      { session }
+    );
+
+    await Notification.deleteMany(
+      {
+        $or: [
+          { recipient: userId },
+          { actor: userId },
+        ],
+      },
+      { session }
+    );
+
+    await Session.deleteMany(
+      { user: userId },
+      { session }
+    );
+
+    await VerificationToken.deleteMany(
+      { user: userId },
+      { session }
+    );
+
+    await PasswordResetToken.deleteMany(
+      { user: userId },
+      { session }
+    );
+
+    await User.deleteOne(
+      { _id: userId },
+      { session }
+    );
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    await session.endSession();
   }
 
-  await Like.deleteMany({
-    user: userId,
-  });
+  // MongoDB committed successfully → now clean Cloudinary
+  for (const post of posts) {
+    if (post.media?.publicId) {
+      await deleteCloudinaryImage(post.media.publicId);
+    }
+  }
 
-  await Comment.deleteMany({
-    author: userId,
-  });
-
-  await Follow.deleteMany({
-    $or: [
-      { follower: userId },
-      { following: userId },
-    ],
-  });
-
-  await Notification.deleteMany({
-    $or: [
-      { recipient: userId },
-      { actor: userId },
-    ],
-  });
-
-  await Session.deleteMany({
-    user: userId,
-  });
-
-  await VerificationToken.deleteMany({
-    user: userId,
-  });
-
-  await PasswordResetToken.deleteMany({
-    user: userId,
-  });
-
-  // Delete profile image from Cloudinary
-  if(user?.profileImage?.publicId){
+  if (user.profileImage?.publicId) {
     await deleteCloudinaryImage(user.profileImage.publicId);
   }
-
-  await User.deleteOne({
-    _id: userId,
-  });
 
   return {
     message: "Account deleted successfully",
