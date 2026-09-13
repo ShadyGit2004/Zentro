@@ -64,7 +64,7 @@ export const uploadPostImage = (
   });
 };
 
-export const deletePostImage = (
+export const deleteCloudinaryImage = (
   publicId: string
 ): Promise<void> => {
   return new Promise((resolve, reject) => {

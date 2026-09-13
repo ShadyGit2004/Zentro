@@ -11,7 +11,7 @@ import PasswordResetToken from "../models/password-reset-token.model";
 import AppError from "../utils/appError";
 
 // Services
-import { uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
+import { deleteCloudinaryImage, uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
 
 const getCurrentUser = async (userId: string) => {
   const user = await User.findById(userId).select(
@@ -138,17 +138,30 @@ const updateProfileImage = async (
     );
   }
 
-  const result = await uploadToCloudinary(
-    file.buffer,
-    userId
-  );
+  const oldProfileImage = user?.profileImage?.publicId;
 
-  user.profileImage = {
-    url: result.secure_url,
-    publicId: result.public_id,
+  const uploadedImage = await uploadToCloudinary(
+    file.buffer,
+    userId.toString()
+  );
+  
+  const newProfileImage = {
+    url: uploadedImage.secure_url,
+    publicId: uploadedImage.public_id,
   };
 
-  await user.save();
+  try {
+    user.profileImage = newProfileImage;
+    await user.save();
+
+  } catch (error) {
+    await deleteCloudinaryImage(newProfileImage.publicId);
+    throw error;
+  }
+
+  if(oldProfileImage){
+    await deleteCloudinaryImage(oldProfileImage)
+  }
 
   return {
     profileImage: user.profileImage,
@@ -350,7 +363,7 @@ const deleteCurrentUser = async (userId: string) => {
   }
 
   const user = await User.findById(userId)
-    .select("_id status")
+    .select("_id status profileImage")
     .lean();
 
   if (!user || user.status === "deleted") {
@@ -360,7 +373,7 @@ const deleteCurrentUser = async (userId: string) => {
   const posts = await Post.find({
     author: userId,
   })
-    .select("_id")
+    .select("_id media")
     .lean();
 
   const postIds = posts.map((post) => post._id);
@@ -377,6 +390,13 @@ const deleteCurrentUser = async (userId: string) => {
     await Notification.deleteMany({
       post: { $in: postIds },
     });
+
+    // Delete post images from Cloudinary
+    for (const post of posts) {
+      if(post.media?.publicId){
+        await deleteCloudinaryImage(post.media.publicId);
+      }
+    }
 
     await Post.deleteMany({
       author: userId,
@@ -416,6 +436,11 @@ const deleteCurrentUser = async (userId: string) => {
   await PasswordResetToken.deleteMany({
     user: userId,
   });
+
+  // Delete profile image from Cloudinary
+  if(user?.profileImage?.publicId){
+    await deleteCloudinaryImage(user.profileImage.publicId);
+  }
 
   await User.deleteOne({
     _id: userId,

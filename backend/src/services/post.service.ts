@@ -5,7 +5,7 @@ import Like from "../models/like.model";
 import Comment from "../models/comment.model";
 import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
-import { uploadPostImage, deletePostImage } from "./cloudinary.service";
+import { uploadPostImage, deleteCloudinaryImage } from "./cloudinary.service";
 
 const createPost = async (
   userId: string,
@@ -61,7 +61,7 @@ const createPost = async (
       await Post.deleteOne({ _id: post._id });
 
       if (uploadedPublicId) {
-        await deletePostImage(uploadedPublicId);
+        await deleteCloudinaryImage(uploadedPublicId);
       }
 
       throw error;
@@ -168,12 +168,12 @@ const updatePost = async (
 
       await post.save();
     } catch (error) {
-      await deletePostImage(newMedia.publicId);
+      await deleteCloudinaryImage(newMedia.publicId);
       throw error;
     }
 
     if (oldPublicId) {
-      await deletePostImage(oldPublicId);
+      await deleteCloudinaryImage(oldPublicId);
     }
   } else {
     await post.save();
@@ -211,7 +211,7 @@ const deletePost = async (userId: string, postId: string) => {
 
   // Delete media from Cloudinary if present
   if (post.media?.publicId) {
-    await deletePostImage(post.media.publicId);
+    await deleteCloudinaryImage(post.media.publicId);
   }
 
   await Post.deleteOne({ _id: postId });
