@@ -1,16 +1,41 @@
+import api from "@/lib/axios";
+
 import { signInWithPopup } from "firebase/auth";
 import { firebaseAuth, googleProvider } from "@/lib/firebase";
-import axios from "axios";
+import { LoginPayload, LoginResponse, RegisterPayload, RegisterResponse } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const registerUser = async (
+  payload: RegisterPayload
+): Promise<RegisterResponse> => {
+  const response = await api.post<RegisterResponse>(
+    "/auth/register",
+    payload
+  );
+
+  return response.data;
+};
+
+export const loginUser = async (
+  payload: LoginPayload
+): Promise<LoginResponse> => {
+  const response = await api.post<LoginResponse>(
+    "/auth/login",
+    payload,
+    {
+      withCredentials: true,
+    }
+  );
+
+  return response.data;
+};
 
 export const signInWithGoogle = async () => {
   const result = await signInWithPopup(firebaseAuth, googleProvider);
 
   const firebaseIdToken = await result.user.getIdToken();
 
-  const response = await axios.post(
-    `${API_URL}/auth/google`,
+  const response = await api.post(
+    "/auth/google",
     {
       idToken: firebaseIdToken,
     },
