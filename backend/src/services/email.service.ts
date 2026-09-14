@@ -19,7 +19,7 @@ const sendVerificationEmail = async (
     throw new Error("FRONTEND_URL is not configured");
   }
 
-  const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
+  const verificationUrl = `${frontendUrl}/auth/verify-email?token=${token}`;
 
   await transporter.sendMail({
     from: `"Zentro" <${emailConfig.user}>`,
