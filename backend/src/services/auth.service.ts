@@ -9,7 +9,7 @@ import VerificationToken from "../models/verification-token.model";
 import PasswordResetToken from "../models/password-reset-token.model";
 
 // Utility Functions
-import { hasMailServer } from "../utils/email";
+import { hasMailServer } from "../utils/email/email";
 import AppError from "../utils/appError";
 import {
   generateAccessToken,
