@@ -16,9 +16,12 @@ import { loginSchema, LoginFormData } from "@/features/auth/schemas";
 import { loginUser, signInWithGoogle } from "@/features/auth/api";
 
 import { getApiErrorMessage } from "@/lib/api-error";
+import { useAuth } from "@/features/auth/AuthProvider";
 
 export default function LoginForm() {
   const router = useRouter();
+  
+  const { setAuth } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -40,7 +43,8 @@ export default function LoginForm() {
       setServerError("");
 
       const res = await loginUser(data);
-        console.log(res)
+      console.log(res)
+      setAuth(res.data.accessToken, res.data.user);
       router.push("/home");
     } catch (error: unknown) {
       setServerError(getApiErrorMessage(error));
@@ -54,8 +58,9 @@ export default function LoginForm() {
       setGoogleLoading(true);
       setServerError("");
 
-      await signInWithGoogle();
+      const res = await signInWithGoogle();
 
+      setAuth(res.data.accessToken, res.data.user);
       router.push("/home");
     } catch (error: unknown) {
       setServerError(getApiErrorMessage(error));
