@@ -34,3 +34,26 @@ export interface LoginResponse {
     };
   };
 }
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
