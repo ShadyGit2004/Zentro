@@ -488,6 +488,13 @@ const refreshUserSession = async (
   return {
     accessToken,
     refreshToken: newRefreshToken,
+    user: {
+      _id: user._id,
+      email: user.email,
+      username: user.username,
+      displayName: user.displayName,
+      profileImage: user.profileImage,
+    },
   };
 };
 

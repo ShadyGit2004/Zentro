@@ -124,6 +124,7 @@ const refresh = async (
       success: true,
       data: {
         accessToken: result.accessToken,
+        user: result.user,
       },
     });
   } catch (error) {

@@ -91,7 +91,7 @@ router.post(
   googleLogin
 );
 
-router.post("/refresh", authRateLimiter, refresh);
+router.post("/refresh", refresh);
 router.post("/logout", logout);
 
 export default router;
