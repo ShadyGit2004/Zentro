@@ -35,6 +35,17 @@ export interface LoginResponse {
   };
 }
 
+export interface ResendVerificationPayload {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
+
 export interface ForgotPasswordPayload {
   email: string;
 }

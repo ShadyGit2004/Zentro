@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import api from "@/lib/axios";
 
+import { resendVerification } from "@/features/auth/api";
+
 function VerifyEmail() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -20,6 +22,10 @@ function VerifyEmail() {
   >("checking");
 
   const [message, setMessage] = useState("");
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     if (!token) {
@@ -60,6 +66,57 @@ function VerifyEmail() {
 
     verifyEmail();
   }, [token]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((previous) => previous - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const handleResendVerification = async () => {
+    if (!email || resending || cooldown > 0) return;
+
+    try {
+      setResending(true);
+      setResendMessage("");
+      setResendError("");
+
+      const response = await resendVerification({
+        email,
+      });
+
+      console.log(response)
+
+      setResendMessage(
+        response.data?.message || "A new verification email has been sent."
+      );
+
+      setCooldown(60);
+    } catch (error: unknown) {
+      const apiError = error as {
+        response?: {
+          data?: {
+            error?: {
+              message?: string;
+            };
+          };
+        };
+      };
+
+      console.log(apiError)
+
+      setResendError(
+        apiError.response?.data?.error?.message ||
+          "Unable to resend verification email. Please try again."
+      );
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
@@ -105,6 +162,32 @@ function VerifyEmail() {
               <p className="mt-4 text-xs text-muted-foreground">
                 Didn&apos;t receive it? Check your spam or junk folder.
               </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4 w-full"
+                disabled={!email || resending || cooldown > 0}
+                onClick={handleResendVerification}
+              >
+                {resending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Resending...
+                  </>
+                ) : cooldown > 0 ? (
+                  `Resend available in ${cooldown}s`
+                ) : (
+                  "Resend verification email"
+                )}
+              </Button>
+
+              {resendMessage && (
+                <p className="mt-3 text-sm text-green-600">{resendMessage}</p>
+              )}
+
+              {resendError && (
+                <p className="mt-3 text-sm text-destructive">{resendError}</p>
+              )}
             </>
           )}
 

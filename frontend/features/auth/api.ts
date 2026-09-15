@@ -2,7 +2,7 @@ import api from "@/lib/axios";
 
 import { signInWithPopup } from "firebase/auth";
 import { firebaseAuth, googleProvider } from "@/lib/firebase";
-import { LoginPayload, LoginResponse, RegisterPayload, RegisterResponse, ForgotPasswordPayload,ForgotPasswordResponse,  ResetPasswordPayload, ResetPasswordResponse, } from "./types";
+import { LoginPayload, LoginResponse, RegisterPayload, RegisterResponse, ForgotPasswordPayload,ForgotPasswordResponse,  ResetPasswordPayload, ResetPasswordResponse, ResendVerificationPayload, ResendVerificationResponse, } from "./types";
 
 export const registerUser = async (
   payload: RegisterPayload
@@ -42,6 +42,17 @@ export const signInWithGoogle = async () => {
     {
       withCredentials: true,
     }
+  );
+
+  return response.data;
+};
+
+export const resendVerification = async (
+  payload: ResendVerificationPayload
+): Promise<ResendVerificationResponse> => {
+  const response = await api.post<ResendVerificationResponse>(
+    "/auth/resend-verification",
+    payload
   );
 
   return response.data;
