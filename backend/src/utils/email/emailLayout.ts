@@ -85,7 +85,7 @@ export const emailLayout = ({
                 line-height: 18px;
               "
             >
-              © ${new Date().getFullYear()}2026 Zentro. All rights reserved.
+              © ${new Date().getFullYear()} Zentro. All rights reserved.
             </td>
           </tr>
 
