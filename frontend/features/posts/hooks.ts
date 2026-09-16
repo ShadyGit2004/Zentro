@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { createPost, deletePost, updatePost } from "./api";
+import { createPost, deletePost, likePost, unlikePost, updatePost } from "./api";
 import { UpdatePostPayload } from "./types";
 
 export const useCreatePost = () => {
@@ -45,5 +45,17 @@ export const useDeletePost = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
+  });
+};
+
+export const useLikePost = () => {
+  return useMutation({
+    mutationFn: likePost,
+  });
+};
+
+export const useUnlikePost = () => {
+  return useMutation({
+    mutationFn: unlikePost,
   });
 };

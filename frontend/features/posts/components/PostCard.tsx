@@ -12,10 +12,22 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdatePost, useDeletePost } from "../hooks";
+import {
+  useUpdatePost,
+  useDeletePost,
+  useLikePost,
+  useUnlikePost,
+} from "../hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
 import type { FeedPost } from "@/features/feed/types";
+import Comments from "@/features/comments/components/Comments";
+import { useQueryClient } from "@tanstack/react-query";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { updatePostSchema, type UpdatePostFormData } from "../schema";
 
 interface PostCardProps {
   post: FeedPost;
@@ -28,16 +40,65 @@ export default function PostCard({ post }: PostCardProps) {
     year: "numeric",
   });
 
+  const editForm = useForm<UpdatePostFormData>({
+    resolver: zodResolver(updatePostSchema),
+    defaultValues: {
+      content: post.content,
+    },
+  });
+
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const isOwner = user?._id === post.author._id;
-  const isLiked = user?._id === post.author._id;
 
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editContent, setEditContent] = useState(post?.content);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
+
+  const likeMutation = useLikePost();
+  const unlikeMutation = useUnlikePost();
+
+  const handleLike = () => {
+    const mutation = post.isLiked ? unlikeMutation : likeMutation;
+
+    mutation.mutate(post._id, {
+      onSuccess: () => {
+        queryClient.setQueryData(["feed"], (oldData: any) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.map((item: FeedPost) =>
+                item._id === post._id
+                  ? {
+                      ...item,
+                      isLiked: !item.isLiked,
+                      likesCount: item.likesCount + (item.isLiked ? -1 : 1),
+                    }
+                  : item
+              ),
+            })),
+          };
+        });
+      },
+
+      onError: (error) => {
+        toast.error(
+          getApiErrorMessage(
+            error,
+            post.isLiked
+              ? "Unable to unlike post. Please try again."
+              : "Unable to like post. Please try again."
+          )
+        );
+      },
+    });
+  };
 
   const handleDelete = () => {
     deletePostMutation.mutate(post._id, {
@@ -53,19 +114,12 @@ export default function PostCard({ post }: PostCardProps) {
     });
   };
 
-  const handleUpdate = () => {
-    const content = editContent.trim();
-
-    if (!content) {
-      toast.error("Post cannot be empty.");
-      return;
-    }
-
+  const handleUpdate = (values: UpdatePostFormData) => {
     updatePostMutation.mutate(
       {
         postId: post._id,
         payload: {
-          content,
+          content: values.content.trim(),
         },
       },
       {
@@ -125,7 +179,9 @@ export default function PostCard({ post }: PostCardProps) {
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => {
-                      setEditContent(post.content);
+                      editForm.reset({
+                        content: post.content,
+                      });
                       setIsEditOpen(true);
                     }}
                   >
@@ -166,15 +222,26 @@ export default function PostCard({ post }: PostCardProps) {
           <div className="mt-4 flex items-center gap-6 text-muted-foreground">
             <button
               type="button"
-              className="flex items-center gap-2 text-sm transition-colors hover:text-foreground"
+              onClick={handleLike}
+              disabled={likeMutation.isPending || unlikeMutation.isPending}
+              className={`flex items-center gap-2 text-sm transition-colors ${
+                post.isLiked
+                  ? "currentColor"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={post.isLiked ? "Unlike post" : "Like post"}
             >
-              <Heart className="h-4 w-4" />
+              <Heart
+                className="h-4 w-4"
+                fill={post.isLiked ? "currentColor" : "none"}
+              />
               <span>{post.likesCount}</span>
             </button>
 
             <button
               type="button"
-              className="flex items-center gap-2 text-sm transition-colors hover:text-foreground"
+              onClick={() => setIsCommentsOpen(true)}
+              className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <MessageCircle className="h-4 w-4" />
               <span>{post.commentsCount}</span>
@@ -183,42 +250,57 @@ export default function PostCard({ post }: PostCardProps) {
         </div>
       </div>
 
+      <Dialog open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
+        <DialogContent className="flex max-h-[80vh] flex-col overflow-hidden p-0 sm:max-w-lg">
+          <DialogHeader className="shrink-0 border-b px-4 py-4">
+            <DialogTitle>Comments</DialogTitle>
+          </DialogHeader>
+
+          <Comments postId={post._id} />
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit post</DialogTitle>
           </DialogHeader>
 
-          <Textarea
-            value={editContent}
-            onChange={(event) => setEditContent(event.target.value)}
-            maxLength={280}
-            spellCheck={true}
-            rows={5}
-          />
+          <form onSubmit={editForm.handleSubmit(handleUpdate)}>
+            <Textarea
+              {...editForm.register("content")}
+              maxLength={280}
+              spellCheck={true}
+              rows={5}
+            />
 
-          <div className="text-right text-xs text-muted-foreground">
-            {editContent?.length}/280
-          </div>
+            <div className="mt-1 flex items-center justify-between">
+              {editForm.formState.errors.content && (
+                <p className="text-xs text-destructive">
+                  {editForm.formState.errors.content.message}
+                </p>
+              )}
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsEditOpen(false)}
-              disabled={updatePostMutation.isPending}
-            >
-              Cancel
-            </Button>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {editForm.watch("content")?.length ?? 0}/280
+              </span>
+            </div>
 
-            <Button
-              type="button"
-              onClick={handleUpdate}
-              disabled={updatePostMutation.isPending}
-            >
-              {updatePostMutation.isPending ? "Updating..." : "Update"}
-            </Button>
-          </DialogFooter>
+            <DialogFooter className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+                disabled={updatePostMutation.isPending}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit" disabled={updatePostMutation.isPending}>
+                {updatePostMutation.isPending ? "Updating..." : "Update"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

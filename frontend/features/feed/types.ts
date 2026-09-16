@@ -18,7 +18,7 @@ export interface FeedPost {
   author: FeedUser;
   likesCount: number;
   commentsCount: number;
-//   isLiked: boolean;
+  isLiked: boolean;
   createdAt: string;
   updatedAt: string;
 }

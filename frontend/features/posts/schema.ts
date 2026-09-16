@@ -8,14 +8,14 @@ export const createPostSchema = z.object({
     .optional(),
 });
 
-// export const updatePostSchema = z.object({
-//   content: z
-//     .string()
-//     .trim()
-//     .min(1, "Post content cannot be empty")
-//     .max(280, "Post content must be at most 280 characters")
-//     .optional(),
-// });
+export const updatePostSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Post cannot be empty")
+    .max(280, "Post cannot exceed 280 characters"),
+});
+
 
 // export const searchPostsSchema = z.object({
 //   q: z
@@ -25,6 +25,5 @@ export const createPostSchema = z.object({
 //     .max(100, "Search query must be at most 100 characters"),
 // });
 
-export type CreatePostFormData = z.infer<
-  typeof createPostSchema
->;
+export type CreatePostFormData = z.infer<typeof createPostSchema>;
+export type UpdatePostFormData = z.infer<typeof updatePostSchema>;

@@ -57,3 +57,13 @@ export const updatePost = async (
 export const deletePost = async (postId: string): Promise<void> => {
   await api.delete(`/posts/${postId}`);
 };
+
+export const likePost = async (postId: string) => {
+  const response = await api.post(`/posts/${postId}/like`);
+  return response.data;
+};
+
+export const unlikePost = async (postId: string) => {
+  const response = await api.delete(`/posts/${postId}/like`);
+  return response.data;
+};
