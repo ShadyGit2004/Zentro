@@ -8,6 +8,7 @@ import AppShell from "@/components/layout/AppShell";
 import { useAuth } from "@/features/auth/AuthProvider";
 
 import Feed from "@/features/feed/components/Feed";
+import CreatePost from "@/features/posts/components/CreatePost";
 
 export default function HomePage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function HomePage() {
           </p>
         </div>
 
+        <CreatePost />
         <Feed />
       </section>
     </AppShell>
