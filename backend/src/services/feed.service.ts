@@ -188,6 +188,30 @@ const getFeed = async (
 
     {
       $lookup: {
+        from: "likes",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$post", "$$postId"] },
+                  { $eq: ["$user", userId] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "currentUserLike",
+      },
+    },
+    {
+      $lookup: {
         from: "users",
         localField: "author",
         foreignField: "_id",
@@ -218,6 +242,13 @@ const getFeed = async (
         createdAt: 1,
         updatedAt: 1,
         score: 1,
+
+        isLiked: {
+          $gt: [
+            { $size: "$currentUserLike" },
+            0,
+          ],
+        },
 
         author: {
           _id: 1,
