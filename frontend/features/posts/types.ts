@@ -26,3 +26,32 @@ export interface CreatePostResponse {
     };
   };
 }
+
+export interface UpdatePostPayload {
+  content?: string;
+  image?: File;
+}
+
+export interface UpdatePostResponse {
+  success: boolean;
+  data: {
+    post: {
+      _id: string;
+      content: string;
+      media?: {
+        url: string;
+        publicId: string;
+      };
+      author: {
+        _id: string;
+        username: string;
+        displayName: string;
+        profileImage?: string;
+      };
+      likesCount: number;
+      commentsCount: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+  };
+}

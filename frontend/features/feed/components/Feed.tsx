@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PostCard from "@/features/posts/components/PostCard";
 import { useFeed } from "../hooks";
+import FeedSkeleton from "./FeedSkeleton";
 
 export default function Feed() {
   const {
@@ -17,11 +18,7 @@ export default function Feed() {
   } = useFeed();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[300px] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
+    return <FeedSkeleton/>
   }
 
   if (isError) {
