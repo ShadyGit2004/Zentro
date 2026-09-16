@@ -16,6 +16,7 @@ import {
 
 import { forgotPassword } from "@/features/auth/api";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { toast } from "sonner";
 
 export default function ForgotPasswordForm() {
   const [loading, setLoading] = useState(false);
@@ -38,10 +39,10 @@ export default function ForgotPasswordForm() {
       setSuccess(false);
 
       const res = await forgotPassword(data);
-      console.log(res)
-
+      toast.success(res.data.message || "If the account exists, a reset email has been sent.");
       setSuccess(true);
     } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Unable to process your request. Please try again."));
       setServerError(getApiErrorMessage(error));
     } finally {
       setLoading(false);

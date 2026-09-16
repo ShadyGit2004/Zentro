@@ -17,6 +17,7 @@ import {
 
 import { resetPassword } from "@/features/auth/api";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { toast } from "sonner";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -55,10 +56,11 @@ export default function ResetPasswordForm() {
         newPassword: data.password,
       });
 
-      console.log(res)
+      toast.success(res.data.message || "Password reset successfully.");
 
       setSuccess(true);
     } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Unable to reset your password."));
       setServerError(getApiErrorMessage(error));
     } finally {
       setLoading(false);

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import api from "@/lib/axios";
 
 import { resendVerification } from "@/features/auth/api";
+import { toast } from "sonner";
 
 function VerifyEmail() {
   const searchParams = useSearchParams();
@@ -40,12 +41,14 @@ function VerifyEmail() {
         });
 
         setStatus("success");
+        toast.success("Email verified successfully.");
         setMessage(
           response.data?.data?.message ||
             "Your email has been verified successfully."
         );
       } catch (error: unknown) {
         setStatus("error");
+        toast.error("Unable to verify your email.");
 
         const apiError = error as {
           response?: {
@@ -87,9 +90,8 @@ function VerifyEmail() {
 
       const response = await resendVerification({
         email,
-      });
-
-      console.log(response)
+      });      
+      toast.success(response.data.message ||"Verification email sent.");
 
       setResendMessage(
         response.data?.message || "A new verification email has been sent."
@@ -107,7 +109,7 @@ function VerifyEmail() {
         };
       };
 
-      console.log(apiError)
+      toast.error("Unable to send verification email.");
 
       setResendError(
         apiError.response?.data?.error?.message ||

@@ -14,6 +14,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -42,10 +43,11 @@ export default function RegisterForm() {
 
       const res = await registerUser(data);
 
-      console.log(res);
+      toast.success("Account created successfully.");
 
       router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Unable to create your account. Please try again."));
       setServerError(getApiErrorMessage(error));
     } finally {
       setLoading(false);

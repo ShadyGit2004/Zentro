@@ -17,6 +17,7 @@ import { loginUser, signInWithGoogle } from "@/features/auth/api";
 
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { toast } from "sonner";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -43,10 +44,11 @@ export default function LoginForm() {
       setServerError("");
 
       const res = await loginUser(data);
-      console.log(res)
+      toast.success("Logged in successfully.");
       setAuth(res.data.accessToken, res.data.user);
       router.push("/home");
     } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Unable to log in. Please check your credentials."));
       setServerError(getApiErrorMessage(error));
     } finally {
       setLoading(false);
@@ -63,6 +65,7 @@ export default function LoginForm() {
       setAuth(res.data.accessToken, res.data.user);
       router.push("/home");
     } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Google sign-in failed. Please try again."));
       setServerError(getApiErrorMessage(error));
     } finally {
       setGoogleLoading(false);
