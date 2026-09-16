@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import { useAuth } from "@/features/auth/AuthProvider";
 
+import Feed from "@/features/feed/components/Feed";
+
 export default function HomePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -27,22 +29,16 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      <section>
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Home</h1>
+      <section className="mx-auto max-w-3xl pb-24 md:pb-6">
+        <div className="border-b px-4 py-6 md:px-6">
+          <h1 className="text-2xl font-bold tracking-tight">Home</h1>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Welcome back, {user.displayName}.
           </p>
         </div>
 
-        <div className="rounded-xl border bg-card p-8 text-center">
-          <h2 className="text-lg font-semibold">Your feed is coming next</h2>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            We&apos;ll connect the real Zentro feed here next.
-          </p>
-        </div>
+        <Feed />
       </section>
     </AppShell>
   );
