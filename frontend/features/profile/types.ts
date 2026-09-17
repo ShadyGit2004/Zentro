@@ -3,13 +3,13 @@ export interface UserProfile {
   username: string;
   displayName: string;
   bio: string;
-  profileImage:{
-    url : string;
-    publicId : string;
-  };
+  profileImage: {
+    url: string;
+    publicId: string;
+  } | null;
   followersCount: number;
   followingCount: number;
-  isFollowing :boolean;
+  isFollowing: boolean;
   postsCount: number;
   createdAt: string;
 }
@@ -32,25 +32,34 @@ export interface UpdateProfileResponse {
     username: string;
     displayName: string;
     bio: string;
-     profileImage:{
-        url : string;
-        publicId : string;
-    };
+    profileImage: {
+      url: string;
+      publicId: string;
+    } | null;
     updatedAt: string;
   };
 }
 
+export interface UpdateProfileImageResponse {
+  success: boolean;
+  data: {
+    profileImage: {
+      url: string;
+      publicId: string;
+    };
+  };
+}
 
 export interface ProfileListUser {
   _id: string;
   username: string;
   displayName: string;
   bio: string;
-  profileImage : {
-    url : string;
-    publicId : string;
-  };
-};
+  profileImage: {
+    url: string;
+    publicId: string;
+  } | null;
+}
 
 export interface ProfileListPagination {
   nextCursor: string | null;

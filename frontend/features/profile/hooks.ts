@@ -2,7 +2,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getUserProfile,
-  updateProfile
+  updateProfile,
+  updateProfileImage
 } from "./api";
 
 export const useUserProfile = (userId: string) => {
@@ -18,6 +19,20 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: updateProfile,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["profile"],
+      });
+    },
+  });
+};
+
+export const useUpdateProfileImage = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateProfileImage,
 
     onSuccess: () => {
       queryClient.invalidateQueries({

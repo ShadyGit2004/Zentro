@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import type { GetUserProfileResponse, UpdateProfilePayload, UpdateProfileResponse } from "./types";
+import type { GetUserProfileResponse, UpdateProfileImageResponse, UpdateProfilePayload, UpdateProfileResponse } from "./types";
 
 export const getUserProfile = async (
   userId: string
@@ -22,3 +22,17 @@ export const updateProfile = async (
   return response.data;
 };
 
+export const updateProfileImage = async (
+  file: File
+): Promise<UpdateProfileImageResponse> => {
+  const formData = new FormData();
+
+  formData.append("profileImage", file);
+
+  const response = await api.patch<UpdateProfileImageResponse>(
+    "/users/me/profile-image",
+    formData
+  );
+
+  return response.data;
+};

@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft, Camera } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   Dialog,
@@ -13,33 +15,23 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-import {
-  useFollowUser,
-  useUnfollowUser,
-} from "@/features/follows/hooks";
+import { useFollowUser, useUnfollowUser } from "@/features/follows/hooks";
 
 import {
   useUpdateProfile,
+  useUpdateProfileImage,
   useUserProfile,
 } from "../hooks";
 
-import {
-  updateProfileSchema,
-} from "../schema";
+import { updateProfileSchema } from "../schema";
 
-import type {
-  UpdateProfileFormData,
-} from "../schema";
+import type { UpdateProfileFormData } from "../schema";
 
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -50,26 +42,32 @@ interface ProfileProps {
 }
 
 export default function Profile({ userId }: ProfileProps) {
+  const router = useRouter();
 
-const [listType, setListType] = useState<"followers" | "following" | null>(null);
-
-  const { data, isLoading, isError } = useUserProfile(userId);
-  const { user } = useAuth();  
-
-  const profile = data?.data;
+  const [listType, setListType] = useState<"followers" | "following" | null>(
+    null
+  );
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const { data, isLoading, isError } = useUserProfile(userId);
+  const { user } = useAuth();
+
+  const profile = data?.data;
+
+  const followMutation = useFollowUser();
+  const unfollowMutation = useUnfollowUser();
+  const updateProfileMutation = useUpdateProfile();
+  const updateProfileImageMutation = useUpdateProfileImage();
 
   useEffect(() => {
     if (profile) {
       setIsFollowing(profile.isFollowing);
     }
   }, [profile]);
-
-  const followMutation = useFollowUser();
-  const unfollowMutation = useUnfollowUser();
-  const updateProfileMutation = useUpdateProfile();
 
   const isOwnProfile = user?.id === profile?.id;
 
@@ -91,14 +89,66 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
       bio: profile.bio ?? "",
     });
 
+    setSelectedImage(null);
+    setImagePreview(null);
     setIsEditOpen(true);
+  };
+
+  const handleEditClose = (open: boolean) => {
+    if (!open) {
+      setSelectedImage(null);
+      setImagePreview(null);
+    }
+
+    setIsEditOpen(open);
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPG, JPEG, PNG or WebP images are allowed");
+      event.target.value = "";
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      toast.error("Profile image must be less than 5MB");
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedImage(file);
+
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
   };
 
   const onSubmit = async (formData: UpdateProfileFormData) => {
     try {
-      await updateProfileMutation.mutateAsync(formData);
+      let profileUpdated = false;
+      let imageUpdated = false;
 
-      toast.success("Profile updated successfully");
+      if (selectedImage) {
+        await updateProfileImageMutation.mutateAsync(selectedImage);
+        imageUpdated = true;
+      }
+
+      await updateProfileMutation.mutateAsync(formData);
+      profileUpdated = true;
+
+      if (imageUpdated || profileUpdated) {
+        toast.success("Profile updated successfully");
+      }
+
+      setSelectedImage(null);
+      setImagePreview(null);
       setIsEditOpen(false);
     } catch (error) {
       toast.error(getApiErrorMessage(error));
@@ -111,11 +161,15 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
     try {
       if (isFollowing) {
         const res = await unfollowMutation.mutateAsync(profile.id);
+
         setIsFollowing(false);
+
         toast.success(res.data.message || "Unfollowed successfully");
       } else {
         const res = await followMutation.mutateAsync(profile.id);
+
         setIsFollowing(true);
+
         toast.success(res.data.message || "Following successfully");
       }
     } catch (error) {
@@ -158,24 +212,41 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
     );
   }
 
-  const initials = profile?.displayName
+  const initials = profile.displayName
     .split(" ")
     .map((name) => name.charAt(0))
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
+  const currentImage = imagePreview ?? profile.profileImage?.url ?? undefined;
+
+  const isSaving = updateProfileMutation.isPending || updateProfileImageMutation.isPending;
+
   return (
     <>
       <section className="mx-auto w-full max-w-2xl">
         {/* Profile Header */}
-        <div className="border-b px-4 py-8 sm:px-6">
+        <div className="border-b px-4 py-6 sm:px-6">
+          <div className="mb-6 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+
+            <h1 className="text-xl font-semibold">Profile</h1>
+          </div>
+
           <div className="flex flex-col gap-6">
             {/* Avatar + Actions */}
             <div className="flex items-start justify-between gap-4">
               <Avatar className="h-24 w-24 border-2 border-background shadow-sm">
                 <AvatarImage
-                  src={profile?.profileImage?.url ?? undefined}
+                  src={profile.profileImage?.url ?? undefined}
                   alt={profile.displayName}
                 />
 
@@ -197,8 +268,11 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
                   <Button
                     variant={isFollowing ? "outline" : "default"}
                     className="min-w-24 rounded-full px-5"
-                    disabled={followMutation.isPending || unfollowMutation.isPending}
-                    onClick={handleFollowToggle}>
+                    disabled={
+                      followMutation.isPending || unfollowMutation.isPending
+                    }
+                    onClick={handleFollowToggle}
+                  >
                     {followMutation.isPending || unfollowMutation.isPending
                       ? "..."
                       : isFollowing
@@ -273,13 +347,53 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
       />
 
       {/* Edit Profile */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen} onOpenChange={handleEditClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Profile Image */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <Avatar className="h-24 w-24 border">
+                  <AvatarImage src={currentImage} alt={profile.displayName} />
+
+                  <AvatarFallback className="text-2xl font-semibold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+
+                <label
+                  htmlFor="profileImage"
+                  className="absolute bottom-0 right-0 flex size-8 cursor-pointer items-center justify-center rounded-full border bg-background shadow-sm transition hover:bg-muted"
+                  aria-label="Change profile image"
+                >
+                  <Camera className="size-4" />
+                </label>
+
+                <input
+                  id="profileImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+              </div>
+
+              <label
+                htmlFor="profileImage"
+                className="cursor-pointer text-sm font-medium hover:underline"
+              >
+                Change profile photo
+              </label>
+
+              <p className="text-xs text-muted-foreground">
+                JPG, JPEG, PNG or WebP · Max 5MB
+              </p>
+            </div>
+
             {/* Username */}
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">
@@ -340,13 +454,14 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsEditOpen(false)}
+                onClick={() => handleEditClose(false)}
+                disabled={isSaving}
               >
                 Cancel
               </Button>
 
-              <Button type="submit" disabled={updateProfileMutation.isPending}>
-                {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>
@@ -354,4 +469,4 @@ const [listType, setListType] = useState<"followers" | "following" | null>(null)
       </Dialog>
     </>
   );
-};
+}
