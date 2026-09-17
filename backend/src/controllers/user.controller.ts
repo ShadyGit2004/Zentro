@@ -43,7 +43,7 @@ const getUserProfile = async (
   try {
     const { userId } = req.params;
 
-    if (typeof userId !== "string") {
+    if (typeof userId !== "string" || typeof req.user?.userId !== 'string') {
       throw new AppError(
         400,
         "INVALID_USER_ID",
@@ -51,7 +51,7 @@ const getUserProfile = async (
       );
     }
 
-    const user = await getPublicUserProfile(userId);
+    const user = await getPublicUserProfile(userId, req.user?.userId);
     
     return res.status(200).json({
       success: true,

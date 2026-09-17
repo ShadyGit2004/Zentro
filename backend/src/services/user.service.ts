@@ -41,7 +41,7 @@ const getCurrentUser = async (userId: string) => {
   };
 };
 
-const getPublicUserProfile = async (userId: string) => {
+const getPublicUserProfile = async (userId: string, currUserId:string) => {
   if (!mongoose.isValidObjectId(userId)) {
     throw new AppError(
       400,
@@ -49,16 +49,131 @@ const getPublicUserProfile = async (userId: string) => {
       "Invalid user ID"
     );
   }
+  
+  const user = await User.aggregate([
+  {
+    $match: {
+      _id: new mongoose.Types.ObjectId(userId),
+      status: "active",
+    },
+  },
 
-  const user = await User.findById(userId)
-    .select(
-      "username displayName bio profileImage createdAt updatedAt status"
-    )
-    .lean();
+  // Followers count
+  {
+    $lookup: {
+      from: "follows",
+      let: { userId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$following", "$$userId"] },
+          },
+        },
+        { $count: "count" },
+      ],
+      as: "followers",
+    },
+  },
 
-    console.log(user)
+  // Following count
+  {
+    $lookup: {
+      from: "follows",
+      let: { userId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$follower", "$$userId"] },
+          },
+        },
+        { $count: "count" },
+      ],
+      as: "following",
+    },
+  },
 
-  if (!user || user.status !== "active") {
+  // Posts count
+  {
+    $lookup: {
+      from: "posts",
+      let: { userId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$author", "$$userId"] },
+          },
+        },
+        { $count: "count" },
+      ],
+      as: "posts",
+    },
+  },
+
+  // Is current user following this profile?
+  {
+    $lookup: {
+      from: "follows",
+      let: { userId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            
+            $expr: {
+              $and: [
+                { $eq: ["$follower", new mongoose.Types.ObjectId(currUserId)] },
+                { $eq: ["$following", "$$userId"] },
+              ],
+            },
+          },
+        },
+        { $limit: 1 },
+      ],
+      as: "followingStatus",
+    },
+  },
+
+  {
+    $addFields: {
+      followersCount: {
+        $ifNull: [{ $arrayElemAt: ["$followers.count", 0] }, 0],
+      },
+      followingCount: {
+        $ifNull: [{ $arrayElemAt: ["$following.count", 0] }, 0],
+      },
+      postsCount: {
+        $ifNull: [{ $arrayElemAt: ["$posts.count", 0] }, 0],
+      },
+      isFollowing: {
+        $gt: [{ $size: "$followingStatus" }, 0],
+      },
+    },
+  },
+
+  {
+    $project: {
+      _id: 1,
+      username: 1,
+      displayName: 1,
+      bio: 1,
+      profileImage: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      status: 1,
+      followersCount: 1,
+      followingCount: 1,
+      postsCount: 1,
+      isFollowing: 1,
+    },
+  },
+]);
+
+  // const user = await User.findById(userId)
+  //   .select(
+  //     "username displayName bio profileImage createdAt updatedAt status"
+  //   )
+  //   .lean();
+
+  if (!user[0] || user[0].status !== "active") {
     throw new AppError(
       404,
       "USER_NOT_FOUND",
@@ -66,7 +181,20 @@ const getPublicUserProfile = async (userId: string) => {
     );
   }
 
-  return user;
+  return {
+    id : user[0]._id,
+    username: user[0].username,
+    displayName : user[0].displayName,
+    bio : user[0].bio,
+    profileImage : user[0].profileImage,
+    createdAt : user[0].createdAt,
+    updatedAt : user[0].updatedAt,
+    status : user[0].status,
+    postsCount : user[0].postsCount,
+    isFollowing : user[0].isFollowing,
+    followersCount: user[0].followersCount,
+    followingCount: user[0].followingCount
+  };
 };
 
 const updateCurrentUser = async (

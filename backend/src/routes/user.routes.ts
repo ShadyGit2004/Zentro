@@ -57,6 +57,7 @@ router.get(
 
 router.get(
   "/:userId",
+  authMiddleware,
   getUserProfile
 );
 
