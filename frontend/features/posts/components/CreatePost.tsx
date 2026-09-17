@@ -103,7 +103,7 @@ export default function CreatePost() {
         placeholder="What’s happening?"
         maxLength={280}
         disabled={createPostMutation.isPending}
-        className="min-h-24 resize-none border-0 px-0 text-base shadow-none focus-visible:ring-0"
+        className="min-h-16 resize-none border-0 px-0 text-base shadow-none focus-visible:ring-0"
       />
 
       {errors.content && (

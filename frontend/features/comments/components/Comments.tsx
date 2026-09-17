@@ -147,7 +147,7 @@ export default function Comments({ postId }: CommentsProps) {
 
                   <p className="mt-1 break-words text-sm">{comment.content}</p>
 
-                  {user?._id === comment.author._id && (
+                  {user?.id === comment.author._id && (
                     <Button
                       type="button"
                       variant="ghost"

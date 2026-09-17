@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { Bell, Home, LogOut, Search, User } from "lucide-react";
 
+import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
+
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/AuthProvider";
 import api from "@/lib/axios";
@@ -14,6 +16,10 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { user, clearAuth } = useAuth();
+
+  const unreadNotificationsQuery = useUnreadNotificationsCount();
+
+  const unreadCount = unreadNotificationsQuery.data ?? 0;
 
   const handleLogout = async () => {
     try {
@@ -31,7 +37,7 @@ export default function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-7xl">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 border-r px-4 py-6 md:flex md:flex-col">
+        <aside className="sticky top-0 h-screen hidden w-64 shrink-0 border-r px-4 py-6 md:flex md:flex-col">
           <div className="px-3 text-2xl font-bold tracking-tight">Zentro</div>
 
           <nav className="mt-8 space-y-1">
@@ -58,7 +64,15 @@ export default function AppShell({ children }: AppShellProps) {
               className="w-full justify-start gap-3"
               onClick={() => router.push("/notifications")}
             >
-              <Bell className="h-5 w-5" />
+              <div className="relative">
+                <Bell className="h-5 w-5" />
+
+                {unreadCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-4 text-background">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </div>
               Notifications
             </Button>
 
@@ -85,7 +99,7 @@ export default function AppShell({ children }: AppShellProps) {
         </aside>
 
         {/* Main content */}
-        <main className="min-w-0 flex-1"> 
+        <main className="min-w-0 flex-1">
           <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background/95 px-4 backdrop-blur md:px-6">
             <div className="font-semibold md:hidden">Zentro</div>
 
