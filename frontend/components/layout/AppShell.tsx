@@ -65,7 +65,7 @@ export default function AppShell({ children }: AppShellProps) {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => router.push(`/profile/${user?._id}`)}
+              onClick={() => router.push(`/profile/${user?.id}`)}
             >
               <User className="h-5 w-5" />
               Profile
@@ -103,7 +103,7 @@ export default function AppShell({ children }: AppShellProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push(`/profile/${user?._id}`)}
+                onClick={() => router.push(`/profile/${user?.id}`)}
               >
                 <User className="h-5 w-5" />
                 <span className="sr-only">Profile</span>
@@ -148,7 +148,7 @@ export default function AppShell({ children }: AppShellProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push(`/profile/${user?._id}`)}
+            onClick={() => router.push(`/profile/${user?.id}`)}
           >
             <User className="h-5 w-5" />
             <span className="sr-only">Profile</span>

@@ -8,7 +8,7 @@ export interface RegisterPayload {
 export interface RegisterResponse {
   success: boolean;
   data: {
-    _id: string;
+    id: string;
     email: string;
     username: string;
     displayName: string;
@@ -26,7 +26,7 @@ export interface LoginResponse {
   data: {
     accessToken: string;
     user: {
-      _id: string;
+      id: string;
       email: string;
       username: string;
       displayName: string;

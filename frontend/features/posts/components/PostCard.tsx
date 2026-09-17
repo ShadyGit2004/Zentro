@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Pencil, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { updatePostSchema, type UpdatePostFormData } from "../schema";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface PostCardProps {
   post: FeedPost;
@@ -49,7 +51,7 @@ export default function PostCard({ post }: PostCardProps) {
 
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const isOwner = user?._id === post.author._id;
+  const isOwner = user?.id === post.author._id;
 
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -142,33 +144,37 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <article className="border-b px-4 py-5">
       <div className="flex gap-3">
-        {/* Avatar */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
-          {post.author.profileImage ? (
-            <img
-              src={post.author.profileImage.url}
-              alt={post.author.displayName}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="text-sm font-semibold">
-              {post.author.displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
-
         <div className="min-w-0 flex-1">
           {/* Author */}
-          <div className="flex flex-wrap items-center gap-x-2">
-            <span className="font-semibold">{post.author.displayName}</span>
+          <div className="flex flex-wrap gap-x-2">
+            {/* Avatar */}
+            <Link
+              href={`/profile/${post.author._id}`}
+              className="group flex items-center gap-3"
+            >
+              <Avatar>
+                <AvatarImage
+                  src={post.author.profileImage?.url ?? undefined}
+                  alt={post.author.displayName}
+                />
+                <AvatarFallback>
+                  {post.author.displayName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
 
-            <span className="text-sm text-muted-foreground">
-              @{post.author.username}
-            </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold group-hover:underline">
+                  {post.author.displayName}{" "}
+                  <span className="text-xs text-muted-foreground">
+                    · {formattedDate}
+                  </span>
+                </p>
 
-            <span className="text-sm text-muted-foreground">
-              · {formattedDate}
-            </span>
+                <p className="truncate text-sm text-muted-foreground">
+                  @{post.author.username}
+                </p>
+              </div>
+            </Link>
 
             <div className="ml-auto flex gap-3 text-sm">
               {isOwner && (

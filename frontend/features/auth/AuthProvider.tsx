@@ -12,7 +12,7 @@ import { setAccessToken as setApiAccessToken } from "@/lib/axios";
 import api from "@/lib/axios";
 
 interface AuthUser {
-  _id: string;
+  id: string;
   email: string;
   username: string;
   displayName: string;
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    try {
+    try { 
       const response = await api.post("/auth/refresh");
 
       setApiAccessToken(response.data.accessToken);
