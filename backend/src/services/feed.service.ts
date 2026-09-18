@@ -7,6 +7,7 @@ type FeedCursor = {
   score: number;
   createdAt: string;
   id: string;
+  scoredAt: string;
 };
 
 const encodeCursor = (cursor: FeedCursor): string => {
@@ -23,6 +24,7 @@ const decodeCursor = (cursor: string): FeedCursor => {
       typeof decoded.score !== "number" ||
       typeof decoded.createdAt !== "string" ||
       typeof decoded.id !== "string" ||
+      typeof decoded.scoredAt !== "string" ||
       !mongoose.isValidObjectId(decoded.id)
     ) {
       throw new Error();
@@ -51,14 +53,16 @@ const getFeed = async (
     );
   }
 
+  const currUserId = new mongoose.Types.ObjectId(userId);
+
   const following = await Follow.find({
-    follower: userId,
+    follower: currUserId,
   })
     .select("following")
     .lean();
 
   const authorIds = [
-    new mongoose.Types.ObjectId(userId),
+    currUserId,
     ...following.map((follow) => follow.following),
   ];
 
@@ -67,6 +71,10 @@ const getFeed = async (
   if (cursor) {
     decodedCursor = decodeCursor(cursor);
   }
+
+  const scoreReferenceTime = decodedCursor
+    ? new Date(decodedCursor.scoredAt)
+    : new Date();
 
   const pipeline: mongoose.PipelineStage[] = [
     {
@@ -90,12 +98,24 @@ const getFeed = async (
       },
     },
 
+    // {
+    //   $addFields: {
+    //     ageInHours: {
+    //       $divide: [
+    //         {
+    //           $subtract: [new Date(), "$createdAt"],
+    //         },
+    //         1000 * 60 * 60,
+    //       ],
+    //     },
+    //   },
+    // },
     {
       $addFields: {
         ageInHours: {
           $divide: [
             {
-              $subtract: [new Date(), "$createdAt"],
+              $subtract: [scoreReferenceTime, "$createdAt"],
             },
             1000 * 60 * 60,
           ],
@@ -184,7 +204,7 @@ const getFeed = async (
               $expr: {
                 $and: [
                   { $eq: ["$post", "$$postId"] },
-                  { $eq: ["$user", userId] },
+                  { $eq: ["$user", currUserId] },
                 ],
               },
             },
@@ -208,7 +228,7 @@ const getFeed = async (
               $expr: {
                 $and: [
                   { $eq: ["$post", "$$postId"] },
-                  { $eq: ["$user", userId] },
+                  { $eq: ["$user", currUserId] },
                 ],
               },
             },
@@ -281,12 +301,22 @@ const getFeed = async (
 
   const lastPost = posts[posts.length - 1];
 
+  // const nextCursor =
+  //   hasNextPage && lastPost
+  //     ? encodeCursor({
+  //         score: lastPost.score,
+  //         createdAt: lastPost.createdAt.toISOString(),
+  //         id: lastPost._id.toString(),
+  //       })
+  //     : null;
+
   const nextCursor =
     hasNextPage && lastPost
       ? encodeCursor({
           score: lastPost.score,
           createdAt: lastPost.createdAt.toISOString(),
           id: lastPost._id.toString(),
+          scoredAt: scoreReferenceTime.toISOString(),
         })
       : null;
 

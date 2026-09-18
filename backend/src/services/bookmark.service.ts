@@ -134,12 +134,7 @@ const bookmarks = await Bookmark.aggregate([
     },
   },
 
-  // 3. limit + 1 for cursor pagination
-  {
-    $limit: limit + 1,
-  },
-
-  // 4. Bookmark -> Post
+  // 3. Bookmark -> Post
   {
     $lookup: {
       from: "posts",
@@ -149,12 +144,12 @@ const bookmarks = await Bookmark.aggregate([
     },
   },
 
-  // 5. Array to object
+  // 4. Array to object
   {
     $unwind: "$post",
   },
 
-  // 6. Post's author fetch
+  // 5. Post's author fetch
   {
     $lookup: {
       from: "users",
@@ -168,11 +163,16 @@ const bookmarks = await Bookmark.aggregate([
     $unwind: "$author",
   },
 
-  // 7. Inactive author's posts remove
+  // 6. Inactive author's posts remove
   {
     $match: {
       "author.status": "active",
     },
+  },
+
+  // 7. limit + 1 for cursor pagination
+  {
+    $limit: limit + 1,
   },
 
   // 8. Check current user liked post or not
@@ -227,12 +227,17 @@ const bookmarks = await Bookmark.aggregate([
   {
     $project: {
       _id: "$post._id",
+      bookmarkId: "$_id",
+
       content: "$post.content",
       media: "$post.media",
+
       likesCount: "$post.likesCount",
       commentsCount: "$post.commentsCount",
+
       isLiked: "$post.isLiked",
       isBookmarked: "$post.isBookmarked",
+      
       createdAt: "$post.createdAt",
       updatedAt: "$post.updatedAt",
 
@@ -277,11 +282,13 @@ const bookmarks = await Bookmark.aggregate([
 
   const nextCursor =
     hasNextPage && bookmarks.length > 0
-      ? bookmarks[bookmarks.length - 1]._id.toString()
+      ? bookmarks[bookmarks.length - 1].bookmarkId.toString()
       : null;
 
+  const data = bookmarks.map(({ bookmarkId, ...bookmark }) => bookmark);
+
   return {
-    data: bookmarks,
+    data,
     pagination: {
       nextCursor,
       hasNextPage,
