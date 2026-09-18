@@ -83,10 +83,7 @@ const getFeed = async (
           $add: [
             { $ifNull: ["$likesCount", 0] },
             {
-              $multiply: [
-                { $ifNull: ["$commentsCount", 0] },
-                2,
-              ],
+              $multiply: [{ $ifNull: ["$commentsCount", 0] }, 2],
             },
           ],
         },
@@ -98,10 +95,7 @@ const getFeed = async (
         ageInHours: {
           $divide: [
             {
-              $subtract: [
-                new Date(),
-                "$createdAt",
-              ],
+              $subtract: [new Date(), "$createdAt"],
             },
             1000 * 60 * 60,
           ],
@@ -119,10 +113,7 @@ const getFeed = async (
                 $multiply: [
                   -1,
                   {
-                    $divide: [
-                      "$ageInHours",
-                      24,
-                    ],
+                    $divide: ["$ageInHours", 24],
                   },
                 ],
               },
@@ -135,10 +126,7 @@ const getFeed = async (
     {
       $addFields: {
         score: {
-          $add: [
-            "$engagementScore",
-            "$recencyScore",
-          ],
+          $add: ["$engagementScore", "$recencyScore"],
         },
       },
     },
@@ -163,9 +151,7 @@ const getFeed = async (
                   score: decodedCursor.score,
                   createdAt: new Date(decodedCursor.createdAt),
                   _id: {
-                    $lt: new mongoose.Types.ObjectId(
-                      decodedCursor.id
-                    ),
+                    $lt: new mongoose.Types.ObjectId(decodedCursor.id),
                   },
                 },
               ],
@@ -207,7 +193,31 @@ const getFeed = async (
             $limit: 1,
           },
         ],
-        as: "currentUserLike",
+        as: "Like",
+      },
+    },
+    {
+      $lookup: {
+        from: "bookmarks",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$post", "$$postId"] },
+                  { $eq: ["$user", userId] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "Bookmark",
       },
     },
     {
@@ -244,10 +254,10 @@ const getFeed = async (
         score: 1,
 
         isLiked: {
-          $gt: [
-            { $size: "$currentUserLike" },
-            0,
-          ],
+          $gt: [{ $size: "$Like" }, 0],
+        },
+        isBookmarked: {
+          $gt: [{ $size: "$Bookmark" }, 0],
         },
 
         author: {

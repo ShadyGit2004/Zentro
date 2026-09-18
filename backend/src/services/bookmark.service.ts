@@ -107,8 +107,11 @@ const getBookmarkedPosts = async (
     throw new AppError(401, "UNAUTHORIZED", "Authentication required");
   }
 
+  
+const currentUserId = new mongoose.Types.ObjectId(userId);
+
   const query: mongoose.QueryFilter<IBookmark> = {
-    user: new mongoose.Types.ObjectId(userId),
+    user: currentUserId,
   };
 
   if (cursor) {
@@ -117,20 +120,147 @@ const getBookmarkedPosts = async (
     };
   }
 
-  const bookmarks = await Bookmark.find(query)
-    .sort({ _id: -1 })
-    .limit(limit + 1)
-    .populate({
-      path: "post",
-      populate: {
-        path: "author",
-        select: "_id username displayName bio profileImage",
-        match: {
-          status: "active",
-        },
+
+const bookmarks = await Bookmark.aggregate([
+  // 1. User ke bookmarks filter karo
+  {
+    $match: query,
+  },
+
+  // 2. Latest bookmarks first
+  {
+    $sort: {
+      _id: -1,
+    },
+  },
+
+  // 3. limit + 1 for cursor pagination
+  {
+    $limit: limit + 1,
+  },
+
+  // 4. Bookmark -> Post
+  {
+    $lookup: {
+      from: "posts",
+      localField: "post",
+      foreignField: "_id",
+      as: "post",
+    },
+  },
+
+  // 5. Array to object
+  {
+    $unwind: "$post",
+  },
+
+  // 6. Post's author fetch
+  {
+    $lookup: {
+      from: "users",
+      localField: "post.author",
+      foreignField: "_id",
+      as: "author",
+    },
+  },
+
+  {
+    $unwind: "$author",
+  },
+
+  // 7. Inactive author's posts remove
+  {
+    $match: {
+      "author.status": "active",
+    },
+  },
+
+  // 8. Check current user liked post or not
+  {
+    $lookup: {
+      from: "likes",
+      let: {
+        postId: "$post._id",
       },
-    })
-    .lean();
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                {
+                  $eq: ["$post", "$$postId"],
+                },
+                {
+                  $eq: ["$user", currentUserId],
+                },
+              ],
+            },
+          },
+        },
+        {
+          $limit: 1,
+        },
+      ],
+      as: "userLike",
+    },
+  },
+
+  // 9. isLiked boolean
+  {
+    $addFields: {
+      "post.isLiked": {
+        $gt: [{ $size: "$userLike" }, 0],
+      },
+      "post.isBookmarked": true,
+    },
+  },
+
+  // 10. Temporary lookup remove
+  {
+    $project: {
+      userLike: 0,
+      user: 0,
+    },
+  },
+
+  // 11. Final response shape
+  {
+    $project: {
+      _id: "$post._id",
+      content: "$post.content",
+      media: "$post.media",
+      likesCount: "$post.likesCount",
+      commentsCount: "$post.commentsCount",
+      isLiked: "$post.isLiked",
+      isBookmarked: "$post.isBookmarked",
+      createdAt: "$post.createdAt",
+      updatedAt: "$post.updatedAt",
+
+      author: {
+        _id: "$author._id",
+        username: "$author.username",
+        displayName: "$author.displayName",
+        bio: "$author.bio",
+        profileImage: "$author.profileImage",
+      },
+    },
+  },
+]);
+
+  // const bookmarks = await Bookmark.find(query)
+  //   .sort({ _id: -1 })
+  //   .limit(limit + 1)
+  //   .populate({
+  //     path: "post",
+  //     populate: {
+  //       path: "author",
+  //       select: "_id username displayName bio profileImage",
+  //       match: {
+  //         status: "active",
+  //       },
+  //     },
+  //   })
+  //   .lean();
 
   const hasNextPage = bookmarks.length > limit;
 
@@ -138,12 +268,12 @@ const getBookmarkedPosts = async (
     bookmarks.pop();
   }
 
-  const data = bookmarks
-    .filter((bookmark) => bookmark.post)
-    .map((bookmark) => ({
-      ...bookmark.post,
-      isBookmarked: true,
-    }));
+  // const data = bookmarks
+  //   .filter((bookmark) => bookmark.post)
+  //   .map((bookmark) => ({
+  //     ...bookmark.post,
+  //     isBookmarked: true,
+  //   }));
 
   const nextCursor =
     hasNextPage && bookmarks.length > 0
@@ -151,7 +281,7 @@ const getBookmarkedPosts = async (
       : null;
 
   return {
-    data,
+    data: bookmarks,
     pagination: {
       nextCursor,
       hasNextPage,
