@@ -11,7 +11,7 @@ import PasswordResetToken from "../models/password-reset-token.model";
 import AppError from "../utils/appError";
 
 // Services
-import { deleteCloudinaryImage, uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
+import { deleteCloudinaryImage, getOptimizedProfileImageUrl, uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
 
 const getCurrentUser = async (userId: string) => {
   const user = await User.findById(userId).select(
@@ -266,29 +266,28 @@ const updateProfileImage = async (
     );
   }
 
-  const oldProfileImage = user?.profileImage?.publicId;
-
   const uploadedImage = await uploadToCloudinary(
     file.buffer,
     userId.toString()
   );
-  
+
+  const optimizedUrl = getOptimizedProfileImageUrl(
+    uploadedImage.public_id,
+    uploadedImage.version
+  );
+
   const newProfileImage = {
-    url: uploadedImage.secure_url,
+    url: optimizedUrl,
     publicId: uploadedImage.public_id,
   };
 
   try {
     user.profileImage = newProfileImage;
-    await user.save();
 
+    await user.save();
   } catch (error) {
     await deleteCloudinaryImage(newProfileImage.publicId);
     throw error;
-  }
-
-  if(oldProfileImage){
-    await deleteCloudinaryImage(oldProfileImage)
   }
 
   return {

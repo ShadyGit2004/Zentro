@@ -5,7 +5,7 @@ import Like from "../models/like.model";
 import Comment from "../models/comment.model";
 import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
-import { uploadPostImage, deleteCloudinaryImage } from "./cloudinary.service";
+import { uploadPostImage, deleteCloudinaryImage, getOptimizedPostImageUrl } from "./cloudinary.service";
 
 const createPost = async (
   userId: string,
@@ -51,8 +51,13 @@ const createPost = async (
 
       uploadedPublicId = uploadedImage.public_id;
 
+      const optimizedUrl = getOptimizedPostImageUrl(
+        uploadedImage.public_id,
+        uploadedImage.version
+      );
+
       post.media = {
-        url: uploadedImage.secure_url,
+        url: optimizedUrl,
         publicId: uploadedImage.public_id,
       };
 
@@ -138,7 +143,7 @@ const updatePost = async (
     );
   }
 
- if (content === undefined && !file) {
+  if (content === undefined && !file) {
     throw new AppError(
       400,
       "NO_UPDATE_DATA",
@@ -158,8 +163,13 @@ const updatePost = async (
       post._id.toString()
     );
 
+    const optimizedUrl = getOptimizedPostImageUrl(
+      uploadedImage.public_id,
+      uploadedImage.version
+    );
+
     const newMedia = {
-      url: uploadedImage.secure_url,
+      url: optimizedUrl,
       publicId: uploadedImage.public_id,
     };
 
