@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Pencil, Heart, MessageCircle, Trash2 } from "lucide-react";
+import { Pencil, Heart, MessageCircle, Trash2, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -116,29 +116,65 @@ export default function PostCard({ post }: PostCardProps) {
     });
   };
 
+  const [editImage, setEditImage] = useState<File | undefined>();
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+
+  const handleEditImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {    
+    const file = event.target.files?.[0];
+
+    const fileTypes = ["image/jpg", "image/jpeg", "image/png", "image/webp"];
+
+    if (!file) return;
+
+    if (!fileTypes.includes(file.type)) {
+      toast.error("Please select an image file [jpg, jpeg, png, webp].");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be smaller than 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    if (editImagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(editImagePreview);
+    }   
+
+    setEditImage(file);
+    setEditImagePreview(URL.createObjectURL(file));
+  };
+
   const handleUpdate = (values: UpdatePostFormData) => {
-    updatePostMutation.mutate(
-      {
-        postId: post._id,
-        payload: {
-          content: values.content.trim(),
+    if (values.content.trim() === "" && !editImage){
+      return;
+    }
+      updatePostMutation.mutate(
+        {
+          postId: post._id,
+          payload: {
+            content: values.content.trim(),
+            image: editImage,
+          },
         },
-      },
-      {
-        onSuccess: () => {
-          setIsEditOpen(false);
-          toast.success("Post updated successfully.");
-        },
-        onError: (error) => {
-          toast.error(
-            getApiErrorMessage(
-              error,
-              "Unable to update post. Please try again."
-            )
-          );
-        },
-      }
-    );
+        {
+          onSuccess: () => {
+            setIsEditOpen(false);
+            setEditImage(undefined);
+            setEditImagePreview(null);
+            toast.success("Post updated successfully.");
+          },
+          onError: (error) => {
+            toast.error(
+              getApiErrorMessage(
+                error,
+                "Unable to update post. Please try again."
+              )
+            );
+          },
+        }
+      );
   };
 
   return (
@@ -188,6 +224,9 @@ export default function PostCard({ post }: PostCardProps) {
                       editForm.reset({
                         content: post.content,
                       });
+
+                      setEditImage(undefined);
+                      setEditImagePreview(post.media?.url ?? null);
                       setIsEditOpen(true);
                     }}
                   >
@@ -232,7 +271,7 @@ export default function PostCard({ post }: PostCardProps) {
               disabled={likeMutation.isPending || unlikeMutation.isPending}
               className={`flex items-center gap-2 text-sm transition-colors ${
                 post.isLiked
-                  ? "currentColor"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
               aria-label={post.isLiked ? "Unlike post" : "Like post"}
@@ -279,6 +318,46 @@ export default function PostCard({ post }: PostCardProps) {
               spellCheck={true}
               rows={5}
             />
+
+            <div className="mt-4">
+              {editImagePreview && (
+                <div className="relative overflow-hidden rounded-xl border">
+                  <img
+                    src={editImagePreview}
+                    alt="Post preview"
+                    className="max-h-[300px] w-full object-cover"
+                  />
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-2 h-8 w-8"
+                    onClick={() => {
+                      setEditImage(undefined);
+                      setEditImagePreview(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              <small className="mt-2 block text-xs text-muted-foreground">
+                You can replace the image, but you can’t remove it completely.
+              </small>
+
+              <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <ImagePlus className="h-4 w-4" />
+                Change image
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleEditImageChange}
+                />
+              </label>
+            </div>
 
             <div className="mt-1 flex items-center justify-between">
               {editForm.formState.errors.content && (
