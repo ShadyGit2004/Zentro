@@ -22,6 +22,11 @@ import {
   search
 } from "../controllers/post.controller";
 
+import {
+  create as createBookmark,
+  remove as removeBookmark,
+} from "../controllers/bookmark.controller";
+
 const router = Router();
 
 router.post(
@@ -39,6 +44,21 @@ router.get(
   validate(searchPostsSchema, "query"),
   search
 );
+
+router
+  .route("/:postId/bookmark")
+  .post(
+    authMiddleware, 
+    requireActiveUser, 
+    requireVerifiedEmail, 
+    createBookmark
+  )
+  .delete(
+    authMiddleware,
+    requireActiveUser,
+    requireVerifiedEmail,
+    removeBookmark
+  );
 
 router.route("/:postId")
 .get(

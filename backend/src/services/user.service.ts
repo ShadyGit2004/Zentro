@@ -12,6 +12,7 @@ import AppError from "../utils/appError";
 
 // Services
 import { deleteCloudinaryImage, getOptimizedProfileImageUrl, uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
+import Bookmark from "../models/bookmark.model";
 
 const getCurrentUser = async (userId: string) => {
   const user = await User.findById(userId).select(
@@ -542,6 +543,8 @@ const deleteCurrentUser = async (userId: string) => {
       { author: userId },
       { session }
     );
+
+    await Bookmark.deleteMany({ user: userId }, { session });
 
     await Follow.deleteMany(
       {

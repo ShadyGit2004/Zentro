@@ -13,8 +13,8 @@ import { searchUsersSchema } from "../validators/user.validator";
 import { updateProfileSchema } from "../validators/user.validator";
 
 // Controllers
-import { getMe, getUserProfile, updateUserProfile, search, deleteUser, suspend, unsuspend } from "../controllers/user.controller";
-import { updateProfileImage } from "../controllers/user.controller";
+import { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, deleteUser, suspend, unsuspend } from "../controllers/user.controller";
+import { getMine as getMyBookmarks } from "../controllers/bookmark.controller";
 
 const router = Router();
 
@@ -47,6 +47,14 @@ router.patch(
   requireActiveUser,
   uploadProfileImage.single("profileImage"),
   updateProfileImage
+);
+
+router.get(
+  "/me/bookmarks",
+  authMiddleware,
+  requireActiveUser,
+  requireVerifiedEmail,
+  getMyBookmarks
 );
 
 router.get(

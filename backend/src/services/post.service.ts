@@ -6,6 +6,7 @@ import Comment from "../models/comment.model";
 import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
 import { uploadPostImage, deleteCloudinaryImage, getOptimizedPostImageUrl } from "./cloudinary.service";
+import Bookmark from "../models/bookmark.model";
 
 const createPost = async (
   userId: string,
@@ -218,6 +219,8 @@ const deletePost = async (userId: string, postId: string) => {
   await Like.deleteMany({ post: postId });
   await Comment.deleteMany({ post: postId });
   await Notification.deleteMany({ post: postId });
+  await Bookmark.deleteMany({ post: postId });
+
 
   // Delete media from Cloudinary if present
   if (post.media?.publicId) {
