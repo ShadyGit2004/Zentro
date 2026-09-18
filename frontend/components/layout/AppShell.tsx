@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Bell, Home, LogOut, Search, User } from "lucide-react";
+import { Bell, Home, LogOut, Search, User, Bookmark } from "lucide-react";
 
 import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
 
@@ -76,6 +76,14 @@ export default function AppShell({ children }: AppShellProps) {
               Notifications
             </Button>
 
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3"
+              onClick={() => router.push(`/bookmarks`)}
+            >
+              <Bookmark className="h-5 w-5" />
+              Bookmarks
+            </Button>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3"

@@ -2,15 +2,16 @@ export interface FeedUser {
   _id: string;
   username: string;
   displayName: string;
+  bio?: string;
   profileImage?: {
-    publicId: string;
     url: string;
-  };
+    publicId: string;
+  } | null;
 }
 
 export interface FeedPost {
   _id: string;
-  content: string;
+  content?: string;
   media?: {
     url: string;
     publicId: string;
@@ -19,6 +20,7 @@ export interface FeedPost {
   likesCount: number;
   commentsCount: number;
   isLiked: boolean;
+  isBookmarked: boolean;
   createdAt: string;
   updatedAt: string;
 }

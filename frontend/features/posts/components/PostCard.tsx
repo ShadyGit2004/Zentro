@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Pencil, Heart, MessageCircle, Trash2, ImagePlus, X } from "lucide-react";
+import { Pencil, Heart, MessageCircle, Trash2, ImagePlus, X, Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
   useLikePost,
   useUnlikePost,
 } from "../hooks";
+import { useBookmarkPost, useUnbookmarkPost } from "@/features/bookmarks/hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
 import type { FeedPost } from "@/features/feed/types";
@@ -62,6 +63,34 @@ export default function PostCard({ post }: PostCardProps) {
 
   const likeMutation = useLikePost();
   const unlikeMutation = useUnlikePost();
+
+  const bookmarkMutation = useBookmarkPost();
+  const unbookmarkMutation = useUnbookmarkPost();
+
+  const handleBookmark = () => {
+    if (post.isBookmarked) {
+      unbookmarkMutation.mutate(post._id, {
+        onError: (error) => {
+          toast.error(
+            getApiErrorMessage(
+              error,
+              "Unable to remove bookmark. Please try again."
+            )
+          );
+        },
+      });
+
+      return;
+    }
+
+    bookmarkMutation.mutate(post._id, {
+      onError: (error) => {
+        toast.error(
+          getApiErrorMessage(error, "Unable to bookmark post. Please try again.")
+        );
+      },
+    });
+  };
 
   const handleLike = () => {
     const mutation = post.isLiked ? unlikeMutation : likeMutation;
@@ -291,6 +320,27 @@ export default function PostCard({ post }: PostCardProps) {
               <MessageCircle className="h-4 w-4" />
               <span>{post.commentsCount}</span>
             </button>
+
+            <button
+              type="button"
+              onClick={handleBookmark}
+              disabled={
+                bookmarkMutation.isPending || unbookmarkMutation.isPending
+              }
+              className={`flex items-center gap-2 text-sm transition-colors ${
+                post.isBookmarked
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {post.isBookmarked ? (
+                <BookmarkCheck className="h-4 w-4" fill="currentColor" />
+              ) : (
+                <Bookmark className="h-4 w-4" />
+              )}
+
+              <span>{post.isBookmarked ? "Saved" : "Save"}</span>
+            </button> 
           </div>
         </div>
       </div>
