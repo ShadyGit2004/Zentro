@@ -7,12 +7,7 @@ import {
   useNotifications,
 } from "../hooks";
 
-import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-
 export default function Notifications() {
-
-  const router = useRouter();
 
   const notificationsQuery = useNotifications();
   const markAsReadMutation = useMarkNotificationAsRead();
@@ -61,16 +56,7 @@ export default function Notifications() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">     
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
-
+        <div className="flex items-center gap-3">  
           <div>
             <h1 className="text-xl font-semibold">Notifications</h1>
 

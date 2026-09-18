@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ArrowLeft, Camera } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Camera } from "lucide-react";
 
 import {
   Dialog,
@@ -42,7 +41,6 @@ interface ProfileProps {
 }
 
 export default function Profile({ userId }: ProfileProps) {
-  const router = useRouter();
 
   const [listType, setListType] = useState<"followers" | "following" | null>(
     null
@@ -229,15 +227,6 @@ export default function Profile({ userId }: ProfileProps) {
         {/* Profile Header */}
         <div className="border-b px-4 py-6 sm:px-6">
           <div className="mb-6 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-
             <h1 className="text-xl font-semibold">Profile</h1>
           </div>
 

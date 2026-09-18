@@ -1,20 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { useSearchPosts, useSearchUsers } from "../hooks";
 import UserSearchResult from "./UserSearchResult";
 import PostSearchResult from "./PostSearchResult";
 
-import { useRouter } from "next/navigation";
-
 type SearchTab = "users" | "posts";
 
 export default function Search() {
-
-  const router = useRouter();
 
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
@@ -55,16 +51,7 @@ export default function Search() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="size-5" />
-        </button>
-
+      <div className="mb-4 flex items-center gap-3">        
         <h1 className="text-xl font-semibold">Search</h1>
       </div>
       
