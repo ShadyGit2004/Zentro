@@ -112,6 +112,225 @@ const getPostById = async (postId: string) => {
   return post;
 };
 
+const getUserPosts = async (
+  userId: string,
+  currentUserId: string,
+  limit: number,
+  cursor?: string
+) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
+  }
+
+  if (cursor && !mongoose.isValidObjectId(cursor)) {
+    throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
+  }
+
+  const user = await User.findOne({
+    _id: userId,
+    status: "active",
+  })
+    .select("_id")
+    .lean();
+
+  if (!user) {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  const loggedInUserId = new mongoose.Types.ObjectId(currentUserId);
+
+  const dbQuery: mongoose.QueryFilter<IPost> = {
+    author: new mongoose.Types.ObjectId(userId),
+  };
+
+  if (cursor) {
+    dbQuery._id = {
+      $lt: new mongoose.Types.ObjectId(cursor),
+    };
+  }
+  
+  const posts = await Post.aggregate([
+    {
+      $match: dbQuery,
+    },
+
+    {
+      $sort: {
+        _id: -1,
+      },
+    },
+
+    {
+      $limit: limit + 1,
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "author",
+        foreignField: "_id",
+        as: "author",
+      },
+    },
+
+    {
+      $unwind: "$author",
+    },
+
+    {
+      $match: {
+        "author.status": "active",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "likes",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$post", "$$postId"],
+              },
+            },
+          },
+          {
+            $count: "count",
+          },
+        ],
+        as: "likes",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "comments",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$post", "$$postId"],
+              },
+            },
+          },
+          {
+            $count: "count",
+          },
+        ],
+        as: "comments",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "likes",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$post", "$$postId"] },
+                  { $eq: ["$user", loggedInUserId] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "userLike",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "bookmarks",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$post", "$$postId"] },
+                  { $eq: ["$user", loggedInUserId] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "userBookmark",
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        content: 1,
+        media: 1,
+        createdAt: 1,
+        updatedAt: 1,
+
+        author: {
+          _id: "$author._id",
+          username: "$author.username",
+          displayName: "$author.displayName",
+          profileImage: "$author.profileImage",
+        },
+
+        likesCount: {
+          $ifNull: [{ $arrayElemAt: ["$likes.count", 0] }, 0],
+        },
+
+        commentsCount: {
+          $ifNull: [{ $arrayElemAt: ["$comments.count", 0] }, 0],
+        },
+
+        isLiked: {
+          $gt: [{ $size: "$userLike" }, 0],
+        },
+
+        isBookmarked: {
+          $gt: [{ $size: "$userBookmark" }, 0],
+        },
+      },
+    },
+  ]);
+
+  const hasNextPage = posts.length > limit;
+
+  if (hasNextPage) {
+    posts.pop();
+  }
+
+  const nextCursor =
+    hasNextPage && posts.length > 0
+      ? posts[posts.length - 1]._id.toString()
+      : null;
+
+  return {
+    data: posts,
+    pagination: {
+      nextCursor,
+      hasNextPage,
+    },
+  };
+};
+
 const updatePost = async (
   userId: string,
   postId: string,
@@ -303,7 +522,8 @@ const searchPosts = async (
 export {
   createPost,
   getPostById,
+  getUserPosts,
   updatePost,
   deletePost,
-  searchPosts
+  searchPosts,
 };

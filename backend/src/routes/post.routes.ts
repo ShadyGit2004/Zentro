@@ -17,6 +17,7 @@ import {
 import {
   create,
   getById,
+  getPosts,
   update,
   remove,
   search
@@ -37,6 +38,13 @@ router.post(
   uploadImage.single("image"),
   validate(createPostSchema),
   create
+);
+
+router.get(
+  "/user/:userId",
+  authMiddleware,
+  requireActiveUser,
+  getPosts
 );
 
 router.get(
