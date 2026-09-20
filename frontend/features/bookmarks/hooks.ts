@@ -10,8 +10,8 @@ import {
 
 import { bookmarkPost, unbookmarkPost, getBookmarkedPosts } from "./api";
 
-const updateFeedBookmarkState = (
-  oldData: InfiniteData<FeedResponse> | undefined,
+const updateBookmarkState = (
+  oldData: InfiniteData<any> | undefined,
   postId: string,
   isBookmarked: boolean
 ) => {
@@ -21,7 +21,7 @@ const updateFeedBookmarkState = (
     ...oldData,
     pages: oldData.pages.map((page) => ({
       ...page,
-      data: page.data.map((post) =>
+      data: page.data.map((post: any) =>
         post._id === postId ? { ...post, isBookmarked } : post
       ),
     })),
@@ -50,17 +50,23 @@ export const useBookmarkPost = () => {
     mutationFn: bookmarkPost,
 
     onSuccess: (_, postId) => {
+      // Feed
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         ["feed"],
-        (oldData) => updateFeedBookmarkState(oldData, postId, true)
+        (oldData) => updateBookmarkState(oldData, postId, true)
       );
 
-      // Bookmark list needs refetch because
-      // a new post has to be added to the list.
+      // All cached profile-post queries
+      queryClient.setQueriesData<InfiniteData<any>>(
+        { queryKey: ["user-posts"] },
+        (oldData) => updateBookmarkState(oldData, postId, true)
+      );
+
+      // New bookmark must appear in bookmarks page.
       queryClient.invalidateQueries({
         queryKey: ["bookmarks"],
       });
-    },
+    },    
   });
 };
 
@@ -74,10 +80,16 @@ export const useUnbookmarkPost = () => {
       // Feed
       queryClient.setQueryData<InfiniteData<FeedResponse>>(
         ["feed"],
-        (oldData) => updateFeedBookmarkState(oldData, postId, false)
+        (oldData) => updateBookmarkState(oldData, postId, false)
       );
 
-      // Bookmarks page
+      // Profile posts
+      queryClient.setQueriesData<InfiniteData<any>>(
+        { queryKey: ["user-posts"] },
+        (oldData) => updateBookmarkState(oldData, postId, false)
+      );
+
+      // Bookmark page
       queryClient.setQueryData<InfiniteData<BookmarkedPostsResponse>>(
         ["bookmarks"],
         (oldData) => removePostFromBookmarks(oldData, postId)
@@ -89,6 +101,7 @@ export const useUnbookmarkPost = () => {
 export const useBookmarkedPosts = () => {
   return useInfiniteQuery({
     queryKey: ["bookmarks"],
+
     queryFn: ({ pageParam }) => getBookmarkedPosts(20, pageParam),
 
     initialPageParam: undefined as string | undefined,

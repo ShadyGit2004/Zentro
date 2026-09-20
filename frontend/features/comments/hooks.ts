@@ -4,6 +4,7 @@ import {
   deleteComment,
   getComments,
 } from "./api";
+import { updateCommentCountInAllPostCaches } from "@/features/posts/hooks";
 
 export const useComments = (postId: string) => {
   return useInfiniteQuery({
@@ -27,22 +28,15 @@ export const useCreateComment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      postId,
-      content,
-    }: {
-      postId: string;
-      content: string;
-    }) => createComment(postId, { content }),
+    mutationFn: ({ postId, content }: { postId: string; content: string }) =>
+      createComment(postId, { content }),
 
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["comments", variables.postId],
       });
 
-      queryClient.invalidateQueries({
-        queryKey: ["feed"],
-      });
+      updateCommentCountInAllPostCaches(queryClient, variables.postId, 1);
     },
   });
 };
@@ -64,9 +58,7 @@ export const useDeleteComment = () => {
         queryKey: ["comments", variables.postId],
       });
 
-      queryClient.invalidateQueries({
-        queryKey: ["feed"],
-      });
+      updateCommentCountInAllPostCaches(queryClient, variables.postId, -1);
     },
   });
 };

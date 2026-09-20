@@ -11,9 +11,9 @@ import {
   markNotificationAsRead,
 } from "./api";
 
-import type { Notification, NotificationsResponse } from "./types";
+import type { NotificationsResponse } from "./types";
 
-export const useNotifications = () => {
+export const useNotifications = (enabled = true) => {
   return useInfiniteQuery({
     queryKey: ["notifications"],
 
@@ -25,6 +25,8 @@ export const useNotifications = () => {
       lastPage.pagination.hasNextPage
         ? lastPage.pagination.nextCursor
         : undefined,
+
+    enabled,
   });
 };
 
@@ -95,65 +97,6 @@ export const useMarkNotificationAsRead = () => {
   });
 };
 
-// export const useMarkNotificationAsRead = () => {
-//   const queryClient = useQueryClient();
-
-//   return useMutation({
-//     mutationFn: (notificationId: string) =>
-//       markNotificationAsRead(notificationId),
-
-//     onSuccess: (response) => {
-//       const updatedNotification = response.data;
-
-//       queryClient.invalidateQueries({
-//         queryKey: ["notifications", "unread-count"],
-//         });
-
-//       queryClient.setQueryData(
-//         ["notifications"],
-//         (
-//           oldData:
-//             | {
-//                 pages: NotificationsResponse[];
-//                 pageParams: (string | undefined)[];
-//               }
-//             | undefined
-//         ) => {
-//           if (!oldData) {
-//             return oldData;
-//           }
-
-//           return {
-//             ...oldData,
-//             pages: oldData.pages.map((page) => ({
-//               ...page,
-
-//               data: page.data.map((notification: Notification) =>
-//                 notification._id === updatedNotification._id
-//                   ? {
-//                       ...notification,
-//                       isRead: true,
-//                     }
-//                   : notification
-//               ),
-
-//               unreadCount:
-//                 page.unreadCount > 0 &&
-//                 page.data.some(
-//                     (notification) =>
-//                     notification._id === updatedNotification._id &&
-//                     !notification.isRead
-//                 )
-//                     ? page.unreadCount - 1
-//                     : page.unreadCount,
-//             })),
-//           };
-//         }
-//       );
-//     },
-//   });
-// };
-
 export const useMarkAllNotificationsAsRead = () => {
   const queryClient = useQueryClient();
 
@@ -191,14 +134,11 @@ export const useMarkAllNotificationsAsRead = () => {
   });
 };
 
-export const useUnreadNotificationsCount = () => {
+export const useUnreadNotificationsCount = (enabled = true) => {
   return useQuery({
     queryKey: ["notifications", "unread-count"],
-
     queryFn: () => getNotifications(1),
-
     select: (response) => response.unreadCount,
-
-    staleTime: 30_000,
+    enabled,
   });
 };
