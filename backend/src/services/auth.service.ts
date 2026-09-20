@@ -220,7 +220,11 @@ const loginUser = async (
 ) => {
   const user = await User.findOne({
     email: data.email,
-  }).select("+passwordHash");
+  })
+    .select(
+      "_id status email username displayName profileImage emailVerifiedAt passwordHash"
+    )
+    .lean();
 
   // Same response for unknown email and wrong password.
   if (!user || !user.passwordHash) {
@@ -280,6 +284,7 @@ const loginUser = async (
       username: user.username,
       displayName: user.displayName,
       profileImage: user.profileImage,
+      emailVerifiedAt: user.emailVerifiedAt,
     },
   };
 };
@@ -393,6 +398,14 @@ const updatePassword = async (
     );
   }
 
+  // if (!user.password) {
+  //   throw new AppError(
+  //     400,
+  //     "PASSWORD_AUTH_NOT_AVAILABLE",
+  //     "Password authentication is not available for this account."
+  //   );
+  // }
+
   // Password already exists → current password required
   if (user.passwordHash) {
     if (!currentPassword) {
@@ -416,6 +429,13 @@ const updatePassword = async (
       );
     }
     
+    if (currentPassword === newPassword) {
+      throw new AppError(
+        400,
+        "PASSWORD_UNCHANGED",
+        "New password must be different from current password."
+      );
+    }
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
@@ -451,7 +471,9 @@ const refreshUserSession = async (
     );
   }
 
-  const user = await User.findById(session.user);
+  const user = await User.findById(session.user)
+  .select("_id status email username displayName profileImage emailVerifiedAt")
+  .lean();
 
   if (!user || user.status !== "active") {
     throw new AppError(
@@ -494,6 +516,7 @@ const refreshUserSession = async (
       username: user.username,
       displayName: user.displayName,
       profileImage: user.profileImage,
+      emailVerifiedAt: user.emailVerifiedAt,
     },
   };
 };
@@ -641,6 +664,7 @@ const googleLoginUser = async (
       username: user.username,
       displayName: user.displayName,
       profileImage: user.profileImage,
+      emailVerifiedAt: user.emailVerifiedAt,
     },
   };
 };
