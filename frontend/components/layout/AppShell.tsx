@@ -6,6 +6,7 @@ import {
   Bell,
   Bookmark,
   Home,
+  Loader2,
   LogOut,
   Search,
   User,
@@ -16,6 +17,7 @@ import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/AuthProvider";
 import api from "@/lib/axios";
+import { useEffect } from "react";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -25,10 +27,32 @@ export default function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { user, clearAuth } = useAuth();
+  const { user, loading, clearAuth } = useAuth();
 
-  const unreadNotificationsQuery = useUnreadNotificationsCount();
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/auth/login");
+    }
+  }, [loading, user, router]);
+
+  const unreadNotificationsQuery = useUnreadNotificationsCount(Boolean(user));
   const unreadCount = unreadNotificationsQuery.data ?? 0;
+
+   if (loading) {
+     return (
+       <div className="flex min-h-screen items-center justify-center">
+         <Loader2 className="h-6 w-6 animate-spin" />
+       </div>
+     );
+   }
+
+   if (!user) {
+     return (
+       <div className="flex min-h-screen items-center justify-center">
+         Redirecting...
+       </div>
+     );
+   }
 
   const showBackButton = pathname !== "/home";
 
