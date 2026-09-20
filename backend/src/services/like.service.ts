@@ -7,6 +7,7 @@ import User from "../models/user.model";
 import AppError from "../utils/appError";
 
 import { createNotification } from "./notification.service";
+import Notification from "../models/notification.model";
 
 const likePost = async (
   userId: string,
@@ -67,12 +68,14 @@ const likePost = async (
       post: postId,
     });
 
+   if (post.author.toString() !== userId) {
     await createNotification({
       recipient: post.author.toString(),
       actor: userId,
       type: "like",
       post: postId,
     });
+   }
 
     await Post.updateOne(
       { _id: postId },
@@ -113,7 +116,7 @@ const unlikePost = async (
   }
 
   const post = await Post.findById(postId)
-    .select("_id")
+    .select("_id author")
     .lean();
 
   if (!post) {
@@ -129,17 +132,22 @@ const unlikePost = async (
     post: postId,
   });
 
+    if (!deletedLike) {
+      throw new AppError(404, "NOT_LIKED", "You have not liked this post");
+    }
+
   await Post.updateOne(
     { _id: postId },
     { $inc: { likesCount: -1 } }
   );
 
-  if (!deletedLike) {
-    throw new AppError(
-      404,
-      "NOT_LIKED",
-      "You have not liked this post"
-    );
+  if (post.author.toString() !== userId) {
+    await Notification.findOneAndDelete({
+      recipient: post.author.toString(),
+      actor: userId,
+      type: "like",
+      post: postId,
+    });
   }
 
   return {
