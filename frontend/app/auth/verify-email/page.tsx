@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, CircleAlert, Loader2, Mail } from "lucide-react";
 
@@ -10,10 +10,13 @@ import api from "@/lib/axios";
 
 import { resendVerification } from "@/features/auth/api";
 import { toast } from "sonner";
+import { useAuth } from "@/features/auth/AuthProvider";
 
 function VerifyEmail() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const verificationStartedRef = useRef<string | null>(null);
 
   const email = searchParams.get("email");
   const token = searchParams.get("token");
@@ -27,12 +30,26 @@ function VerifyEmail() {
   const [resendMessage, setResendMessage] = useState("");
   const [resendError, setResendError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
+  useEffect(() => {      
+     if (loading) return;
+
+     if(user?.emailVerifiedAt){
+       router.replace("/home");
+       return;
+     }
+
     if (!token) {
       setStatus("waiting");
       return;
     }
+
+    if (verificationStartedRef.current === token) {
+      return;
+    }
+
+    verificationStartedRef.current = token;
 
     const verifyEmail = async () => {
       try {
@@ -42,6 +59,7 @@ function VerifyEmail() {
 
         setStatus("success");
         toast.success("Email verified successfully.");
+
         setMessage(
           response.data?.data?.message ||
             "Your email has been verified successfully."
@@ -68,7 +86,7 @@ function VerifyEmail() {
     };
 
     verifyEmail();
-  }, [token]);
+  }, [token, user?.emailVerifiedAt, loading, router]);
 
   useEffect(() => {
     if (cooldown <= 0) return;

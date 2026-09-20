@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import LoginForm from "./LoginForm";
+import GuestGuard from "@/components/auth/GuestGuard";
 
 export default function LoginPage() {
   return (
+    <GuestGuard>
     <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
@@ -33,5 +35,6 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+    </GuestGuard>
   );
 }

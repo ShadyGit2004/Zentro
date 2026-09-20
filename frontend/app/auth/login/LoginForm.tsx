@@ -97,7 +97,7 @@ export default function LoginForm() {
             <Label htmlFor="password">Password</Label>
 
             <Link
-              href="/forgot-password"
+              href="/auth/forgot-password"
               className="text-xs font-medium text-muted-foreground hover:text-foreground"
             >
               Forgot password?
