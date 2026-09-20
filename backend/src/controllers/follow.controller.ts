@@ -89,9 +89,13 @@ const followers = async (
   next: NextFunction
 ) => {
   try {
+    
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
     const { userId } = req.params;
 
-    if (typeof userId !== "string") {
+    if (typeof userId !== "string" || typeof req.user?.userId !== "string") {
       throw new AppError(
         400,
         "INVALID_USER_ID",
@@ -119,6 +123,7 @@ const followers = async (
 
     const result = await getFollowers(
       userId,
+      req.user.userId,
       limit,
       cursor
     );
@@ -139,9 +144,12 @@ const following = async (
   next: NextFunction
 ) => {
   try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
     const { userId } = req.params;
 
-    if (typeof userId !== "string") {
+    if (typeof userId !== "string" || typeof req.user?.userId !== "string") {
       throw new AppError(
         400,
         "INVALID_USER_ID",
@@ -168,7 +176,8 @@ const following = async (
         : undefined;
 
     const result = await getFollowing(
-      userId,
+      userId,      
+      req.user.userId,
       limit,
       cursor
     );

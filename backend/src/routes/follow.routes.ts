@@ -27,11 +27,17 @@ router.route("/follow")
 
 router.get(
   "/followers",
+  authMiddleware,
+  requireActiveUser,
+  requireVerifiedEmail,
   followers
 );
 
 router.get(
   "/following",
+  authMiddleware,
+  requireActiveUser,
+  requireVerifiedEmail,
   following
 );
 

@@ -116,15 +116,16 @@ const unfollowUser = async (
 
 const getFollowers = async (
   userId: string,
+  currentUserId: string,
   limit: number,
   cursor?: string
 ) => {
   if (!mongoose.isValidObjectId(userId)) {
-    throw new AppError(
-      400,
-      "INVALID_USER_ID",
-      "Invalid user ID"
-    );
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
+  }
+
+  if (!mongoose.isValidObjectId(currentUserId)) {
+    throw new AppError(400, "INVALID_USER_ID", "Invalid current user ID");
   }
 
   const user = await User.findOne({
@@ -135,43 +136,116 @@ const getFollowers = async (
     .lean();
 
   if (!user) {
-    throw new AppError(
-      404,
-      "USER_NOT_FOUND",
-      "User not found"
-    );
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
   }
 
   if (cursor && !mongoose.isValidObjectId(cursor)) {
-    throw new AppError(
-      400,
-      "INVALID_CURSOR",
-      "Invalid cursor"
-    );
+    throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
   }
 
-  const query: {
-    following: string;
-    _id?: { $lt: mongoose.Types.ObjectId };
-  } = {
-    following: userId,
+  const match: Record<string, unknown> = {
+    following: new mongoose.Types.ObjectId(userId),
   };
 
   if (cursor) {
-    query._id = {
+    match._id = {
       $lt: new mongoose.Types.ObjectId(cursor),
     };
   }
 
-  const follows = await Follow.find(query)
-    .sort({ _id: -1 })
-    .limit(limit + 1)
-    .populate({
-      path: "follower",
-      select: "_id username displayName bio profileImage",
-      match: { status: "active" },
-    })
-    .lean();
+  const follows = await Follow.aggregate([
+    {
+      $match: match,
+    },
+
+    {
+      $sort: {
+        _id: -1,
+      },
+    },
+
+    {
+      $limit: limit + 1,
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        let: { followerId: "$follower" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$followerId"],
+              },
+              status: "active",
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              username: 1,
+              displayName: 1,
+              bio: 1,
+              profileImage: 1,
+            },
+          },
+        ],
+        as: "follower",
+      },
+    },
+
+    {
+      $unwind: "$follower",
+    },
+
+    {
+      $lookup: {
+        from: "follows",
+        let: {
+          targetUserId: "$follower._id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  {
+                    $eq: [
+                      "$follower",
+                      new mongoose.Types.ObjectId(currentUserId),
+                    ],
+                  },
+                  {
+                    $eq: ["$following", "$$targetUserId"],
+                  },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "currentUserFollow",
+      },
+    },
+
+    {
+      $addFields: {
+        "follower.isFollowing": {
+          $gt: [{ $size: "$currentUserFollow" }, 0],
+        },
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        follower: 1,
+      },
+    },
+  ]);
 
   const hasNextPage = follows.length > limit;
 
@@ -179,9 +253,7 @@ const getFollowers = async (
     follows.pop();
   }
 
-  const data = follows
-    .filter((follow) => follow.follower)
-    .map((follow) => follow.follower);
+  const data = follows.map((follow) => follow.follower);
 
   const nextCursor =
     hasNextPage && follows.length > 0
@@ -199,15 +271,16 @@ const getFollowers = async (
 
 const getFollowing = async (
   userId: string,
+  currentUserId: string,
   limit: number,
   cursor?: string
 ) => {
   if (!mongoose.isValidObjectId(userId)) {
-    throw new AppError(
-      400,
-      "INVALID_USER_ID",
-      "Invalid user ID"
-    );
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
+  }
+
+  if (!mongoose.isValidObjectId(currentUserId)) {
+    throw new AppError(400, "INVALID_USER_ID", "Invalid current user ID");
   }
 
   const user = await User.findOne({
@@ -218,43 +291,116 @@ const getFollowing = async (
     .lean();
 
   if (!user) {
-    throw new AppError(
-      404,
-      "USER_NOT_FOUND",
-      "User not found"
-    );
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
   }
 
   if (cursor && !mongoose.isValidObjectId(cursor)) {
-    throw new AppError(
-      400,
-      "INVALID_CURSOR",
-      "Invalid cursor"
-    );
+    throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
   }
 
-  const query: {
-    follower: string;
-    _id?: { $lt: mongoose.Types.ObjectId };
-  } = {
-    follower: userId,
+  const match: Record<string, unknown> = {
+    follower: new mongoose.Types.ObjectId(userId),
   };
 
   if (cursor) {
-    query._id = {
+    match._id = {
       $lt: new mongoose.Types.ObjectId(cursor),
     };
   }
 
-  const follows = await Follow.find(query)
-    .sort({ _id: -1 })
-    .limit(limit + 1)
-    .populate({
-      path: "following",
-      select: "_id username displayName bio profileImage",
-      match: { status: "active" },
-    })
-    .lean();
+  const follows = await Follow.aggregate([
+    {
+      $match: match,
+    },
+
+    {
+      $sort: {
+        _id: -1,
+      },
+    },
+
+    {
+      $limit: limit + 1,
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        let: { followingId: "$following" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$followingId"],
+              },
+              status: "active",
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              username: 1,
+              displayName: 1,
+              bio: 1,
+              profileImage: 1,
+            },
+          },
+        ],
+        as: "following",
+      },
+    },
+
+    {
+      $unwind: "$following",
+    },
+
+    {
+      $lookup: {
+        from: "follows",
+        let: {
+          targetUserId: "$following._id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  {
+                    $eq: [
+                      "$follower",
+                      new mongoose.Types.ObjectId(currentUserId),
+                    ],
+                  },
+                  {
+                    $eq: ["$following", "$$targetUserId"],
+                  },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "currentUserFollow",
+      },
+    },
+
+    {
+      $addFields: {
+        "following.isFollowing": {
+          $gt: [{ $size: "$currentUserFollow" }, 0],
+        },
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        following: 1,
+      },
+    },
+  ]);
 
   const hasNextPage = follows.length > limit;
 
@@ -262,9 +408,7 @@ const getFollowing = async (
     follows.pop();
   }
 
-  const data = follows
-    .filter((follow) => follow.following)
-    .map((follow) => follow.following);
+  const data = follows.map((follow) => follow.following);
 
   const nextCursor =
     hasNextPage && follows.length > 0
