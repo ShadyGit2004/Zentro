@@ -1,3 +1,5 @@
+import { FeedPost } from "../feed/types";
+
 export interface CreatePostPayload {
   content?: string;
   image?: File;
@@ -54,4 +56,15 @@ export interface UpdatePostResponse {
       updatedAt: string;
     };
   };
+}
+
+export interface UserPostsPagination {
+  nextCursor: string | null;
+  hasNextPage: boolean;
+}
+
+export interface UserPostsResponse {
+  success: boolean;
+  data: FeedPost[];
+  pagination: UserPostsPagination;
 }

@@ -8,8 +8,11 @@ import {
   useState,
 } from "react";
 
-import { setAccessToken as setApiAccessToken } from "@/lib/axios";
-import api from "@/lib/axios";
+import {
+  refreshAccessToken,
+  resetRefreshState,
+  setAccessToken as setApiAccessToken,
+} from "@/lib/axios";
 
 interface AuthUser {
   id: string;
@@ -17,6 +20,7 @@ interface AuthUser {
   username: string;
   displayName: string;
   profileImage?: string;
+  emailVerifiedAt: Date | null;
 }
 
 interface AuthContextType {
@@ -26,6 +30,7 @@ interface AuthContextType {
   setAuth: (accessToken: string, user: AuthUser) => void;
   clearAuth: () => void;
   refreshSession: () => Promise<boolean>;
+  updateUser: (updates: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,28 +40,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        ...updates,
+      };
+    });
+  }, []);
+
   const clearAuth = useCallback(() => {
     setUser(null);
     setAccessToken(null);
     setApiAccessToken(null);
   }, []);
 
-  const refreshSession = useCallback(async () => {
-    try { 
-      const response = await api.post("/auth/refresh");
+ const refreshSession = useCallback(async () => {
+   try {
+     const { accessToken, user } = await refreshAccessToken();
 
-      setApiAccessToken(response.data.accessToken);
-      setAccessToken(response.data.accessToken);
-      setUser(response.data.data.user);
+     setApiAccessToken(accessToken);
+     setAccessToken(accessToken);
+     setUser(user);
 
-      return true;
-    } catch {
-      clearAuth();
-      return false;
-    }
-  }, [clearAuth]);
+     return true;
+   } catch {
+     clearAuth();
+     return false;
+   }
+ }, [clearAuth]);
 
   const setAuth = useCallback((token: string, authUser: AuthUser) => {
+    resetRefreshState();
+
     setAccessToken(token);
     setApiAccessToken(token);
     setUser(authUser);
@@ -80,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuth,
         clearAuth,
         refreshSession,
+        updateUser,
       }}
     >
       {children}

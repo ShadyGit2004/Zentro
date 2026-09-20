@@ -31,6 +31,7 @@ export interface LoginResponse {
       username: string;
       displayName: string;
       profileImage?: string;
+      emailVerifiedAt: Date | null;
     };
   };
 }

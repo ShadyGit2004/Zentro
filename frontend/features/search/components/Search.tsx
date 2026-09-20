@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { useSearchPosts, useSearchUsers } from "../hooks";
 import UserSearchResult from "./UserSearchResult";
 import PostSearchResult from "./PostSearchResult";
+import SearchSkeleton from "./SearchSkeleton";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 type SearchTab = "users" | "posts";
 
@@ -51,10 +53,10 @@ export default function Search() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="mb-4 flex items-center gap-3">        
+      <div className="mb-4 flex items-center gap-3">
         <h1 className="text-xl font-semibold">Search</h1>
       </div>
-      
+
       {/* Search input */}
       <div className="relative">
         <SearchIcon
@@ -114,16 +116,12 @@ export default function Search() {
         )}
 
         {/* Loading */}
-        {query.length >= 2 && isSearching && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Searching...
-          </p>
-        )}
+        {query.length >= 2 && isSearching && <SearchSkeleton />}
 
         {/* Error */}
         {query.length >= 2 && !isSearching && isError && (
           <p className="py-8 text-center text-sm text-destructive">
-            Something went wrong while searching.
+            {getApiErrorMessage(activeQuery.error, "Something went wrong while searching.")}            
           </p>
         )}
 

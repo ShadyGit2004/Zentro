@@ -4,6 +4,7 @@ import type {
   CreatePostResponse,
   UpdatePostPayload,
   UpdatePostResponse,
+  UserPostsResponse,
 } from "./types";
 
 export const createPost = async (
@@ -65,5 +66,20 @@ export const likePost = async (postId: string) => {
 
 export const unlikePost = async (postId: string) => {
   const response = await api.delete(`/posts/${postId}/like`);
+  return response.data;
+};
+
+export const getUserPosts = async (
+  userId: string,
+  limit = 20,
+  cursor?: string
+): Promise<UserPostsResponse> => {
+  const response = await api.get<UserPostsResponse>(`/posts/user/${userId}`, {
+    params: {
+      limit,
+      ...(cursor ? { cursor } : {}),
+    },
+  });
+
   return response.data;
 };

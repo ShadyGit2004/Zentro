@@ -1,15 +1,18 @@
 "use client";
 
 import NotificationItem from "./NotificationItem";
+import NotificationsSkeleton from "./NotificationsSkeleton";
 import {
   useMarkAllNotificationsAsRead,
   useMarkNotificationAsRead,
   useNotifications,
 } from "../hooks";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function Notifications() {
-
-  const notificationsQuery = useNotifications();
+const { user } = useAuth();
+  const notificationsQuery = useNotifications(Boolean(user));
   const markAsReadMutation = useMarkNotificationAsRead();
   const markAllMutation = useMarkAllNotificationsAsRead();
 
@@ -33,21 +36,27 @@ export default function Notifications() {
     markAllMutation.mutate();
   };
 
-  if (notificationsQuery.isLoading) {
-    return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-6">
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          Loading notifications...
-        </div>
-      </div>
-    );
-  }
+ if (notificationsQuery.isLoading) {
+   return (
+     <div className="mx-auto w-full max-w-2xl px-4 py-6">
+       <div className="mb-6">
+         <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+         <div className="mt-2 h-4 w-20 animate-pulse rounded bg-muted" />
+       </div>
+
+       <NotificationsSkeleton />
+     </div>
+   );
+ }
 
   if (notificationsQuery.isError) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-6">
         <div className="py-12 text-center text-sm text-destructive">
-          Something went wrong while loading notifications.
+          {getApiErrorMessage(
+            notificationsQuery.error,
+            "Something went wrong while loading notifications."
+          )}
         </div>
       </div>
     );

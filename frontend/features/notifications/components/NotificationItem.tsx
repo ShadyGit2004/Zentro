@@ -61,7 +61,9 @@ export default function NotificationItem({
         </p>
       </div>
 
-      {!isRead && (
+      <span>{icon}</span>
+
+      {!isRead && (        
         <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" />
       )}
     </div>
@@ -77,9 +79,7 @@ export default function NotificationItem({
 
   if (notification.post) {
     return (
-      <div onClick={() => onRead(notification)}>
-        {content}
-      </div>
+      <div onClick={() => onRead(notification)}>{content}</div>
     );
   }
 

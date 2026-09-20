@@ -41,6 +41,7 @@ export default function Comments({ postId }: CommentsProps) {
     data,
     isLoading,
     isError,
+    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -109,7 +110,10 @@ export default function Comments({ postId }: CommentsProps) {
 
         {isError && (
           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-            Unable to load comments. Please try again.
+            {getApiErrorMessage(
+              error,
+              "Unable to load comments. Please try again."
+            )}
           </div>
         )}
 

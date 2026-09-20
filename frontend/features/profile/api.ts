@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import type { GetUserProfileResponse, UpdateProfileImageResponse, UpdateProfilePayload, UpdateProfileResponse } from "./types";
+import type { DeleteAccountResponse, GetUserProfileResponse, UpdatePasswordPayload, UpdatePasswordResponse, UpdateProfileImageResponse, UpdateProfilePayload, UpdateProfileResponse } from "./types";
 
 export const getUserProfile = async (
   userId: string
@@ -33,6 +33,23 @@ export const updateProfileImage = async (
     "/users/me/profile-image",
     formData
   );
+
+  return response.data;
+};
+
+export const updatePassword = async (
+  payload: UpdatePasswordPayload
+): Promise<UpdatePasswordResponse> => {
+  const response = await api.patch<UpdatePasswordResponse>(
+    "/auth/password",
+    payload
+  );
+
+  return response.data;
+};
+
+export const deleteAccount = async (): Promise<DeleteAccountResponse> => {
+  const response = await api.delete<DeleteAccountResponse>("/users/me");
 
   return response.data;
 };

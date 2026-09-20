@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { memo,  useState } from "react";
 import { Pencil, Heart, MessageCircle, Trash2, ImagePlus, X, Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,6 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
 import type { FeedPost } from "@/features/feed/types";
 import Comments from "@/features/comments/components/Comments";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,7 +35,7 @@ interface PostCardProps {
   post: FeedPost;
 }
 
-export default function PostCard({ post }: PostCardProps) {
+function PostCard({ post }: PostCardProps) {
   const formattedDate = new Date(post.createdAt).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -50,7 +49,6 @@ export default function PostCard({ post }: PostCardProps) {
     },
   });
 
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const isOwner = user?.id === post.author._id;
 
@@ -96,28 +94,6 @@ export default function PostCard({ post }: PostCardProps) {
     const mutation = post.isLiked ? unlikeMutation : likeMutation;
 
     mutation.mutate(post._id, {
-      onSuccess: () => {
-        queryClient.setQueryData(["feed"], (oldData: any) => {
-          if (!oldData) return oldData;
-
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page: any) => ({
-              ...page,
-              data: page.data.map((item: FeedPost) =>
-                item._id === post._id
-                  ? {
-                      ...item,
-                      isLiked: !item.isLiked,
-                      likesCount: item.likesCount + (item.isLiked ? -1 : 1),
-                    }
-                  : item
-              ),
-            })),
-          };
-        });
-      },
-
       onError: (error) => {
         toast.error(
           getApiErrorMessage(
@@ -327,7 +303,7 @@ export default function PostCard({ post }: PostCardProps) {
               disabled={
                 bookmarkMutation.isPending || unbookmarkMutation.isPending
               }
-              className={`flex items-center gap-2 text-sm transition-colors ${
+              className={`ml-auto flex items-center gap-2 text-sm transition-colors ${
                 post.isBookmarked
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -473,3 +449,5 @@ export default function PostCard({ post }: PostCardProps) {
     </article>
   );
 }
+
+export default memo(PostCard);

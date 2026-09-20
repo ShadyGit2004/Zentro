@@ -55,10 +55,11 @@ export interface ProfileListUser {
   username: string;
   displayName: string;
   bio: string;
-  profileImage: {
+  profileImage?: {
     url: string;
     publicId: string;
   } | null;
+  isFollowing: boolean;
 }
 
 export interface ProfileListPagination {
@@ -70,4 +71,23 @@ export interface ProfileListResponse {
   success: boolean;
   data: ProfileListUser[];
   pagination: ProfileListPagination;
+}
+
+export interface UpdatePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UpdatePasswordResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
+
+export interface DeleteAccountResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
 }
