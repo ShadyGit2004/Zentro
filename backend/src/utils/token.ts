@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config/auth";
+import { ACCESS_TOKEN_EXPIRES_IN, JWT_SECRET } from "../config/auth";
 
 interface AccessTokenPayload {
   userId: string;
@@ -9,7 +9,7 @@ interface AccessTokenPayload {
 // Access & Refresh token
 const generateAccessToken = (userId: string): string => {
   return jwt.sign({ userId }, JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
   });
 };
 

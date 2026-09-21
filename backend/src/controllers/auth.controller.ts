@@ -13,12 +13,14 @@ import {
 } from "../services/auth.service";
 
 import AppError from "../utils/appError";
+import { REFRESH_TOKEN_EXPIRES_IN_DAYS } from "../config/auth";
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "none" as const,
-  maxAge: 30 * 24 * 60 * 60 * 1000,
+  partitioned: true,
+  maxAge: REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
 };
 
 const register = async (
@@ -107,8 +109,7 @@ const refresh = async (
   next: NextFunction
 ) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
-    console.log("REFRESH COOKIE:", req.cookies?.refreshToken);
+    const refreshToken = req.cookies.refreshToken;    
 
     if (!refreshToken) {
       throw new AppError(401,"REFRESH_TOKEN_MISSING", "Refresh token is required");
