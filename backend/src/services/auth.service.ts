@@ -564,9 +564,33 @@ const googleLoginUser = async (
     );
   }
 
-  let user = await User.findOne({
-    $or: [{ firebaseUid }, { email }],
-  });
+  // Find both identities separately.
+  // This avoids the ambiguity of using $or + findOne().
+  const userByFirebaseUid = await User.findOne({ firebaseUid });
+  const userByEmail = await User.findOne({ email });
+
+  let user;
+
+  // Same Google UID and email point to different accounts.
+  // Never merge or overwrite either account automatically.
+  if (
+    userByFirebaseUid &&
+    userByEmail &&
+    userByFirebaseUid._id.toString() !== userByEmail._id.toString()
+  ) {
+    throw new AppError(
+      409,
+      "GOOGLE_ACCOUNT_CONFLICT",
+      "This Google account is already linked to another account"
+    );
+  }
+
+  // Prefer Firebase UID as the canonical Google identity.
+  if (userByFirebaseUid) {
+    user = userByFirebaseUid;
+  } else if (userByEmail) {
+    user = userByEmail;
+  }
 
   // Existing account
   if (user) {
@@ -578,12 +602,12 @@ const googleLoginUser = async (
       );
     }
 
-    // Existing password account → link Google
+    // Existing password/email account → link Google.
     if (!user.firebaseUid) {
       user.firebaseUid = firebaseUid;
     }
 
-    // Different Google account already linked
+    // Safety check.
     if (user.firebaseUid !== firebaseUid) {
       throw new AppError(
         409,
@@ -596,7 +620,7 @@ const googleLoginUser = async (
       user.authProviders.push("google");
     }
 
-    // Google has already verified the email
+    // Google has already verified the email.
     if (!user.emailVerifiedAt) {
       user.emailVerifiedAt = new Date();
     }
@@ -605,11 +629,11 @@ const googleLoginUser = async (
   }
 
   /*
-     * New Google account.
-     *
-     * Firebase doesn't give us a guaranteed unique username
-     * suitable for Zentro, so generate one.
-  */
+   * New Google account.
+   *
+   * Firebase doesn't give us a guaranteed unique username
+   * suitable for Zentro, so generate one.
+   */
   if (!user) {
     const baseUsername =
       decodedToken.name
@@ -636,7 +660,7 @@ const googleLoginUser = async (
     });
   }
 
-  // Issue Zentro's own tokens
+  // Issue Zentro's own tokens.
   const accessToken = generateAccessToken(user._id.toString());
 
   const refreshToken = generateRefreshToken();
