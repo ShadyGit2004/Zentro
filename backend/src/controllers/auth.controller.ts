@@ -108,6 +108,7 @@ const refresh = async (
 ) => {
   try {
     const refreshToken = req.cookies.refreshToken;
+    console.log("REFRESH COOKIE:", req.cookies?.refreshToken);
 
     if (!refreshToken) {
       throw new AppError(401,"REFRESH_TOKEN_MISSING", "Refresh token is required");
