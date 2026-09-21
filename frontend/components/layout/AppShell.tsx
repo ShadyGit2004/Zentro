@@ -15,6 +15,14 @@ import {
 import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 import { useAuth } from "@/features/auth/AuthProvider";
 import api from "@/lib/axios";
 import { useEffect } from "react";
@@ -38,21 +46,21 @@ export default function AppShell({ children }: AppShellProps) {
   const unreadNotificationsQuery = useUnreadNotificationsCount(Boolean(user));
   const unreadCount = unreadNotificationsQuery.data ?? 0;
 
-   if (loading) {
-     return (
-       <div className="flex min-h-screen items-center justify-center">
-         <Loader2 className="h-6 w-6 animate-spin" />
-       </div>
-     );
-   }
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
-   if (!user) {
-     return (
-       <div className="flex min-h-screen items-center justify-center">
-         Redirecting...
-       </div>
-     );
-   }
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Redirecting...
+      </div>
+    );
+  }
 
   const showBackButton = pathname !== "/home";
 
@@ -185,14 +193,38 @@ export default function AppShell({ children }: AppShellProps) {
                 </div>
               )}
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push(`/profile/${user?.id}`)}
-              >
-                <User className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
-              </Button>
+              {/* Profile menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Open profile menu"
+                  >
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">Profile menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/profile/${user.id}`)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive focus:text-destructive data-[highlighted]:text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4 stroke-destructive" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
