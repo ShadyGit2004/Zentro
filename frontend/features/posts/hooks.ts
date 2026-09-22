@@ -404,7 +404,7 @@ const updatePostRepostState = (
         return {
           ...post,
           isReposted,
-          repostsCount: Math.max(0, post.repostsCount + (isReposted ? 1 : -1)),
+          repostsCount: Math.max(0, (post.repostsCount ?? 0) + (isReposted ? 1 : -1)),
         };
       }),
     })),
@@ -425,7 +425,7 @@ const updateRepostInAllPostCaches = (
   updatePostInInfiniteQueries(queryClient, postId, (post) => ({
     ...post,
     isReposted,
-    repostsCount: Math.max(0, post.repostsCount + (isReposted ? 1 : -1)),
+    repostsCount: Math.max(0, (post.repostsCount ?? 0) + (isReposted ? 1 : -1))
   }));
 
   // Bookmarks

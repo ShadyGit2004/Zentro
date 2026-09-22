@@ -215,15 +215,56 @@ const bookmarks = await Bookmark.aggregate([
     },
   },
 
-  // 10. Temporary lookup remove
+  // 10. reposts count
   {
-    $project: {
-      userLike: 0,
-      user: 0,
+    $lookup: {
+      from: "reposts",
+      let: {
+        postId: "$post._id",
+      },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: ["$post", "$$postId"],
+            },
+          },
+        },
+        {
+          $count: "count",
+        },
+      ],
+      as: "reposts",
     },
   },
 
-  // 11. Final response shape
+  // 11. isReposted
+  {
+    $lookup: {
+      from: "reposts",
+      let: {
+        postId: "$post._id",
+      },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$post", "$$postId"] },
+                { $eq: ["$user", currentUserId] },
+              ],
+            },
+          },
+        },
+        {
+          $limit: 1,
+        },
+      ],
+      as: "userRepost",
+    },
+  },
+
+  // 12. Final response shape
   {
     $project: {
       _id: "$post._id",
@@ -235,9 +276,17 @@ const bookmarks = await Bookmark.aggregate([
       likesCount: "$post.likesCount",
       commentsCount: "$post.commentsCount",
 
+      repostsCount: {
+        $ifNull: [{ $arrayElemAt: ["$reposts.count", 0] }, 0],
+      },
+
       isLiked: "$post.isLiked",
       isBookmarked: "$post.isBookmarked",
-      
+
+      isReposted: {
+        $gt: [{ $size: { $ifNull: ["$userRepost", []] } }, 0],
+      },
+
       createdAt: "$post.createdAt",
       updatedAt: "$post.updatedAt",
 

@@ -279,6 +279,53 @@ const getUserPosts = async (
     },
 
     {
+      $lookup: {
+        from: "reposts",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$post", "$$postId"],
+              },
+            },
+          },
+          {
+            $count: "count",
+          },
+        ],
+        as: "reposts",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "reposts",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$post", "$$postId"] },
+                  { $eq: ["$user", loggedInUserId] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "userRepost",
+      },
+    },
+
+    {
       $project: {
         _id: 1,
         content: 1,
@@ -299,6 +346,14 @@ const getUserPosts = async (
 
         commentsCount: {
           $ifNull: [{ $arrayElemAt: ["$comments.count", 0] }, 0],
+        },
+
+        repostsCount: {
+          $ifNull: [{ $arrayElemAt: ["$reposts.count", 0] }, 0],
+        },
+
+        isReposted: {
+          $gt: [{ $size: "$userRepost" }, 0],
         },
 
         isLiked: {

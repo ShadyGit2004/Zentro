@@ -66,6 +66,7 @@ export default function Profile({ userId }: ProfileProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [imgErr, setImgErr] = useState<string>("");
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
@@ -147,6 +148,7 @@ export default function Profile({ userId }: ProfileProps) {
       bio: profile.bio ?? "",
     });
 
+    setImgErr("");
     setSelectedImage(null);
     setImagePreview(null);
     setIsEditOpen(true);
@@ -160,12 +162,14 @@ export default function Profile({ userId }: ProfileProps) {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
+      setImgErr("Only JPG, JPEG, PNG or WebP images are allowed.");
       toast.error("Only JPG, JPEG, PNG or WebP images are allowed.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
+      setImgErr("Profile image must be less than 5MB.");
       toast.error("Profile image must be less than 5MB.");
       event.target.value = "";
       return;
@@ -179,6 +183,7 @@ export default function Profile({ userId }: ProfileProps) {
 
     setSelectedImage(file);
     setImagePreview(previewUrl);
+    setImgErr("");
   };
 
   const handleProfileUpdate = async (values: UpdateProfileFormData) => {
@@ -402,9 +407,6 @@ export default function Profile({ userId }: ProfileProps) {
           <p className="mt-1 text-sm text-muted-foreground">
             {getApiErrorMessage(error, "We couldn't load this profile.")}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            We couldn't load this profile.
-          </p>
         </div>
       </div>
     );
@@ -604,7 +606,9 @@ export default function Profile({ userId }: ProfileProps) {
       {activeTab === "followers" && (
         <section className="mt-4">
           {isFollowersError && (
-            <p>{getApiErrorMessage(followersError, "Unable to load followers.")}</p>
+            <p>
+              {getApiErrorMessage(followersError, "Unable to load followers.")}
+            </p>
           )}
           {followersLoading ? (
             <ProfileListSkeleton />
@@ -647,7 +651,12 @@ export default function Profile({ userId }: ProfileProps) {
       {activeTab === "following" && (
         <section className="mt-4">
           {isFollowingError && (
-            <p>{getApiErrorMessage(followingError, "Unable to load following users.")}</p>
+            <p>
+              {getApiErrorMessage(
+                followingError,
+                "Unable to load following users."
+              )}
+            </p>
           )}
           {followingLoading ? (
             <ProfileListSkeleton />
@@ -697,78 +706,98 @@ export default function Profile({ userId }: ProfileProps) {
           if (!open) {
             setSelectedImage(null);
             setImagePreview(null);
+            setImgErr("");
           }
 
           setIsEditOpen(open);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-lg">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
 
           <form
             onSubmit={handleSubmit(handleProfileUpdate)}
-            className="space-y-4"
+            className="flex min-h-0 flex-1 flex-col"
           >
-            <div>
-              <label className="text-sm font-medium">Username</label>
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1 scrollbar-none">
+              <div className="space-y-5">
+                {/* Username */}
+                <div>
+                  <label className="text-sm font-medium">Username</label>
 
-              <Input {...register("username")} className="mt-1" />
+                  <Input {...register("username")} className="mt-1.5" />
 
-              {errors.username && (
-                <p className="mt-1 text-xs text-destructive">
-                  {errors.username.message}
-                </p>
-              )}
-            </div>
+                  {errors.username && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {errors.username.message}
+                    </p>
+                  )}
+                </div>
 
-            <div>
-              <label className="text-sm font-medium">Display name</label>
+                {/* Display name */}
+                <div>
+                  <label className="text-sm font-medium">Display name</label>
 
-              <Input {...register("displayName")} className="mt-1" />
+                  <Input {...register("displayName")} className="mt-1.5" />
 
-              {errors.displayName && (
-                <p className="mt-1 text-xs text-destructive">
-                  {errors.displayName.message}
-                </p>
-              )}
-            </div>
+                  {errors.displayName && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {errors.displayName.message}
+                    </p>
+                  )}
+                </div>
 
-            <div>
-              <label className="text-sm font-medium">Bio</label>
+                {/* Bio */}
+                <div>
+                  <label className="text-sm font-medium">Bio</label>
 
-              <Textarea {...register("bio")} className="mt-1" rows={4} />
+                  <Textarea {...register("bio")} className="mt-1.5" rows={4} />
 
-              {errors.bio && (
-                <p className="mt-1 text-xs text-destructive">
-                  {errors.bio.message}
-                </p>
-              )}
-            </div>
+                  {errors.bio && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {errors.bio.message}
+                    </p>
+                  )}
+                </div>
 
-            {currentImage && (
-              <div className="relative overflow-hidden rounded-xl border">
-                <img
-                  src={currentImage}
-                  alt="Profile preview"
-                  className="max-h-64 w-full object-cover"
-                />
+                {/* Current image */}
+                {currentImage && (
+                  <div>
+                    <label className="text-sm font-medium">Profile image</label>
+
+                    <div className="relative mt-1.5 overflow-hidden rounded-xl border">
+                      <img
+                        src={currentImage}
+                        alt="Profile preview"
+                        className="max-h-48 w-full object-cover sm:max-h-64"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Change image */}
+                <div>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                    <Camera className="h-4 w-4" />
+                    Change profile image
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+
+                  {imgErr && (
+                    <p className="mt-1.5 text-sm text-destructive">{imgErr}</p>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
 
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <Camera className="h-4 w-4" />
-              Change profile image
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={handleImageChange}
-              />
-            </label>
-
-            <DialogFooter>
+            <DialogFooter className="mt-4 shrink-0 border-t pt-4">
               <Button
                 type="button"
                 variant="outline"
