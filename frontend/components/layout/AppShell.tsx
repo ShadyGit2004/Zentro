@@ -211,7 +211,7 @@ export default function AppShell({ children }: AppShellProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="rounded-full mt-2"
                     aria-label="Open profile menu"
                   >
                     <Avatar className="h-9 w-9">
