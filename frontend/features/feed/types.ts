@@ -17,8 +17,10 @@ export interface FeedPost {
     publicId: string;
   };
   author: FeedUser;
+  repostsCount: number;
   likesCount: number;
   commentsCount: number;
+  isReposted: boolean;
   isLiked: boolean;
   isBookmarked: boolean;
   createdAt: string;

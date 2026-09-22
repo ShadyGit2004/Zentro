@@ -15,6 +15,8 @@ import {
   likePost,
   unlikePost,
   updatePost,
+  repostPost,
+  unrepostPost,
 } from "./api";
 
 import type { UpdatePostPayload } from "./types";
@@ -376,5 +378,83 @@ export const useUserPosts = (userId: string, enabled = true) => {
         : undefined,
 
     enabled: Boolean(userId) && enabled,
+  });
+};
+
+/* ----------------------------------------
+   USER REPOSTS
+----------------------------------------- */
+
+const updatePostRepostState = (
+  oldData: InfiniteData<any> | undefined,
+  postId: string,
+  isReposted: boolean
+) => {
+  if (!oldData) return oldData;
+
+  return {
+    ...oldData,
+    pages: oldData.pages.map((page) => ({
+      ...page,
+      data: page.data.map((post: any) => {
+        if (post._id !== postId) {
+          return post;
+        }
+
+        return {
+          ...post,
+          isReposted,
+          repostsCount: Math.max(0, post.repostsCount + (isReposted ? 1 : -1)),
+        };
+      }),
+    })),
+  };
+};
+
+const updateRepostInAllPostCaches = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  postId: string,
+  isReposted: boolean
+) => {
+  // Feed
+  queryClient.setQueryData<InfiniteData<FeedResponse>>(["feed"], (oldData) =>
+    updatePostRepostState(oldData, postId, isReposted)
+  );
+
+  // Profile / User Posts
+  updatePostInInfiniteQueries(queryClient, postId, (post) => ({
+    ...post,
+    isReposted,
+    repostsCount: Math.max(0, post.repostsCount + (isReposted ? 1 : -1)),
+  }));
+
+  // Bookmarks
+  queryClient.setQueryData<InfiniteData<BookmarkedPostsResponse>>(
+    ["bookmarks"],
+    (oldData) => updatePostRepostState(oldData, postId, isReposted)
+  );
+};
+
+export const useRepostPost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: repostPost,
+
+    onSuccess: (_, postId) => {
+      updateRepostInAllPostCaches(queryClient, postId, true);
+    },
+  });
+};
+
+export const useUnrepostPost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: unrepostPost,
+
+    onSuccess: (_, postId) => {
+      updateRepostInAllPostCaches(queryClient, postId, false);
+    },
   });
 };

@@ -1,3 +1,5 @@
+import { FeedPost } from "../feed/types";
+
 export interface BookmarkResponse {
   success: boolean;
   data: {
@@ -14,32 +16,6 @@ export interface UnbookmarkResponse {
   };
 }
 
-export interface BookmarkedPost {
-  _id: string;
-  content?: string;
-  media?: {
-    url: string;
-    publicId: string;
-  };
-  author: {
-    _id: string;
-    username: string;
-    displayName: string;
-    bio?: string;
-    profileImage?: {
-      url: string;
-      publicId?: string;
-    } | null;
-  };
-  likesCount: number;
-  commentsCount: number;
-  isLiked: boolean;
-  createdAt: string;
-  updatedAt: string;
-  isBookmarked: true;
-};
-
-
 export interface BookmarksPagination {
   nextCursor: string | null;
   hasNextPage: boolean;
@@ -47,7 +23,7 @@ export interface BookmarksPagination {
 
 export interface BookmarkedPostsResponse {
   success: boolean;
-  data: BookmarkedPost[];
+  data: FeedPost[];
   pagination: BookmarksPagination;
 }
 

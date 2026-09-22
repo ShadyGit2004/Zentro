@@ -24,6 +24,7 @@ export interface CreatePostResponse {
           publicId?: string;
         } | null;
       };
+      repostsCount: number;
       likesCount: number;
       commentsCount: number;
       createdAt: string;
@@ -56,6 +57,7 @@ export interface UpdatePostResponse {
           publicId?: string;
         } | null;
       };
+      repostsCount: number;
       likesCount: number;
       commentsCount: number;
       createdAt: string;

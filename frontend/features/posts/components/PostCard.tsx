@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { memo,  useState } from "react";
-import { Pencil, Heart, MessageCircle, Trash2, ImagePlus, X, Bookmark, BookmarkCheck } from "lucide-react";
+import {
+  Pencil,
+  Heart,
+  MessageCircle,
+  Trash2,
+  ImagePlus,
+  X,
+  Bookmark,
+  BookmarkCheck,
+  Repeat2,
+} from "lucide-react";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +29,8 @@ import {
   useDeletePost,
   useLikePost,
   useUnlikePost,
+  useRepostPost,
+  useUnrepostPost,
 } from "../hooks";
 import { useBookmarkPost, useUnbookmarkPost } from "@/features/bookmarks/hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -64,6 +77,9 @@ function PostCard({ post }: PostCardProps) {
 
   const bookmarkMutation = useBookmarkPost();
   const unbookmarkMutation = useUnbookmarkPost();
+
+  const repostMutation = useRepostPost();
+  const unrepostMutation = useUnrepostPost();
 
   const handleBookmark = () => {
     if (post.isBookmarked) {
@@ -116,6 +132,22 @@ function PostCard({ post }: PostCardProps) {
       onError: (error) => {
         toast.error(
           getApiErrorMessage(error, "Unable to delete post. Please try again.")
+        );
+      },
+    });
+  };
+
+  const handleRepost = () => {
+    const mutation = post.isReposted ? unrepostMutation : repostMutation;
+
+    mutation.mutate(post._id, {
+      onError: (error) => {
+        toast.error(
+          getApiErrorMessage(error,
+            post.isReposted
+              ? "Unable to remove repost. Please try again."
+              : "Unable to repost. Please try again."
+          )
         );
       },
     });
@@ -296,6 +328,20 @@ function PostCard({ post }: PostCardProps) {
               <MessageCircle className="h-4 w-4" />
               <span>{post.commentsCount}</span>
             </button>
+            <button
+              type="button"
+              onClick={handleRepost}
+              disabled={repostMutation.isPending || unrepostMutation.isPending}
+              className={`flex items-center gap-2 text-sm transition-colors ${
+                post.isReposted
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={post.isReposted ? "Remove repost" : "Repost"}
+            >
+              <Repeat2 className="h-4 w-4" />
+              <span>{post.repostsCount}</span>
+            </button>
 
             <button
               type="button"
@@ -316,7 +362,7 @@ function PostCard({ post }: PostCardProps) {
               )}
 
               <span>{post.isBookmarked ? "Saved" : "Save"}</span>
-            </button> 
+            </button>   
           </div>
         </div>
       </div>
