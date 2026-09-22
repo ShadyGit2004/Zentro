@@ -10,6 +10,7 @@ import authRouter from "./routes/auth.routes";
 import userRouter from "./routes/user.routes";
 import followRouter from "./routes/follow.routes";
 import postRouter from "./routes/post.routes";
+import repostRouter from "./routes/repost.routes";
 import likeRouter from "./routes/like.routes";
 import commentRouter from "./routes/comment.routes";
 import feedRouter from "./routes/feed.routes";
@@ -44,6 +45,7 @@ app.use("/api/v1/posts", postRouter);
 app.use("/api/v1/posts/:postId/like", likeRouter);
 app.use("/api/v1/posts/:postId/comments", commentRouter);
 app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/posts/:postId/repost", repostRouter);
 
 // Error Middlewares
 app.use(notFoundMiddleware);

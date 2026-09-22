@@ -6,7 +6,7 @@ import AppError from "../utils/appError";
 type CreateNotificationInput = {
   recipient: string;
   actor: string;
-  type: "like" | "comment" | "follow";
+  type: "like" | "comment" | "follow" | "repost";
   post?: string;
   comment?: string;
 };

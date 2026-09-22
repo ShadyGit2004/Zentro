@@ -216,6 +216,7 @@ const getFeed = async (
         as: "Like",
       },
     },
+
     {
       $lookup: {
         from: "bookmarks",
@@ -240,6 +241,54 @@ const getFeed = async (
         as: "Bookmark",
       },
     },
+
+    {
+      $lookup: {
+        from: "reposts",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$post", "$$postId"],
+              },
+            },
+          },
+          {
+            $count: "count",
+          },
+        ],
+        as: "Reposts",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "reposts",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$post", "$$postId"] },
+                  { $eq: ["$user", currUserId] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: "Repost",
+      },
+    },
+
     {
       $lookup: {
         from: "users",
@@ -269,6 +318,11 @@ const getFeed = async (
         media: 1,
         likesCount: 1,
         commentsCount: 1,
+
+        repostsCount: {
+          $ifNull: [{ $arrayElemAt: ["$Reposts.count", 0] }, 0],
+        },
+        
         createdAt: 1,
         updatedAt: 1,
         score: 1,
@@ -278,6 +332,10 @@ const getFeed = async (
         },
         isBookmarked: {
           $gt: [{ $size: "$Bookmark" }, 0],
+        },
+
+        isReposted: {
+          $gt: [{ $size: "$Repost" }, 0],
         },
 
         author: {
