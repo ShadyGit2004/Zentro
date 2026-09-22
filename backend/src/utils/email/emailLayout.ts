@@ -5,6 +5,7 @@ export const emailLayout = ({
   title: string;
   content: string;
 }) => {
+  const logoUrl = `${process.env.FRONTEND_URL}/favicon.svg`;
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -54,15 +55,43 @@ export const emailLayout = ({
               align="center"
               style="padding: 32px 32px 20px;"
             >
-              <div
-                style="
-                  font-size: 24px;
-                  font-weight: 700;
-                  letter-spacing: -0.5px;
-                "
+              <table
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
               >
-                Zentro
-              </div>
+                <tr>
+
+                  <!-- Logo -->
+                  <td style="padding-right: 10px;">
+                    <img
+                      src="${logoUrl}"
+                      alt="Zentro"
+                      width="32"
+                      height="32"
+                      style="
+                        display: block;
+                        border: 0;
+                      "
+                    />
+                  </td>
+
+                  <!-- Brand Name -->
+                  <td>
+                    <span
+                      style="
+                        font-size: 24px;
+                        font-weight: 700;
+                        letter-spacing: -0.5px;
+                        color: #18181b;
+                      "
+                    >
+                      Zentro
+                    </span>
+                  </td>
+
+                </tr>
+              </table>
             </td>
           </tr>
 
