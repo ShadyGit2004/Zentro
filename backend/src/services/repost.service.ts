@@ -20,7 +20,7 @@ const repostPost = async (userId: string, postId: string) => {
     .select("_id")
     .lean();
 
-  if (!user || user.status !== "active") {
+  if (!user) {
     throw new AppError(401, "UNAUTHORIZED", "Authentication required");
   }
 
