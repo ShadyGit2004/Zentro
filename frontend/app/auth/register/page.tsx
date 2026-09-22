@@ -2,27 +2,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import RegisterForm from "./RegisterForm";
-
-import GuestGuard from "@/components/auth/GuestGuard";
+import AuthLayout from "@/components/auth/AuthLayout";
 export default function RegisterPage() {
   return (
-    <GuestGuard>
-      <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <Link href="/" className="text-2xl font-bold tracking-tight">
-              Zentro
-            </Link>
-
-            <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-              Create your account
-            </h1>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              Join Zentro and start sharing what matters.
-            </p>
-          </div>
-
+    <AuthLayout
+      children={
+        <>
           <div className="rounded-2xl border bg-background p-6 shadow-sm sm:p-8">
             <RegisterForm />
 
@@ -47,8 +32,10 @@ export default function RegisterPage() {
           <p className="mt-6 text-center text-xs text-muted-foreground">
             By creating an account, you agree to use Zentro responsibly.
           </p>
-        </div>
-      </main>
-    </GuestGuard>
+        </>
+      }
+      heroHeading={"Create your account"}
+      heroPara={"Join Zentro and start sharing what matters."}
+    />
   );
 };

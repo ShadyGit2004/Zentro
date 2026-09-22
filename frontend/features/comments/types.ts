@@ -2,7 +2,10 @@ export interface CommentAuthor {
   _id: string;
   username: string;
   displayName: string;
-  profileImage?: string;
+  profileImage?: {
+    url: string;
+    publicId?: string;
+  } | null;
 }
 
 export interface Comment {

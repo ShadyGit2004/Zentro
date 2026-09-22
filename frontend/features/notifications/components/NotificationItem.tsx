@@ -41,12 +41,12 @@ export default function NotificationItem({
 
   const content = (
     <div
-      className={`flex gap-3 rounded-xl p-4 transition ${
+      className={`flex gap-3 rounded-xl p-4 transition relative ${
         isRead ? "bg-background" : "bg-muted/50"
       }`}
     >
       <Avatar className="size-10 shrink-0">
-        <AvatarImage src={actor?.profileImage?.url  ?? undefined} />
+        <AvatarImage src={actor?.profileImage?.url ?? undefined} />
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
 
@@ -61,10 +61,11 @@ export default function NotificationItem({
         </p>
       </div>
 
+      {/* <span className="absolute -top-0.5 -right-1.5">{icon}</span> */}
       <span>{icon}</span>
 
-      {!isRead && (        
-        <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" />
+      {!isRead && (
+        <span className="mt-2 size-2 shrink-0 rounded-full bg-primary absolute -top-1.5 -right-1" />
       )}
     </div>
   );
@@ -77,11 +78,11 @@ export default function NotificationItem({
     );
   }
 
-  if (notification.post) {
-    return (
-      <div onClick={() => onRead(notification)}>{content}</div>
-    );
-  }
+  // if (notification.post) {
+  //   return (
+  //     <div onClick={() => onRead(notification)}>{content}</div>
+  //   );
+  // }
 
   return <div onClick={() => onRead(notification)}>{content}</div>;
 }

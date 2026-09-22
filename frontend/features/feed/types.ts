@@ -5,7 +5,7 @@ export interface FeedUser {
   bio?: string;
   profileImage?: {
     url: string;
-    publicId: string;
+    publicId?: string;
   } | null;
 }
 

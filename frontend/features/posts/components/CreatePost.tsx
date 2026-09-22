@@ -97,13 +97,13 @@ export default function CreatePost() {
  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="border-b p-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="border-b py-4 px-3">
       <Textarea
         {...register("content")}
         placeholder="What’s happening?"
         maxLength={280}
         disabled={createPostMutation.isPending}
-        className="min-h-16 resize-none border-0 px-0 text-base shadow-none focus-visible:ring-0"
+        className="min-h-20 resize-none border-0 px-1 text-base shadow-none focus-visible:ring-0"
       />
 
       {errors.content && (

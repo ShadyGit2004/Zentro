@@ -4,10 +4,10 @@ export interface NotificationActor {
   _id: string;
   username: string;
   displayName: string;
-  profileImage: {
-    url : string | null;
-    publicId : string | null;
-  }
+  profileImage?: {
+    url: string;
+    publicId?: string;
+  } | null;
 }
 
 export interface NotificationPost {

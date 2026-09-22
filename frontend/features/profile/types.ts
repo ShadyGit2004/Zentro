@@ -5,7 +5,7 @@ export interface UserProfile {
   bio: string;
   profileImage: {
     url: string;
-    publicId: string;
+    publicId?: string;
   } | null;
   followersCount: number;
   followingCount: number;
@@ -57,7 +57,7 @@ export interface ProfileListUser {
   bio: string;
   profileImage?: {
     url: string;
-    publicId: string;
+    publicId?: string;
   } | null;
   isFollowing: boolean;
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import ZentroLogo from "@/components/brand/ZentroLogo";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -22,6 +24,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { useAuth } from "@/features/auth/AuthProvider";
 import api from "@/lib/axios";
@@ -129,7 +133,11 @@ export default function AppShell({ children }: AppShellProps) {
       <div className="mx-auto flex min-h-screen max-w-7xl">
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r px-4 py-6 md:flex md:flex-col">
-          <div className="px-3 text-2xl font-bold tracking-tight">Zentro</div>
+          <div className="flex items-center gap-2 px-3">
+            <ZentroLogo className="h-9 w-9 text-foreground" />
+
+            <span className="text-2xl font-bold tracking-tight">Zentro</span>
+          </div>
 
           <nav className="mt-8 space-y-1">
             {navItems.map((item) => {
@@ -179,10 +187,14 @@ export default function AppShell({ children }: AppShellProps) {
                 </Button>
               )}
 
-              <div className="font-semibold md:hidden">Zentro</div>
+              <div className="flex items-center gap-2 md:hidden">
+                <ZentroLogo className="h-7 w-7 text-foreground" />
+                <span className="font-semibold">Zentro</span>
+              </div>
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              <ThemeToggle />
               {user && (
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-medium">{user.displayName}</p>
@@ -199,9 +211,23 @@ export default function AppShell({ children }: AppShellProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="rounded-full"
                     aria-label="Open profile menu"
                   >
-                    <User className="h-5 w-5" />
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage
+                        src={user?.profileImage?.url}
+                        alt={user.displayName}
+                      />
+                      <AvatarFallback>
+                        {user.displayName
+                          .split(" ")
+                          .map((name) => name[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <span className="sr-only">Profile menu</span>
                   </Button>
                 </DropdownMenuTrigger>

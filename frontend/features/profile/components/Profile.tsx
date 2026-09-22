@@ -183,14 +183,17 @@ export default function Profile({ userId }: ProfileProps) {
 
   const handleProfileUpdate = async (values: UpdateProfileFormData) => {
     try {
-      let updatedProfileImage: string | undefined;
+      let updatedProfileImage: {
+        url?: string;
+        publicId: string
+      } | undefined;
 
       if (selectedImage) {
         const imageResponse = await updateProfileImageMutation.mutateAsync(
           selectedImage
         );
 
-        updatedProfileImage = imageResponse.data.profileImage.url;
+        updatedProfileImage = imageResponse.data.profileImage;
       }
 
       const profileResponse = await updateProfileMutation.mutateAsync(values);
@@ -849,7 +852,7 @@ function ProfileListRow({
     bio: string;
     profileImage?: {
       url: string;
-      publicId: string;
+      publicId?: string;
     } | null;
     isFollowing: boolean;
   };
