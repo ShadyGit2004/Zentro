@@ -1,5 +1,7 @@
 "use client";
 
+import ZentroLogo from "@/components/brand/ZentroLogo";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -15,6 +17,16 @@ import {
 import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { useAuth } from "@/features/auth/AuthProvider";
 import api from "@/lib/axios";
 import { useEffect } from "react";
@@ -38,21 +50,21 @@ export default function AppShell({ children }: AppShellProps) {
   const unreadNotificationsQuery = useUnreadNotificationsCount(Boolean(user));
   const unreadCount = unreadNotificationsQuery.data ?? 0;
 
-   if (loading) {
-     return (
-       <div className="flex min-h-screen items-center justify-center">
-         <Loader2 className="h-6 w-6 animate-spin" />
-       </div>
-     );
-   }
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
-   if (!user) {
-     return (
-       <div className="flex min-h-screen items-center justify-center">
-         Redirecting...
-       </div>
-     );
-   }
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Redirecting...
+      </div>
+    );
+  }
 
   const showBackButton = pathname !== "/home";
 
@@ -121,7 +133,11 @@ export default function AppShell({ children }: AppShellProps) {
       <div className="mx-auto flex min-h-screen max-w-7xl">
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r px-4 py-6 md:flex md:flex-col">
-          <div className="px-3 text-2xl font-bold tracking-tight">Zentro</div>
+          <div className="flex items-center gap-2 px-3">
+            <ZentroLogo className="h-9 w-9 text-foreground" />
+
+            <span className="text-2xl font-bold tracking-tight">Zentro</span>
+          </div>
 
           <nav className="mt-8 space-y-1">
             {navItems.map((item) => {
@@ -171,10 +187,14 @@ export default function AppShell({ children }: AppShellProps) {
                 </Button>
               )}
 
-              <div className="font-semibold md:hidden">Zentro</div>
+              <div className="flex items-center gap-2 md:hidden">
+                <ZentroLogo className="h-7 w-7 text-foreground" />
+                <span className="font-semibold">Zentro</span>
+              </div>
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              <ThemeToggle />
               {user && (
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-medium">{user.displayName}</p>
@@ -185,14 +205,52 @@ export default function AppShell({ children }: AppShellProps) {
                 </div>
               )}
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push(`/profile/${user?.id}`)}
-              >
-                <User className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
-              </Button>
+              {/* Profile menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    aria-label="Open profile menu"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage
+                        src={user?.profileImage?.url}
+                        alt={user.displayName}
+                      />
+                      <AvatarFallback>
+                        {user.displayName
+                          .split(" ")
+                          .map((name) => name[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="sr-only">Profile menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/profile/${user.id}`)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive focus:text-destructive data-[highlighted]:text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4 stroke-destructive" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 

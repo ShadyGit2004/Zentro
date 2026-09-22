@@ -131,7 +131,7 @@ export default function Comments({ postId }: CommentsProps) {
                 className="flex gap-3 border-b px-4 py-4 last:border-b-0"
               >
                 <Avatar className="h-9 w-9 shrink-0">
-                  <AvatarImage src={comment.author.profileImage} />
+                  <AvatarImage src={comment.author.profileImage?.url} />
 
                   <AvatarFallback>
                     {comment.author.displayName?.charAt(0).toUpperCase() ?? "U"}
@@ -203,7 +203,7 @@ export default function Comments({ postId }: CommentsProps) {
       >
         <div className="flex gap-3">
           <Avatar className="h-9 w-9 shrink-0">
-            <AvatarImage src={user?.profileImage} />
+            <AvatarImage src={user?.profileImage?.url} />
 
             <AvatarFallback>
               {user?.displayName?.charAt(0).toUpperCase() ?? "U"}

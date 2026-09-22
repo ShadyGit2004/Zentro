@@ -30,7 +30,10 @@ export interface LoginResponse {
       email: string;
       username: string;
       displayName: string;
-      profileImage?: string;
+      profileImage: {
+        url?: string;
+        publicId?: string;
+      } | null;
       emailVerifiedAt: Date | null;
     };
   };

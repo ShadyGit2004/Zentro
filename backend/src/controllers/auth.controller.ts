@@ -15,11 +15,13 @@ import {
 import AppError from "../utils/appError";
 import { REFRESH_TOKEN_EXPIRES_IN_DAYS } from "../config/auth";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "none" as const,
-  partitioned: true,
+  secure: isProduction,
+  sameSite: isProduction ? ("none" as const) : ("lax" as const),
+  ...(isProduction && { partitioned: true }),
   maxAge: REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
 };
 
@@ -148,8 +150,9 @@ const logout = async (
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      ...(isProduction && { partitioned: true }),
     });
 
     return res.status(204).send();

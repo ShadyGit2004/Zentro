@@ -18,6 +18,7 @@ import {
 import { resetPassword } from "@/features/auth/api";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
+import AuthLayout from "@/components/auth/AuthLayout";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -98,20 +99,8 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <span className="text-2xl font-bold tracking-tight">Zentro</span>
-
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-            Reset your password
-          </h1>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            Create a new password for your account.
-          </p>
-        </div>
-
+    <AuthLayout
+      children={
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="space-y-5 rounded-xl border bg-background p-6 shadow-sm"
@@ -209,7 +198,9 @@ export default function ResetPasswordForm() {
             )}
           </Button>
         </form>
-      </div>
-    </main>
+      }
+      heroHeading={"Reset your password"}
+      heroPara={"Create a new password for your account."}
+    />
   );
 }

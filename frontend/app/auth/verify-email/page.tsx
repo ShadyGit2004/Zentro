@@ -11,6 +11,8 @@ import api from "@/lib/axios";
 import { resendVerification } from "@/features/auth/api";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthProvider";
+import Link from "next/link";
+import ZentroLogo from "@/components/brand/ZentroLogo";
 
 function VerifyEmail() {
   const searchParams = useSearchParams();
@@ -257,6 +259,12 @@ function VerifyEmail() {
             </>
           )}
         </CardContent>
+        <Link href="/">
+          <div className="mt-1 flex items-center justify-center gap-2">
+            <ZentroLogo className="h-9 w-9 text-foreground" />
+            <span className="text-2xl font-bold tracking-tight">Zentro</span>
+          </div>
+        </Link>
       </Card>
     </main>
   );

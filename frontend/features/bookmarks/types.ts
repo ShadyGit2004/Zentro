@@ -28,7 +28,7 @@ export interface BookmarkedPost {
     bio?: string;
     profileImage?: {
       url: string;
-      publicId: string;
+      publicId?: string;
     } | null;
   };
   likesCount: number;

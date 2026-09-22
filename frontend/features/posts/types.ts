@@ -19,7 +19,10 @@ export interface CreatePostResponse {
         _id: string;
         username: string;
         displayName: string;
-        profileImage?: string;
+        profileImage?: {
+          url: string;
+          publicId?: string;
+        } | null;
       };
       likesCount: number;
       commentsCount: number;
@@ -48,7 +51,10 @@ export interface UpdatePostResponse {
         _id: string;
         username: string;
         displayName: string;
-        profileImage?: string;
+        profileImage?: {
+          url: string;
+          publicId?: string;
+        } | null;
       };
       likesCount: number;
       commentsCount: number;

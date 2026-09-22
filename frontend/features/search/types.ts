@@ -4,10 +4,10 @@ export interface SearchUser {
   username: string;
   displayName: string;
   bio: string;
-  profileImage: {
-    url : string | null;
-    publicId : string | null;
-  }
+  profileImage?: {
+    url: string;
+    publicId?: string;
+  } | null;
 }
 
 export interface SearchPagination {
