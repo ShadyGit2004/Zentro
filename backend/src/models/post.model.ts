@@ -7,6 +7,7 @@ export interface IPost extends Document {
     url: string;
     publicId: string;
   };
+  repostsCount:number;
   likesCount: number;
   commentsCount: number;
   createdAt: Date;
@@ -28,6 +29,12 @@ const postSchema = new Schema<IPost>(
       maxlength: 280,
     },
     
+    repostsCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     likesCount: {
       type: Number,
       default: 0,

@@ -7,6 +7,7 @@ import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
 import { uploadPostImage, deleteCloudinaryImage, getOptimizedPostImageUrl } from "./cloudinary.service";
 import Bookmark from "../models/bookmark.model";
+import Repost from "../models/repost.model";
 
 const createPost = async (
   userId: string,
@@ -439,6 +440,7 @@ const deletePost = async (userId: string, postId: string) => {
   await Comment.deleteMany({ post: postId });
   await Notification.deleteMany({ post: postId });
   await Bookmark.deleteMany({ post: postId });
+  await Repost.deleteMany({ post: postId });
 
 
   // Delete media from Cloudinary if present

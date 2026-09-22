@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, MessageCircle, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -28,6 +28,8 @@ export default function NotificationItem({
       <Heart className="size-4" />
     ) : type === "comment" ? (
       <MessageCircle className="size-4" />
+    ) : type === "repost" ? (
+      <Repeat2 className="size-4"/>
     ) : (
       <UserPlus className="size-4" />
     );
@@ -37,6 +39,8 @@ export default function NotificationItem({
       ? "liked your post"
       : type === "comment"
       ? "commented on your post"
+      : type === "repost" 
+      ? "reposted your post"
       : "started following you";
 
   const content = (

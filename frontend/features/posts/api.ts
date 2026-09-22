@@ -83,3 +83,13 @@ export const getUserPosts = async (
 
   return response.data;
 };
+
+export const repostPost = async (postId: string) => {
+  const response = await api.post(`/posts/${postId}/repost`);
+  return response.data;
+};
+
+export const unrepostPost = async (postId: string) => {
+  const response = await api.delete(`/posts/${postId}/repost`);
+  return response.data;
+};
