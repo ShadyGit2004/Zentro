@@ -66,6 +66,12 @@ export const useBookmarkPost = () => {
       queryClient.invalidateQueries({
         queryKey: ["bookmarks"],
       });
+
+      // Hashtag posts
+      queryClient.setQueriesData<InfiniteData<any>>(
+        { queryKey: ["hashtag-posts"] },
+        (oldData) => updateBookmarkState(oldData, postId, true)
+      );
     },    
   });
 };
@@ -93,6 +99,12 @@ export const useUnbookmarkPost = () => {
       queryClient.setQueryData<InfiniteData<BookmarkedPostsResponse>>(
         ["bookmarks"],
         (oldData) => removePostFromBookmarks(oldData, postId)
+      );
+
+      // Hashtag posts
+      queryClient.setQueriesData<InfiniteData<any>>(
+        { queryKey: ["hashtag-posts"] },
+        (oldData) => updateBookmarkState(oldData, postId, false)
       );
     },
   });

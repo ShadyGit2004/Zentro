@@ -7,7 +7,8 @@ export interface IPost extends Document {
     url: string;
     publicId: string;
   };
-  repostsCount:number;
+  hashtags: mongoose.Types.ObjectId[];
+  repostsCount: number;
   likesCount: number;
   commentsCount: number;
   createdAt: Date;
@@ -28,7 +29,14 @@ const postSchema = new Schema<IPost>(
       trim: true,
       maxlength: 280,
     },
-    
+
+    hashtags: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Hashtag",
+      },
+    ],
+
     repostsCount: {
       type: Number,
       default: 0,
@@ -61,7 +69,7 @@ const postSchema = new Schema<IPost>(
   }
 );
 
-postSchema.index({ author: 1, createdAt: -1, _id: -1 });
+postSchema.index({ author: 1, hashtags:1, createdAt: -1, _id: -1 });
 
 const Post = mongoose.model<IPost>("Post", postSchema);
 

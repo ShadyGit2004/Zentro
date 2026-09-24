@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 
+import { useSearchHashtags } from "@/features/hashtags/hooks";
+
 import { Input } from "@/components/ui/input";
 import { useSearchPosts, useSearchUsers } from "../hooks";
 import UserSearchResult from "./UserSearchResult";
 import PostSearchResult from "./PostSearchResult";
 import SearchSkeleton from "./SearchSkeleton";
 import { getApiErrorMessage } from "@/lib/api-error";
+import HashtagSearchResult from "./HashtagSearchResult";
 
 type SearchTab = "users" | "posts";
 
@@ -30,8 +33,10 @@ export default function Search() {
   const isUsersTab = activeTab === "users";
 
   // Only active tab query is enabled
-  const usersQuery = useSearchUsers(query, isUsersTab);
-  const postsQuery = useSearchPosts(query, !isUsersTab);
+  const isHashtagSearch = input.trim().startsWith("#");
+  const usersQuery = useSearchUsers(query, isUsersTab && !isHashtagSearch);
+  const postsQuery = useSearchPosts(query, !isUsersTab && !isHashtagSearch);
+  const hashtagQuery = useSearchHashtags(isHashtagSearch ? query : "");
 
   const users = usersQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -67,14 +72,14 @@ export default function Search() {
         <Input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Search users or posts..."
-          aria-label="Search users or posts"
+          placeholder="Search users, posts or #hashtags..."
+          aria-label="Search users, posts or #hashtags"
           className="h-11 rounded-xl pl-9"
         />
       </div>
 
       {/* Tabs */}
-      {query.length >= 2 && (
+      {query.length >= 2 && !isHashtagSearch && (
         <div
           className="mt-4 grid grid-cols-2 rounded-xl bg-muted p-1"
           role="tablist"
@@ -107,6 +112,36 @@ export default function Search() {
       )}
 
       {/* Results */}
+      {isHashtagSearch ? (
+        <div className="mt-4">
+          {hashtagQuery.isLoading && <SearchSkeleton />}
+
+          {!hashtagQuery.isLoading && hashtagQuery.isError && (
+            <p className="py-8 text-center text-sm text-destructive">
+              {getApiErrorMessage(
+                hashtagQuery.error,
+                "Something went wrong while searching hashtags."
+              )}
+            </p>
+          )}
+
+          {!hashtagQuery.isLoading &&
+            !hashtagQuery.isError &&
+            hashtagQuery.data?.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No hashtags found.
+              </p>
+            )}
+
+          {!hashtagQuery.isLoading &&
+            !hashtagQuery.isError &&
+            hashtagQuery.data &&
+            hashtagQuery.data.length > 0 &&
+            hashtagQuery.data.map((hashtag) => (               
+              <HashtagSearchResult key={hashtag._id} hashtag={hashtag} />
+            ))}
+        </div>
+      ) : (
       <div className="mt-4">
         {/* Initial state */}
         {query.length < 2 && (
@@ -121,7 +156,8 @@ export default function Search() {
         {/* Error */}
         {query.length >= 2 && !isSearching && isError && (
           <p className="py-8 text-center text-sm text-destructive">
-            {getApiErrorMessage(activeQuery.error, "Something went wrong while searching.")}            
+            {getApiErrorMessage(activeQuery.error, "Something went wrong while searching."
+            )}
           </p>
         )}
 
@@ -162,6 +198,7 @@ export default function Search() {
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -94,6 +94,26 @@ const removePostFromBookmarks = (
   };
 };
 
+const removePostFromHashtagQueries = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  postId: string
+) => {
+  queryClient.setQueriesData<InfiniteData<any>>(
+    { queryKey: ["hashtag-posts"] },
+    (oldData) => {
+      if (!oldData) return oldData;
+
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page) => ({
+          ...page,
+          data: page.data.filter((post: any) => post._id !== postId),
+        })),
+      };
+    }
+  );
+};
+
 /* ----------------------------------------
    LIKE / UNLIKE CACHE HELPERS
 ----------------------------------------- */
@@ -146,6 +166,12 @@ const updateLikeInAllPostCaches = (
     ["bookmarks"],
     (oldData) => updatePostLikeState(oldData, postId, isLiked)
   );
+
+  // Hashtag posts
+  queryClient.setQueriesData<InfiniteData<any>>(
+    { queryKey: ["hashtag-posts"] },
+    (oldData) => updatePostLikeState(oldData, postId, isLiked)
+  );
 };
 
 /* ----------------------------------------
@@ -190,6 +216,12 @@ export const updateCommentCountInAllPostCaches = (
 
   queryClient.setQueryData<InfiniteData<BookmarkedPostsResponse>>(
     ["bookmarks"],
+    (oldData) => updatePostCommentCount(oldData, postId, change)
+  );
+
+  // Hashtag posts
+  queryClient.setQueriesData<InfiniteData<any>>(
+    { queryKey: ["hashtag-posts"] },
     (oldData) => updatePostCommentCount(oldData, postId, change)
   );
 };
@@ -242,6 +274,10 @@ export const useUpdatePost = () => {
 
         queryClient.invalidateQueries({
           queryKey: ["bookmarks"],
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ["hashtag-posts"],
         });
 
         return;
@@ -324,6 +360,8 @@ export const useDeletePost = () => {
       );
 
       removePostFromInfiniteQueries(queryClient, postId);
+
+      removePostFromHashtagQueries(queryClient, postId);
     },
   });
 };
@@ -425,12 +463,18 @@ const updateRepostInAllPostCaches = (
   updatePostInInfiniteQueries(queryClient, postId, (post) => ({
     ...post,
     isReposted,
-    repostsCount: Math.max(0, (post.repostsCount ?? 0) + (isReposted ? 1 : -1))
+    repostsCount: Math.max(0, (post.repostsCount ?? 0) + (isReposted ? 1 : -1)),
   }));
 
   // Bookmarks
   queryClient.setQueryData<InfiniteData<BookmarkedPostsResponse>>(
     ["bookmarks"],
+    (oldData) => updatePostRepostState(oldData, postId, isReposted)
+  );
+
+  // Hashtag posts
+  queryClient.setQueriesData<InfiniteData<any>>(
+    { queryKey: ["hashtag-posts"] },
     (oldData) => updatePostRepostState(oldData, postId, isReposted)
   );
 };

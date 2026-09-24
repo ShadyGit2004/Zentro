@@ -291,6 +291,15 @@ const getFeed = async (
 
     {
       $lookup: {
+        from: "hashtags",
+        localField: "hashtags",
+        foreignField: "_id",
+        as: "hashtags",
+      },
+    },
+
+    {
+      $lookup: {
         from: "users",
         localField: "author",
         foreignField: "_id",
@@ -319,10 +328,21 @@ const getFeed = async (
         likesCount: 1,
         commentsCount: 1,
 
+        hashtags: {
+          $map: {
+            input: "$hashtags",
+            as: "hashtag",
+            in: {
+              _id: "$$hashtag._id",
+              name: "$$hashtag.name",
+            },
+          },
+        },
+
         repostsCount: {
           $ifNull: [{ $arrayElemAt: ["$Reposts.count", 0] }, 0],
         },
-        
+
         createdAt: 1,
         updatedAt: 1,
         score: 1,

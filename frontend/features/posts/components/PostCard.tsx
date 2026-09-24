@@ -48,6 +48,29 @@ interface PostCardProps {
   post: FeedPost;
 }
 
+const renderPostContent = (content: string|undefined) => {
+  if(!content) return;
+  const parts = content.split(/(#[A-Za-z0-9_]+)/g);
+
+  return parts.map((part, index) => {
+    if (/^#[A-Za-z0-9_]+$/.test(part)) {
+      const hashtag = part.slice(1).toLowerCase();
+
+      return (
+        <Link
+          key={`${part}-${index}`}
+          href={`/hashtags/${encodeURIComponent(hashtag)}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {part}
+        </Link>
+      );
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+};
+
 function PostCard({ post }: PostCardProps) {
   const formattedDate = new Date(post.createdAt).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -286,7 +309,7 @@ function PostCard({ post }: PostCardProps) {
 
           {/* Content */}
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-            {post.content}
+            {renderPostContent(post.content)}
           </p>
 
           {/* Media */}

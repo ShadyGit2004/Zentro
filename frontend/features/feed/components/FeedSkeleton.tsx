@@ -23,9 +23,11 @@ export default function FeedSkeleton() {
               </div>
 
               {/* Actions */}
-              <div className="mt-4 flex gap-6">
+              <div className="mt-4 flex gap-5">
                 <Skeleton className="h-4 w-12 bg-muted" />
                 <Skeleton className="h-4 w-12 bg-muted" />
+                <Skeleton className="h-4 w-12 bg-muted" />
+                <Skeleton className="ml-auto h-4 w-12 bg-muted" />
               </div>
             </div>
           </div>
