@@ -264,6 +264,15 @@ const bookmarks = await Bookmark.aggregate([
     },
   },
 
+  {
+    $lookup: {
+      from: "hashtags",
+      localField: "post.hashtags",
+      foreignField: "_id",
+      as: "hashtags",
+    },
+  },
+
   // 12. Final response shape
   {
     $project: {
@@ -285,6 +294,17 @@ const bookmarks = await Bookmark.aggregate([
 
       isReposted: {
         $gt: [{ $size: { $ifNull: ["$userRepost", []] } }, 0],
+      },
+
+      hashtags: {
+        $map: {
+          input: "$hashtags",
+          as: "hashtag",
+          in: {
+            _id: "$$hashtag._id",
+            name: "$$hashtag.name",
+          },
+        },
       },
 
       createdAt: "$post.createdAt",

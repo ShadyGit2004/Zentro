@@ -8,6 +8,64 @@ import AppError from "../utils/appError";
 import { uploadPostImage, deleteCloudinaryImage, getOptimizedPostImageUrl } from "./cloudinary.service";
 import Bookmark from "../models/bookmark.model";
 import Repost from "../models/repost.model";
+import Hashtag from "../models/hashtag.model";
+import extractHashtags from "../utils/hashtag.utils";
+
+const syncHashtags = async (
+  oldHashtagIds: mongoose.Types.ObjectId[],
+  newHashtagNames: string[]
+) => {
+  const oldIds = oldHashtagIds.map((id) => id.toString());
+
+  const newHashtags = await Promise.all(
+    newHashtagNames.map(async (name) => {
+      return Hashtag.findOneAndUpdate(
+        { name },
+        {
+          $setOnInsert: {
+            name,
+          },
+        },
+        {
+          new: true,
+          upsert: true,
+        }
+      );
+    })
+  );
+
+  const newHashtagIds = newHashtags.map((hashtag) => hashtag!._id);
+
+  const newIds = newHashtagIds.map((id) => id.toString());
+
+  const addedIds = newHashtagIds.filter(
+    (id) => !oldIds.includes(id.toString())
+  );
+
+  const removedIds = oldHashtagIds.filter(
+    (id) => !newIds.includes(id.toString())
+  );
+
+  if (addedIds.length > 0) {
+    await Hashtag.updateMany(
+      { _id: { $in: addedIds } },
+      { $inc: { postsCount: 1 } }
+    );
+  }
+
+  if (removedIds.length > 0) {
+    await Hashtag.updateMany(
+      { _id: { $in: removedIds } },
+      {
+        $inc: {
+          postsCount: -1,
+        },
+      }
+    );
+  }
+
+  return newHashtagIds;
+};
 
 const createPost = async (
   userId: string,
@@ -37,9 +95,13 @@ const createPost = async (
     );
   }
 
+  const hashtagNames = extractHashtags(content);
+  const hashtags = await syncHashtags([], hashtagNames);
+
   const post = await Post.create({
     author: userId,
     content,
+    hashtags
   });
 
   if (file) {
@@ -79,6 +141,7 @@ const createPost = async (
     id: post._id,
     author: userId,
     content: post.content,
+    hashtags: hashtagNames,
     media: post.media,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
@@ -99,6 +162,10 @@ const getPostById = async (postId: string) => {
       path: "author",
       select: "_id username displayName bio profileImage",
       match: { status: "active" },
+    })
+    .populate({
+      path: "hashtags",
+      select: "_id name",
     })
     .lean();
 
@@ -326,6 +393,15 @@ const getUserPosts = async (
     },
 
     {
+      $lookup: {
+        from: "hashtags",
+        localField: "hashtags",
+        foreignField: "_id",
+        as: "hashtags",
+      },
+    },
+
+    {
       $project: {
         _id: 1,
         content: 1,
@@ -362,6 +438,17 @@ const getUserPosts = async (
 
         isBookmarked: {
           $gt: [{ $size: "$userBookmark" }, 0],
+        },
+
+        hashtags: {
+          $map: {
+            input: "$hashtags",
+            as: "hashtag",
+            in: {
+              _id: "$$hashtag._id",
+              name: "$$hashtag.name",
+            },
+          },
         },
       },
     },
@@ -429,8 +516,14 @@ const updatePost = async (
 
   const oldPublicId = post.media?.publicId;
 
-  if (content !== undefined) {
+  if (content !== undefined) {    
+    const oldHashtagIds = post.hashtags ?? [];
+    const hashtagNames = extractHashtags(content);
+
+    const updatedHashtags = await syncHashtags(oldHashtagIds, hashtagNames);
+
     post.content = content;
+    post.hashtags = updatedHashtags;
   }
 
   if (file) {
@@ -480,7 +573,9 @@ const deletePost = async (userId: string, postId: string) => {
     throw new AppError(400, "INVALID_POST_ID", "Invalid post ID");
   }
 
-  const post = await Post.findById(postId).select("_id author media").lean();
+  const post = await Post.findById(postId)
+    .select("_id author media hashtags")
+    .lean();
 
   if (!post) {
     throw new AppError(404, "POST_NOT_FOUND", "Post not found");
@@ -490,20 +585,64 @@ const deletePost = async (userId: string, postId: string) => {
     throw new AppError(403, "FORBIDDEN", "You can only delete your own post");
   }
 
-  // Delete related data
-  await Like.deleteMany({ post: postId });
-  await Comment.deleteMany({ post: postId });
-  await Notification.deleteMany({ post: postId });
-  await Bookmark.deleteMany({ post: postId });
-  await Repost.deleteMany({ post: postId });
+  const session = await mongoose.startSession();
 
+  try {
+    session.startTransaction();
 
-  // Delete media from Cloudinary if present
-  if (post.media?.publicId) {
-    await deleteCloudinaryImage(post.media.publicId);
+    // Delete related hashtag counts
+    if (post.hashtags?.length) {
+      await Hashtag.updateMany(
+        {
+          _id: {
+            $in: post.hashtags,
+          },
+          postsCount: {
+            $gt: 0,
+          },
+        },
+        {
+          $inc: {
+            postsCount: -1,
+          },
+        },
+        { session }
+      );
+    }
+
+    // Delete related data
+    await Like.deleteMany({ post: postId }, { session });
+
+    await Comment.deleteMany({ post: postId }, { session });
+
+    await Notification.deleteMany({ post: postId }, { session });
+
+    await Bookmark.deleteMany({ post: postId }, { session });
+
+    await Repost.deleteMany({ post: postId }, { session });
+
+    // Delete the post itself
+    await Post.deleteOne({ _id: postId }, { session });
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    await session.endSession();
   }
 
-  await Post.deleteOne({ _id: postId });
+  // Cloudinary is external to MongoDB transaction.
+  // Delete it only after DB transaction successfully commits.
+  if (post.media?.publicId) {
+    try {
+      await deleteCloudinaryImage(post.media.publicId);
+    } catch (error) {
+      // DB deletion is already committed.
+      // Do not rollback DB data because Cloudinary deletion failed.
+      console.error("Failed to delete post media from Cloudinary:", error);
+    }
+  }
 
   return {
     message: "Post deleted successfully",
@@ -551,6 +690,10 @@ const searchPosts = async (
       path: "author",
       select: "_id username displayName bio profileImage",
       match: { status: "active" },
+    })
+    .populate({
+      path: "hashtags",
+      select : "_id name",
     })
     .lean();
 
