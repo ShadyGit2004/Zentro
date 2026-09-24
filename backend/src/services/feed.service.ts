@@ -32,25 +32,13 @@ const decodeCursor = (cursor: string): FeedCursor => {
 
     return decoded;
   } catch {
-    throw new AppError(
-      400,
-      "INVALID_CURSOR",
-      "Invalid cursor"
-    );
+    throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
   }
 };
 
-const getFeed = async (
-  userId: string,
-  limit: number,
-  cursor?: string
-) => {
+const getFeed = async (userId: string, limit: number, cursor?: string) => {
   if (!mongoose.isValidObjectId(userId)) {
-    throw new AppError(
-      400,
-      "INVALID_USER_ID",
-      "Invalid user ID"
-    );
+    throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
   }
 
   const currUserId = new mongoose.Types.ObjectId(userId);
@@ -85,6 +73,37 @@ const getFeed = async (
       },
     },
 
+    // Repost count is needed before calculating the feed score.
+    {
+      $lookup: {
+        from: "reposts",
+        let: {
+          postId: "$_id",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$post", "$$postId"],
+              },
+            },
+          },
+          {
+            $count: "count",
+          },
+        ],
+        as: "Reposts",
+      },
+    },
+
+    {
+      $addFields: {
+        repostsCount: {
+          $ifNull: [{ $arrayElemAt: ["$Reposts.count", 0] }, 0],
+        },
+      },
+    },
+
     {
       $addFields: {
         engagementScore: {
@@ -93,23 +112,14 @@ const getFeed = async (
             {
               $multiply: [{ $ifNull: ["$commentsCount", 0] }, 2],
             },
+            {
+              $multiply: ["$repostsCount", 3],
+            },
           ],
         },
       },
     },
 
-    // {
-    //   $addFields: {
-    //     ageInHours: {
-    //       $divide: [
-    //         {
-    //           $subtract: [new Date(), "$createdAt"],
-    //         },
-    //         1000 * 60 * 60,
-    //       ],
-    //     },
-    //   },
-    // },
     {
       $addFields: {
         ageInHours: {
@@ -252,28 +262,6 @@ const getFeed = async (
           {
             $match: {
               $expr: {
-                $eq: ["$post", "$$postId"],
-              },
-            },
-          },
-          {
-            $count: "count",
-          },
-        ],
-        as: "Reposts",
-      },
-    },
-
-    {
-      $lookup: {
-        from: "reposts",
-        let: {
-          postId: "$_id",
-        },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
                 $and: [
                   { $eq: ["$post", "$$postId"] },
                   { $eq: ["$user", currUserId] },
@@ -327,6 +315,7 @@ const getFeed = async (
         media: 1,
         likesCount: 1,
         commentsCount: 1,
+        repostsCount: 1,
 
         hashtags: {
           $map: {
@@ -339,10 +328,6 @@ const getFeed = async (
           },
         },
 
-        repostsCount: {
-          $ifNull: [{ $arrayElemAt: ["$Reposts.count", 0] }, 0],
-        },
-
         createdAt: 1,
         updatedAt: 1,
         score: 1,
@@ -350,6 +335,7 @@ const getFeed = async (
         isLiked: {
           $gt: [{ $size: "$Like" }, 0],
         },
+        
         isBookmarked: {
           $gt: [{ $size: "$Bookmark" }, 0],
         },
@@ -378,15 +364,6 @@ const getFeed = async (
   }
 
   const lastPost = posts[posts.length - 1];
-
-  // const nextCursor =
-  //   hasNextPage && lastPost
-  //     ? encodeCursor({
-  //         score: lastPost.score,
-  //         createdAt: lastPost.createdAt.toISOString(),
-  //         id: lastPost._id.toString(),
-  //       })
-  //     : null;
 
   const nextCursor =
     hasNextPage && lastPost
