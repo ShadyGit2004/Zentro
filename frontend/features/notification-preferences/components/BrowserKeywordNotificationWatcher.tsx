@@ -93,10 +93,18 @@ const BrowserKeywordNotificationWatcher = ({
         return;
       }
 
-      new Notification("Zentro — Keyword match", {
-        body: content,
-        tag: `keyword-post-${post._id}`,
-      });
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready
+          .then((registration) => {
+            return registration.showNotification("Zentro — Keyword match", {
+              body: content,
+              tag: `keyword-post-${post._id}`,
+            });
+          })
+          .catch((error) => {
+            console.error("Failed to show notification:", error);
+          });
+      }
     });
   }, [data, browserEnabled, notificationsReady, normalizedKeywords]);
 

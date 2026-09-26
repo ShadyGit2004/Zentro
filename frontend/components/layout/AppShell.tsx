@@ -28,6 +28,9 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import ServiceWorkerRegistration from "@/features/notification-preferences/components/ServiceWorkerRegistration";
+import BrowserKeywordNotificationWatcher from "@/features/notification-preferences/components/BrowserKeywordNotificationWatcher";
+
 import { useAuth } from "@/features/auth/AuthProvider";
 import api from "@/lib/axios";
 import { useEffect } from "react";
@@ -135,85 +138,96 @@ export default function AppShell({ children }: AppShellProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto flex min-h-screen max-w-7xl">
-        {/* Sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r px-4 py-6 md:flex md:flex-col">
-          <div className="flex items-center gap-2 px-3">
-            <ZentroLogo className="h-9 w-9 text-foreground" />
+    <>
+      <ServiceWorkerRegistration />
+      <BrowserKeywordNotificationWatcher
+        preferences={
+          user?.notificationPreferences ?? {
+            browserEnabled: false,
+            keywords: [],
+          }
+        }
+      />
 
-            <span className="text-2xl font-bold tracking-tight">Zentro</span>
-          </div>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto flex min-h-screen max-w-7xl">
+          {/* Sidebar */}
+          <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r px-4 py-6 md:flex md:flex-col">
+            <div className="flex items-center gap-2 px-3">
+              <ZentroLogo className="h-9 w-9 text-foreground" />
 
-          <nav className="mt-8 space-y-1">
-            {navItems.map((item) => {
-              const isActive =
-                item.label === "Profile"
-                  ? pathname.includes(`/profile`)
-                  : pathname === item.href;
-
-              return (
-                <Button
-                  key={item.href}
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start gap-3"
-                  onClick={() => router.push(item.href)}
-                >
-                  {item.icon}
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto pt-8">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              Logout
-            </Button>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="min-w-0 flex-1">
-          <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background/95 px-4 backdrop-blur md:px-6">
-            <div className="flex items-center gap-2">
-              {showBackButton && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleBack}
-                  aria-label="Go back"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              )}
-
-              <div className="flex items-center gap-2 md:hidden">
-                <ZentroLogo className="h-7 w-7 text-foreground" />
-                <span className="font-semibold">Zentro</span>
-              </div>
+              <span className="text-2xl font-bold tracking-tight">Zentro</span>
             </div>
 
-            <div className="ml-auto flex items-center gap-3">
-              <ThemeToggle />
-              {user && (
-                <div className="hidden text-right sm:block">
-                  <p className="text-sm font-medium">{user.displayName}</p>
+            <nav className="mt-8 space-y-1">
+              {navItems.map((item) => {
+                const isActive =
+                  item.label === "Profile"
+                    ? pathname.includes(`/profile`)
+                    : pathname === item.href;
 
-                  <p className="text-xs text-muted-foreground">
-                    @{user.username}
-                  </p>
+                return (
+                  <Button
+                    key={item.href}
+                    variant={isActive ? "secondary" : "ghost"}
+                    className="w-full justify-start gap-3"
+                    onClick={() => router.push(item.href)}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </nav>
+
+            <div className="mt-auto pt-8">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-5 w-5" />
+                Logout
+              </Button>
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main className="min-w-0 flex-1">
+            <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background/95 px-4 backdrop-blur md:px-6">
+              <div className="flex items-center gap-2">
+                {showBackButton && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleBack}
+                    aria-label="Go back"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                )}
+
+                <div className="flex items-center gap-2 md:hidden">
+                  <ZentroLogo className="h-7 w-7 text-foreground" />
+                  <span className="font-semibold">Zentro</span>
                 </div>
-              )}
+              </div>
 
-              {/* Profile menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger>
+              <div className="ml-auto flex items-center gap-3">
+                <ThemeToggle />
+                {user && (
+                  <div className="hidden text-right sm:block">
+                    <p className="text-sm font-medium">{user.displayName}</p>
+
+                    <p className="text-xs text-muted-foreground">
+                      @{user.username}
+                    </p>
+                  </div>
+                )}
+
+                {/* Profile menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
                     <Avatar className="h-9 w-9">
                       <AvatarImage
                         src={user?.profileImage?.url}
@@ -228,64 +242,65 @@ export default function AppShell({ children }: AppShellProps) {
                           .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="sr-only">Profile menu</span>                  
-                </DropdownMenuTrigger>
+                    <span className="sr-only">Profile menu</span>
+                  </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem
-                    onClick={() => router.push(`/profile/${user.id}`)}
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem
+                      onClick={() => router.push(`/profile/${user.id}`)}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
 
-                  <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-destructive focus:text-destructive data-[highlighted]:text-destructive"
-                  >
-                    <LogOut className="mr-2 h-4 w-4 stroke-destructive" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-destructive focus:text-destructive data-highlighted:text-destructive"
+                    >
+                      <LogOut className="mr-2 h-4 w-4 stroke-destructive" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </header>
 
-          <div className="px-4 py-6 pb-24 md:px-6 md:pb-6">{children}</div>
-        </main>
-      </div>
-
-      {/* Mobile navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t bg-background md:hidden">
-        <div className="flex h-16 items-center justify-around">
-          {navItems.map((item) => {
-            const isActive =
-              item.label === "Profile"
-                ? pathname.startsWith("/profile")
-                : pathname === item.href;
-
-            return (
-              <Button
-                key={item.href}
-                variant="ghost"
-                size="icon"
-                className={
-                  isActive
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground"
-                }
-                onClick={() => router.push(item.href)}
-                aria-label={item.label}
-              >
-                {item.icon}
-                <span className="sr-only">{item.label}</span>
-              </Button>
-            );
-          })}
+            <div className="px-4 py-6 pb-24 md:px-6 md:pb-6">{children}</div>
+          </main>
         </div>
-      </nav>
-    </div>
+
+        {/* Mobile navigation */}
+        <nav className="fixed inset-x-0 bottom-0 z-20 border-t bg-background md:hidden">
+          <div className="flex h-16 items-center justify-around">
+            {navItems.map((item) => {
+              const isActive =
+                item.label === "Profile"
+                  ? pathname.startsWith("/profile")
+                  : pathname === item.href;
+
+              return (
+                <Button
+                  key={item.href}
+                  variant="ghost"
+                  size="icon"
+                  className={
+                    isActive
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground"
+                  }
+                  onClick={() => router.push(item.href)}
+                  aria-label={item.label}
+                >
+                  {item.icon}
+                  <span className="sr-only">{item.label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
+    </>
   );
 }

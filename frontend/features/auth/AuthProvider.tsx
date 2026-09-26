@@ -21,9 +21,13 @@ interface AuthUser {
   displayName: string;
   profileImage: {
     url: string;
-    publicId?: string
+    publicId?: string;
   } | null;
   emailVerifiedAt: Date | null;
+  notificationPreferences?: {
+    browserEnabled: boolean;
+    keywords: string[];
+  } | null;
 }
 
 interface AuthContextType {
