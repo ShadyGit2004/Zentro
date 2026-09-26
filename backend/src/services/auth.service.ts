@@ -491,8 +491,10 @@ const refreshUserSession = async (
   }
 
   const user = await User.findById(session.user)
-  .select("_id status email username displayName profileImage emailVerifiedAt")
-  .lean();
+    .select(
+      "_id status email username displayName profileImage emailVerifiedAt notificationPreferences"
+    )
+    .lean();
 
   if (!user || user.status !== "active") {
     throw new AppError(
