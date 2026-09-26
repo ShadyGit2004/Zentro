@@ -1,26 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
   getKeywordNotificationPosts,
   updateNotificationPreferences,
 } from "./api";
+import { useAuth } from "../auth/AuthProvider";
 
 export const useUpdateNotificationPreferences = () => {
-  const queryClient = useQueryClient();
+  const { updateUser } = useAuth();
 
   return useMutation({
     mutationFn: updateNotificationPreferences,
 
     onSuccess: (response) => {
-      queryClient.setQueryData(["current-user"], (oldData: any) => {
-        if (!oldData) {
-          return oldData;
-        }
-
-        return {
-          ...oldData,
-          notificationPreferences: response.data,
-        };
+      updateUser({
+        notificationPreferences: response.data,
       });
     },
   });

@@ -24,12 +24,6 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      {currentUser && (
-        <BrowserKeywordNotificationWatcher
-          preferences={currentUser.notificationPreferences}
-        />
-      )}
-
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-2">
@@ -196,9 +190,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2">
           <Trash2 className="h-4 w-4 shrink-0 text-destructive" />
 
-          <h2 className="text-sm font-semibold text-destructive">
-            Danger Zone
-          </h2>
+          <h2 className="text-sm font-semibold text-destructive">Danger Zone</h2>
         </div>
 
         <div className="rounded-2xl border border-destructive/30 p-4 sm:p-5">
