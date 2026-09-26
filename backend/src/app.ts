@@ -17,6 +17,7 @@ import likeRouter from "./routes/like.routes";
 import commentRouter from "./routes/comment.routes";
 import feedRouter from "./routes/feed.routes";
 import notificationRouter from "./routes/notification.routes";
+import paymentRouter from "./routes/payment.routes";
 
 // Middlewares
 import loggerMiddleware from "./middlewares/logger.middleware";
@@ -33,7 +34,14 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as express.Request & { rawBody?: Buffer }).rawBody =
+        Buffer.from(buf);
+    },
+  })
+);
 app.use(cookieParser());
 app.use(loggerMiddleware);
 
@@ -50,6 +58,7 @@ app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/posts/:postId/repost", repostRouter);
 app.use("/api/v1/hashtags", hashtagRouter);
 app.use("/api/v1/trending", trendingRouter);
+app.use("/api/v1/payments", paymentRouter);
 
 // Error Middlewares
 app.use(notFoundMiddleware);
