@@ -9,33 +9,24 @@ import uploadProfileImage from "../middlewares/upload.middleware";
 import requireActiveUser from "../middlewares/require-active-user.middleware";
 
 // Schema validator
-import { searchUsersSchema } from "../validators/user.validator";
-import { updateProfileSchema } from "../validators/user.validator";
+import { searchUsersSchema, updateNotificationPreferencesSchema, updateProfileSchema } from "../validators/user.validator";
 
 // Controllers
-import { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, getLoginHistory, deleteUser, suspend, unsuspend } from "../controllers/user.controller";
+import { getMe, getUserProfile, updateUserProfile, updateProfileImage, updateNotificationPreferences, search, getLoginHistory, deleteUser, suspend, unsuspend } from "../controllers/user.controller";
 import { getMine as getMyBookmarks } from "../controllers/bookmark.controller";
 
 const router = Router();
 
-router.get(
-  "/me",
-  authMiddleware,
-  requireVerifiedEmail,
-  getMe
-);
-
-router.patch(
-  "/me",
+router.route("/me")
+.get(authMiddleware, requireVerifiedEmail, getMe)
+.patch(
   authMiddleware,
   requireVerifiedEmail,
   requireActiveUser,
   validate(updateProfileSchema),
   updateUserProfile
-);
-
-router.delete(
-  "/me",
+)
+.delete(
   authMiddleware,
   deleteUser
 );
@@ -47,6 +38,14 @@ router.patch(
   requireActiveUser,
   uploadProfileImage.single("profileImage"),
   updateProfileImage
+);
+
+router.patch(
+  "/me/notification-preferences",
+  authMiddleware,
+  requireVerifiedEmail,
+  validate(updateNotificationPreferencesSchema),
+  updateNotificationPreferences
 );
 
 router.get(

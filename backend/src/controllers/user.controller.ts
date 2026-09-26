@@ -4,6 +4,7 @@ import {
   getPublicUserProfile,
   updateCurrentUser as updateCurrentUserService,
   updateProfileImage as updateProfileImageService,
+  updateNotificationPreferences as updateNotificationPreferencesService,
   searchUsers,
   getLoginHistory as getLoginHistoryService,
   deleteCurrentUser,
@@ -122,6 +123,30 @@ const updateProfileImage = async (
     return res.status(200).json({
       success: true,
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateNotificationPreferences = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
+
+    const preferences = await updateNotificationPreferencesService(
+      req.user.userId,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: preferences,
     });
   } catch (error) {
     next(error);
@@ -304,4 +329,4 @@ const deleteUser = async (
   }
 };
 
-export { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, getLoginHistory, deleteUser, suspend, unsuspend };
+export { getMe, getUserProfile, updateUserProfile, updateProfileImage, updateNotificationPreferences, search, getLoginHistory, deleteUser, suspend, unsuspend };

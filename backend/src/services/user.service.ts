@@ -41,6 +41,10 @@ const getCurrentUser = async (userId: string) => {
     role: user.role,
     status: user.status,
     createdAt: user.createdAt,
+    notificationPreferences: {
+      browserEnabled: user.notificationPreferences?.browserEnabled ?? false,
+      keywords: user.notificationPreferences?.keywords ?? [],
+    },
   };
 };
 
@@ -251,7 +255,10 @@ const updateCurrentUser = async (
     displayName: user.displayName,
     bio: user.bio,
     profileImage: user.profileImage,
+    email: user.email,
+    emailVerifiedAt: user.emailVerifiedAt,
     updatedAt: user.updatedAt,
+    createdAt: user.createdAt,
   };
 };
 
@@ -296,6 +303,46 @@ const updateProfileImage = async (
   return {
     profileImage: user.profileImage,
   };
+};
+
+const updateNotificationPreferences = async (
+  userId: string,
+  data: {
+    browserEnabled: boolean;
+    keywords: string[];
+  }
+) => {
+  const keywords = [
+    ...new Set(
+      data.keywords
+        .map((keyword) => keyword.trim().toLowerCase())
+        .filter(Boolean)
+    ),
+  ];
+
+  const user = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      status: "active",
+    },
+    {
+      $set: {
+        "notificationPreferences.browserEnabled": data.browserEnabled,
+        "notificationPreferences.keywords": keywords,
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .select("notificationPreferences")
+    .lean();
+
+  if (!user) {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  return user.notificationPreferences;
 };
 
 const searchUsers = async (
@@ -703,4 +750,15 @@ const deleteCurrentUser = async (userId: string) => {
   };
 };
 
-export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers, getLoginHistory,  deleteCurrentUser, suspendUser, unsuspendUser};
+export {
+  getCurrentUser,
+  getPublicUserProfile,
+  updateCurrentUser,
+  updateProfileImage,
+  updateNotificationPreferences,
+  searchUsers,
+  getLoginHistory,
+  deleteCurrentUser,
+  suspendUser,
+  unsuspendUser,
+};
