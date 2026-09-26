@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import SubscriptionPlans from "@/features/payment/components/SubscriptionPlans";
 import BrowserKeywordNotificationWatcher from "@/features/notification-preferences/components/BrowserKeywordNotificationWatcher";
 import NotificationPreferences from "@/features/notification-preferences/components/BrowserNotificationSettings";
 import EditProfileForm from "@/features/users/components/EditProfileForm";
@@ -175,6 +176,19 @@ export default function SettingsPage() {
             />
           </div>
         )}
+      </section>
+
+      {/* Subscription */}
+      <section className="mt-8 space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold">Subscription</h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Choose a plan that fits your needs.
+          </p>
+        </div>
+
+        <SubscriptionPlans />
       </section>
 
       {/* Danger Zone */}
