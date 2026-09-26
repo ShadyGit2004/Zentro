@@ -12,6 +12,7 @@ import {
   LogOut,
   Search,
   User,
+  Settings,
 } from "lucide-react";
 
 import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
@@ -126,6 +127,11 @@ export default function AppShell({ children }: AppShellProps) {
       icon: <User className="h-5 w-5" />,
       href: `/profile/${user?.id}`,
     },
+    {
+      label: "Settings",
+      icon: <Settings className="h-5 w-5" />,
+      href: "/settings",
+    },
   ];
 
   return (
@@ -208,12 +214,6 @@ export default function AppShell({ children }: AppShellProps) {
               {/* Profile menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full mt-2"
-                    aria-label="Open profile menu"
-                  >
                     <Avatar className="h-9 w-9">
                       <AvatarImage
                         src={user?.profileImage?.url}
@@ -228,8 +228,7 @@ export default function AppShell({ children }: AppShellProps) {
                           .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="sr-only">Profile menu</span>
-                  </Button>
+                    <span className="sr-only">Profile menu</span>                  
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-44">

@@ -112,6 +112,8 @@ export const useUpdateProfile = (userId: string) => {
       queryClient.setQueryData(["user-posts", userId], updateAuthorInPosts);
 
       queryClient.setQueryData(["bookmarks"], updateAuthorInPosts);
+
+      queryClient.setQueryData(["current-user"], response.data);
     },
   });
 };
@@ -163,6 +165,8 @@ export const useUpdateProfileImage = (userId: string) => {
           })),
         };
       };
+
+      queryClient.setQueryData(["current-user"], response.data);
 
       queryClient.setQueryData(["feed"], updateImageInPosts);
 
