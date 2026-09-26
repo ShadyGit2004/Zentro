@@ -31,7 +31,7 @@ export interface LoginResponse {
       username: string;
       displayName: string;
       profileImage: {
-        url?: string;
+        url: string;
         publicId?: string;
       } | null;
       emailVerifiedAt: Date | null;

@@ -2,23 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Camera, Lock, Pencil, Trash2, UserRound, Users } from "lucide-react";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { UserRound, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -28,27 +15,14 @@ import {
   useUnfollowUser,
 } from "@/features/follows/hooks";
 
-import {
-  useUpdatePassword,
-  useUpdateProfile,
-  useUpdateProfileImage,
-  useUserProfile,
-  useDeleteAccount,
-} from "../hooks";
-
-import { useRouter } from "next/navigation";
-
+import { useUserProfile } from "../hooks";
 import { useUserPosts } from "@/features/posts/hooks";
-
-import { updatePasswordSchema, updateProfileSchema } from "../schema";
-import type { UpdatePasswordFormData, UpdateProfileFormData } from "../schema";
-
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
 
 import ProfileSkeleton from "./ProfileSkeleton";
 import PostCard from "@/features/posts/components/PostCard";
-import {ProfileListSkeleton, EmptyList} from "./ProfileSkeleton";
+import { ProfileListSkeleton, EmptyList } from "./ProfileSkeleton";
 import FeedSkeleton from "@/features/feed/components/FeedSkeleton";
 
 interface ProfileProps {
@@ -58,19 +32,9 @@ interface ProfileProps {
 type Tab = "posts" | "followers" | "following";
 
 export default function Profile({ userId }: ProfileProps) { 
-  const router = useRouter(); 
-  const { user, updateUser, clearAuth } = useAuth();
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>("posts");
-
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [imgErr, setImgErr] = useState<string>("");
-
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useUserProfile(userId);
 
@@ -96,8 +60,7 @@ export default function Profile({ userId }: ProfileProps) {
   } = useUserPosts(
     userId,
     activeTab === "posts"
-  );
-  
+  );  
 
   const {
     data: followersData,
@@ -121,108 +84,6 @@ export default function Profile({ userId }: ProfileProps) {
 
   const followMutation = useFollowUser();
   const unfollowMutation = useUnfollowUser();
-
-  const updateProfileMutation = useUpdateProfile(userId);
-
-  const updateProfileImageMutation = useUpdateProfileImage(userId);
-
-  const updatePasswordMutation = useUpdatePassword();
-
-  const deleteAccountMutation = useDeleteAccount();
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<UpdateProfileFormData>({
-    resolver: zodResolver(updateProfileSchema),
-  });
-
-  const handleEditOpen = () => {
-    if (!profile) return;
-
-    reset({
-      username: profile.username,
-      displayName: profile.displayName,
-      bio: profile.bio ?? "",
-    });
-
-    setImgErr("");
-    setSelectedImage(null);
-    setImagePreview(null);
-    setIsEditOpen(true);
-  };
-
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
-    if (!allowedTypes.includes(file.type)) {
-      setImgErr("Only JPG, JPEG, PNG or WebP images are allowed.");
-      toast.error("Only JPG, JPEG, PNG or WebP images are allowed.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setImgErr("Profile image must be less than 5MB.");
-      toast.error("Profile image must be less than 5MB.");
-      event.target.value = "";
-      return;
-    }
-
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-
-    setSelectedImage(file);
-    setImagePreview(previewUrl);
-    setImgErr("");
-  };
-
-  const handleProfileUpdate = async (values: UpdateProfileFormData) => {
-    try {
-      let updatedProfileImage: {
-        url?: string;
-        publicId: string
-      } | undefined;
-
-      if (selectedImage) {
-        const imageResponse = await updateProfileImageMutation.mutateAsync(
-          selectedImage
-        );
-
-        updatedProfileImage = imageResponse.data.profileImage;
-      }
-
-      const profileResponse = await updateProfileMutation.mutateAsync(values);
-
-      // Sync AuthContext only when editing own profile
-      if (userId === user?.id) {
-        updateUser({
-          username: profileResponse.data.username,
-          displayName: profileResponse.data.displayName,
-          ...(updatedProfileImage !== undefined && {
-            profileImage: updatedProfileImage,
-          }),
-        });
-      }
-
-      setSelectedImage(null);
-      setImagePreview(null);
-      setIsEditOpen(false);
-
-      toast.success("Profile updated successfully.");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to update profile."));
-    }
-  };
 
   const handleFollowToggle = async () => {
     if (!profile) return;
@@ -261,131 +122,6 @@ export default function Profile({ userId }: ProfileProps) {
     }
   };
 
-  function PasswordDialog({
-    open,
-    onOpenChange,
-    mutation,
-  }: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    mutation: ReturnType<typeof useUpdatePassword>;
-  }) {
-    const form = useForm<UpdatePasswordFormData>({
-      resolver: zodResolver(updatePasswordSchema),
-      defaultValues: {
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      },
-    });
-
-    const handleSubmit = async (values: UpdatePasswordFormData) => {
-      try {
-        await mutation.mutateAsync({
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword,
-        });
-
-        toast.success("Password updated successfully.");
-
-        form.reset();
-        onOpenChange(false);
-      } catch (error) {
-        toast.error(getApiErrorMessage(error, "Unable to update password."));
-      }
-    };
-
-    return (
-      <Dialog
-        open={open}
-        onOpenChange={(value) => {
-          if (!value) {
-            form.reset();
-          }
-
-          onOpenChange(value);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change password</DialogTitle>
-          </DialogHeader>
-
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Current password</label>
-              <Input
-                type="password"
-                placeholder="Current password"
-                {...form.register("currentPassword")}
-              />
-
-              {form.formState.errors.currentPassword && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.currentPassword.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">New password</label>
-
-              <Input
-                type="password"
-                placeholder="New password"
-                {...form.register("newPassword")}
-              />
-
-              {form.formState.errors.newPassword && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.newPassword.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Confirm new password
-              </label>
-
-              <Input
-                type="password"
-                placeholder="Confirm new password"
-                {...form.register("confirmPassword")}
-              />
-              {form.formState.errors.confirmPassword && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  form.reset();
-                  onOpenChange(false);
-                }}
-                disabled={mutation.isPending}
-              >
-                Cancel
-              </Button>
-
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Updating..." : "Update password"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
 
   const followers = followersData?.pages.flatMap((page) => page.data) ?? [];
@@ -419,9 +155,7 @@ export default function Profile({ userId }: ProfileProps) {
     .slice(0, 2)
     .toUpperCase();
 
-  const currentImage = imagePreview ?? profile.profileImage?.url ?? undefined;
-
-  const isSaving = updateProfileMutation.isPending || updateProfileImageMutation.isPending;
+  const currentImage = profile.profileImage?.url ?? undefined;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
@@ -434,17 +168,6 @@ export default function Profile({ userId }: ProfileProps) {
 
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
-
-            {isOwnProfile && (
-              <button
-                type="button"
-                onClick={handleEditOpen}
-                className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border bg-background shadow-sm"
-                aria-label="Edit profile"
-              >
-                <Camera className="h-4 w-4" />
-              </button>
-            )}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -460,37 +183,7 @@ export default function Profile({ userId }: ProfileProps) {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {isOwnProfile ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleEditOpen}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit Profile
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsPasswordOpen(true)}
-                    >
-                      <Lock className="mr-2 h-4 w-4" />
-                      Password
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setIsDeleteOpen(true)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </>
-                ) : (
+                {!isOwnProfile && (
                   <Button
                     size="sm"
                     variant={profile.isFollowing ? "outline" : "default"}
@@ -499,7 +192,6 @@ export default function Profile({ userId }: ProfileProps) {
                       followMutation.isPending || unfollowMutation.isPending
                     }
                   >
-                    {" "}
                     {profile.isFollowing ? "Following" : "Follow"}
                   </Button>
                 )}
@@ -521,23 +213,15 @@ export default function Profile({ userId }: ProfileProps) {
             <p className="text-xs text-muted-foreground">Posts</p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("followers")}
-            className="text-center"
-          >
+          <div className="text-center">
             <p className="font-semibold">{profile.followersCount}</p>
             <p className="text-xs text-muted-foreground">Followers</p>
-          </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("following")}
-            className="text-center"
-          >
+          <div className="text-center">
             <p className="font-semibold">{profile.followingCount}</p>
             <p className="text-xs text-muted-foreground">Following</p>
-          </button>
+          </div>
         </div>
       </section>
 
@@ -560,7 +244,6 @@ export default function Profile({ userId }: ProfileProps) {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {" "}
             {label}
           </button>
         ))}
@@ -570,7 +253,9 @@ export default function Profile({ userId }: ProfileProps) {
       {activeTab === "posts" && (
         <section className="mt-4">
           {isPostsError && (
-            <p>{getApiErrorMessage(postsError, "Unable to load posts.")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {getApiErrorMessage(postsError, "Unable to load posts.")}
+            </p>
           )}
           {postsLoading ? (
             <FeedSkeleton />
@@ -606,7 +291,7 @@ export default function Profile({ userId }: ProfileProps) {
       {activeTab === "followers" && (
         <section className="mt-4">
           {isFollowersError && (
-            <p>
+            <p className="mt-1 text-sm text-muted-foreground">
               {getApiErrorMessage(followersError, "Unable to load followers.")}
             </p>
           )}
@@ -651,7 +336,7 @@ export default function Profile({ userId }: ProfileProps) {
       {activeTab === "following" && (
         <section className="mt-4">
           {isFollowingError && (
-            <p>
+            <p className="mt-1 text-sm text-muted-foreground">
               {getApiErrorMessage(
                 followingError,
                 "Unable to load following users."
@@ -694,176 +379,6 @@ export default function Profile({ userId }: ProfileProps) {
           )}
         </section>
       )}
-
-      {/* Edit Profile */}
-      <Dialog
-        open={isEditOpen}
-        onOpenChange={(open) => {
-          if (!open && imagePreview) {
-            URL.revokeObjectURL(imagePreview);
-          }
-
-          if (!open) {
-            setSelectedImage(null);
-            setImagePreview(null);
-            setImgErr("");
-          }
-
-          setIsEditOpen(open);
-        }}
-      >
-        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-lg">
-          <DialogHeader className="shrink-0">
-            <DialogTitle>Edit Profile</DialogTitle>
-          </DialogHeader>
-
-          <form
-            onSubmit={handleSubmit(handleProfileUpdate)}
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1 scrollbar-none">
-              <div className="space-y-5">
-                {/* Username */}
-                <div>
-                  <label className="text-sm font-medium">Username</label>
-
-                  <Input {...register("username")} className="mt-1.5" />
-
-                  {errors.username && (
-                    <p className="mt-1 text-xs text-destructive">
-                      {errors.username.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Display name */}
-                <div>
-                  <label className="text-sm font-medium">Display name</label>
-
-                  <Input {...register("displayName")} className="mt-1.5" />
-
-                  {errors.displayName && (
-                    <p className="mt-1 text-xs text-destructive">
-                      {errors.displayName.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Bio */}
-                <div>
-                  <label className="text-sm font-medium">Bio</label>
-
-                  <Textarea {...register("bio")} className="mt-1.5" rows={4} />
-
-                  {errors.bio && (
-                    <p className="mt-1 text-xs text-destructive">
-                      {errors.bio.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Current image */}
-                {currentImage && (
-                  <div>
-                    <label className="text-sm font-medium">Profile image</label>
-
-                    <div className="relative mt-1.5 overflow-hidden rounded-xl border">
-                      <img
-                        src={currentImage}
-                        alt="Profile preview"
-                        className="max-h-48 w-full object-cover sm:max-h-64"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Change image */}
-                <div>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                    <Camera className="h-4 w-4" />
-                    Change profile image
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-
-                  {imgErr && (
-                    <p className="mt-1.5 text-sm text-destructive">{imgErr}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="mt-4 shrink-0 border-t pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving..." : "Save changes"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Password */}
-      <PasswordDialog
-        open={isPasswordOpen}
-        onOpenChange={setIsPasswordOpen}
-        mutation={updatePasswordMutation}
-      />
-
-      {/* Delete account */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete account?</DialogTitle>
-          </DialogHeader>
-
-          <p className="text-sm text-muted-foreground">
-            This action cannot be undone. Your account and associated data will
-            be permanently deleted.
-          </p>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-
-            <Button
-              variant="destructive"
-              disabled={deleteAccountMutation.isPending}
-              onClick={() => {
-                deleteAccountMutation.mutate(undefined, {
-                  onSuccess: () => {
-                    clearAuth();
-                    toast.success("Account deleted successfully.");
-                    router.replace("/auth/login");
-                  },
-                  onError: (error) => {
-                    toast.error(
-                      getApiErrorMessage(error, "Unable to delete account.")
-                    );
-                  },
-                });
-              }}
-            >
-              {deleteAccountMutation.isPending
-                ? "Deleting..."
-                : "Delete account"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -878,7 +393,7 @@ function ProfileListRow({
     _id: string;
     username: string;
     displayName: string;
-    bio: string;
+    bio?: string;
     profileImage?: {
       url: string;
       publicId?: string;
@@ -932,9 +447,7 @@ function ProfileListRow({
           {user.isFollowing ? "Following" : "Follow"}
         </Button>
       )}
-      {isSelf && (
-        <span className="text-sm text-muted"> me </span>
-      )}
+      {isSelf && <span className="text-sm text-muted-foreground"> me </span>}
     </div>
   );
 }

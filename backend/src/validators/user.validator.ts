@@ -26,3 +26,8 @@ export const updateProfileSchema = z.object({
 export const searchUsersSchema = z.object({
   q: z.string().trim().min(2).max(50),
 });
+
+export const updateNotificationPreferencesSchema = z.object({
+  browserEnabled: z.boolean(),
+  keywords: z.array(z.string().trim().min(1).max(50)).max(20),
+});

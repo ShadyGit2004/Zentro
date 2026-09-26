@@ -297,6 +297,21 @@ const forgotPassword = async (email: string) => {
     return;
   }
 
+  // Prevent repeated reset emails for the same account
+  const lastResetRequest = await PasswordResetToken.findOne({
+    user: user._id,
+  })
+    .sort({ createdAt: -1 })
+    .select("createdAt")
+    .lean();
+
+  if (
+    lastResetRequest &&
+    Date.now() - lastResetRequest.createdAt.getTime() < 5 * 60 * 1000
+  ) {
+    return;
+  }
+
   // Invalidate previous reset tokens
   await PasswordResetToken.updateMany(
     {

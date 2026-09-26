@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from "express";
-import { getCurrentUser,
-  getPublicUserProfile, 
+import {
+  getCurrentUser,
+  getPublicUserProfile,
   updateCurrentUser as updateCurrentUserService,
   updateProfileImage as updateProfileImageService,
+  updateNotificationPreferences as updateNotificationPreferencesService,
   searchUsers,
+  getLoginHistory as getLoginHistoryService,
   deleteCurrentUser,
   suspendUser,
   unsuspendUser,
- } from "../services/user.service";
+} from "../services/user.service";
 import AppError from "../utils/appError";
 
 const getMe = async (
@@ -120,6 +123,30 @@ const updateProfileImage = async (
     return res.status(200).json({
       success: true,
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateNotificationPreferences = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
+
+    const preferences = await updateNotificationPreferencesService(
+      req.user.userId,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: preferences,
     });
   } catch (error) {
     next(error);
@@ -245,6 +272,42 @@ const unsuspend = async (
   }
 };
 
+const getLoginHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
+
+    const limitValue = Number(req.query.limit);
+
+    const limit = req.query.limit ? Math.min(Math.max(limitValue, 1), 20) : 20;
+
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new AppError(
+        400,
+        "INVALID_LIMIT",
+        "Limit must be a positive integer"
+      );
+    }
+
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+
+    const result = await getLoginHistoryService(req.user.userId, limit, cursor);
+
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteUser = async (
   req: Request,
   res: Response,
@@ -266,4 +329,4 @@ const deleteUser = async (
   }
 };
 
-export { getMe, getUserProfile, updateUserProfile, updateProfileImage, search, deleteUser, suspend, unsuspend };
+export { getMe, getUserProfile, updateUserProfile, updateProfileImage, updateNotificationPreferences, search, getLoginHistory, deleteUser, suspend, unsuspend };

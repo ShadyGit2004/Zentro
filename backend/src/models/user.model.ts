@@ -15,6 +15,10 @@ export interface IUser extends Document {
   emailVerifiedAt?: Date;
   role: "user" | "admin";
   status: "active" | "suspended" | "deleted";
+  notificationPreferences: {
+    browserEnabled: boolean;
+    keywords: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +92,18 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["active", "suspended", "deleted"],
       default: "active",
+    },
+    
+    notificationPreferences: {
+      browserEnabled: {
+        type: Boolean,
+        default: false,
+      },
+
+      keywords: {
+        type: [String],
+        default: [],
+      },
     },
   },
   {

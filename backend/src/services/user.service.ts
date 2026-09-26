@@ -5,10 +5,11 @@ import Like from "../models/like.model";
 import Comment from "../models/comment.model";
 import Follow from "../models/follow.model";
 import Notification from "../models/notification.model";
-import Session from "../models/session.model";
+import Session, { ISession } from "../models/session.model";
 import VerificationToken from "../models/verification-token.model";
 import PasswordResetToken from "../models/password-reset-token.model";
 import AppError from "../utils/appError";
+import parseUserAgent from "../utils/parseUserAgent";
 
 // Services
 import { deleteCloudinaryImage, getOptimizedProfileImageUrl, uploadProfileImage as uploadToCloudinary } from "./cloudinary.service";
@@ -40,6 +41,10 @@ const getCurrentUser = async (userId: string) => {
     role: user.role,
     status: user.status,
     createdAt: user.createdAt,
+    notificationPreferences: {
+      browserEnabled: user.notificationPreferences?.browserEnabled ?? false,
+      keywords: user.notificationPreferences?.keywords ?? [],
+    },
   };
 };
 
@@ -250,7 +255,10 @@ const updateCurrentUser = async (
     displayName: user.displayName,
     bio: user.bio,
     profileImage: user.profileImage,
+    email: user.email,
+    emailVerifiedAt: user.emailVerifiedAt,
     updatedAt: user.updatedAt,
+    createdAt: user.createdAt,
   };
 };
 
@@ -295,6 +303,46 @@ const updateProfileImage = async (
   return {
     profileImage: user.profileImage,
   };
+};
+
+const updateNotificationPreferences = async (
+  userId: string,
+  data: {
+    browserEnabled: boolean;
+    keywords: string[];
+  }
+) => {
+  const keywords = [
+    ...new Set(
+      data.keywords
+        .map((keyword) => keyword.trim().toLowerCase())
+        .filter(Boolean)
+    ),
+  ];
+
+  const user = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      status: "active",
+    },
+    {
+      $set: {
+        "notificationPreferences.browserEnabled": data.browserEnabled,
+        "notificationPreferences.keywords": keywords,
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .select("notificationPreferences")
+    .lean();
+
+  if (!user) {
+    throw new AppError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  return user.notificationPreferences;
 };
 
 const searchUsers = async (
@@ -486,6 +534,92 @@ const unsuspendUser = async (adminId: string, userId: string) => {
   };
 };
 
+const getLoginHistory = async (
+  userId: string,
+  limit: number,
+  cursor?: string
+) => {
+  let cursorDate: Date | undefined;
+
+  if (cursor) {
+    if (!mongoose.isValidObjectId(cursor)) {
+      throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
+    }
+
+    const cursorSession = await Session.findOne({
+      _id: cursor,
+      user: userId,
+    })
+      .select("createdAt")
+      .lean();
+
+    if (!cursorSession) {
+      throw new AppError(400, "INVALID_CURSOR", "Invalid cursor");
+    }
+
+    cursorDate = cursorSession.createdAt;
+  }
+
+  const query: mongoose.QueryFilter<ISession> = {
+    user: userId,
+  };
+
+  if (cursor && cursorDate) {
+    query.$or = [
+      {
+        createdAt: { $lt: cursorDate },
+      },
+      {
+        createdAt: cursorDate,
+        _id: { $lt: new mongoose.Types.ObjectId(cursor) },
+      },
+    ];
+  }
+
+  const sessions = await Session.find(query)
+    .select("_id userAgent ipAddress createdAt lastUsedAt revokedAt expiresAt")
+    .sort({
+      createdAt: -1,
+      _id: -1,
+    })
+    .limit(limit + 1)
+    .lean();
+
+  const hasNextPage = sessions.length > limit;
+
+  if (hasNextPage) {
+    sessions.pop();
+  }
+
+  const data = sessions.map((session) => {
+    const deviceInfo = parseUserAgent(session.userAgent);
+
+    return {
+      id: session._id,
+      browser: deviceInfo.browser,
+      os: deviceInfo.os,
+      device: deviceInfo.device,
+      ipAddress: session.ipAddress ?? "Unknown",
+      loginAt: session.createdAt,
+      lastUsedAt: session.lastUsedAt,
+      revokedAt: session.revokedAt ?? null,
+      expiresAt: session.expiresAt,
+      status: session.revokedAt ? "revoked" : "active",
+    };
+  });
+
+  return {
+    data,
+    pagination: {
+      nextCursor:
+        hasNextPage && data.length > 0
+          ? data[data.length - 1].id.toString()
+          : null,
+      hasNextPage,
+    },
+  };
+};
+
 const deleteCurrentUser = async (userId: string) => {
   if (!mongoose.isValidObjectId(userId)) {
     throw new AppError(400, "INVALID_USER_ID", "Invalid user ID");
@@ -616,4 +750,15 @@ const deleteCurrentUser = async (userId: string) => {
   };
 };
 
-export { getCurrentUser, getPublicUserProfile, updateCurrentUser, updateProfileImage, searchUsers, deleteCurrentUser,suspendUser, unsuspendUser};
+export {
+  getCurrentUser,
+  getPublicUserProfile,
+  updateCurrentUser,
+  updateProfileImage,
+  updateNotificationPreferences,
+  searchUsers,
+  getLoginHistory,
+  deleteCurrentUser,
+  suspendUser,
+  unsuspendUser,
+};
