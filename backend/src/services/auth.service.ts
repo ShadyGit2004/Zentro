@@ -285,6 +285,10 @@ const loginUser = async (
       displayName: user.displayName,
       profileImage: user.profileImage,
       emailVerifiedAt: user.emailVerifiedAt,
+      notificationPreferences: {
+        browserEnabled: user.notificationPreferences?.browserEnabled ?? false,
+        keywords: user.notificationPreferences?.keywords ?? [],
+      },
     },
   };
 };
@@ -532,6 +536,10 @@ const refreshUserSession = async (
       displayName: user.displayName,
       profileImage: user.profileImage,
       emailVerifiedAt: user.emailVerifiedAt,
+      notificationPreferences: {
+        browserEnabled: user.notificationPreferences?.browserEnabled ?? false,
+        keywords: user.notificationPreferences?.keywords ?? [],
+      },
     },
   };
 };
@@ -704,6 +712,10 @@ const googleLoginUser = async (
       displayName: user.displayName,
       profileImage: user.profileImage,
       emailVerifiedAt: user.emailVerifiedAt,
+      notificationPreferences: {
+        browserEnabled: user.notificationPreferences?.browserEnabled ?? false,
+        keywords: user.notificationPreferences?.keywords ?? [],
+      },
     },
   };
 };
