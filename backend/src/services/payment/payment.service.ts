@@ -14,10 +14,14 @@ import type {
 } from "./payment.types";
 import AppError from "../../utils/appError";
 import Post from "../../models/post.model";
+import mongoose from "mongoose";
 
 type PaidPlan = "bronze" | "silver" | "gold";
 
-const getPostUsage = async (userId: string) => {
+const getPostUsage = async (
+  userId: string,
+  session?: mongoose.ClientSession
+) => {
   const now = new Date();
 
   let plan: SubscriptionPlan = "free";
@@ -26,42 +30,71 @@ const getPostUsage = async (userId: string) => {
   let subscriptionStatus: "active" | "expired" = "active";
   let subscription = null;
 
-  subscription = await Subscription.findOne({
+  const subscriptionQuery = Subscription.findOne({
     user: userId,
     status: "active",
   })
     .sort({ createdAt: -1 })
     .lean();
 
-  if (subscription && subscription.endDate && subscription.endDate > now) {
+  if (session) {
+    subscriptionQuery.session(session);
+  }
+
+  subscription = await subscriptionQuery;
+
+  if (
+    subscription &&
+    subscription.endDate &&
+    subscription.endDate > now
+  ) {
     plan = subscription.plan;
 
     periodStart = subscription.startDate ?? now;
     periodEnd = subscription.endDate;
   } else {
-    if (subscription && subscription.endDate && subscription.endDate <= now) {
+    if (
+      subscription &&
+      subscription.endDate &&
+      subscription.endDate <= now
+    ) {
       await Subscription.updateOne(
         { _id: subscription._id },
-        { $set: { status: "expired" } }
+        { $set: { status: "expired" } },
+        { session }
       );
 
       subscriptionStatus = "expired";
     }
 
-    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    periodStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    );
 
-    periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    periodEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1
+    );
   }
 
   const planConfig = SUBSCRIPTION_PLANS[plan];
 
-  const postsUsed = await Post.countDocuments({
+  const postCountQuery = Post.countDocuments({
     author: userId,
     createdAt: {
       $gte: periodStart,
       $lt: periodEnd,
     },
   });
+
+  if (session) {
+    postCountQuery.session(session);
+  }
+
+  const postsUsed = await postCountQuery;
 
   return {
     plan,
@@ -78,8 +111,11 @@ const getPostUsage = async (userId: string) => {
   };
 };
 
-const checkPostLimit = async (userId: string) => {
-  const usage = await getPostUsage(userId);
+const checkPostLimit = async (
+  userId: string,
+  session?: mongoose.ClientSession
+) => {
+  const usage = await getPostUsage(userId, session);
 
   // Gold / unlimited
   if (usage.postLimit === null) {

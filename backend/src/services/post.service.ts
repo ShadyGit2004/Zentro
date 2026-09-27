@@ -14,7 +14,8 @@ import { checkPostLimit } from "./payment/payment.service";
 
 const syncHashtags = async (
   oldHashtagIds: mongoose.Types.ObjectId[],
-  newHashtagNames: string[]
+  newHashtagNames: string[],
+  session?: mongoose.ClientSession
 ) => {
   const oldIds = oldHashtagIds.map((id) => id.toString());
 
@@ -30,6 +31,7 @@ const syncHashtags = async (
         {
           new: true,
           upsert: true,
+          session,
         }
       );
     })
@@ -50,7 +52,8 @@ const syncHashtags = async (
   if (addedIds.length > 0) {
     await Hashtag.updateMany(
       { _id: { $in: addedIds } },
-      { $inc: { postsCount: 1 } }
+      { $inc: { postsCount: 1 } },
+      { session }
     );
   }
 
@@ -61,7 +64,8 @@ const syncHashtags = async (
         $inc: {
           postsCount: -1,
         },
-      }
+      },
+      { session }
     );
   }
 
@@ -81,32 +85,58 @@ const createPost = async (
     .lean();
 
   if (!user) {
-    throw new AppError(
-      401,
-      "UNAUTHORIZED",
-      "Authentication required"
-    );
+    throw new AppError(401, "UNAUTHORIZED", "Authentication required");
   }
 
   if (!content && !file) {
-    throw new AppError(
-      400,
-      "EMPTY_POST",
-      "Post must contain text or an image"
-    );
+    throw new AppError(400, "EMPTY_POST", "Post must contain text or an image");
   }
 
-  await checkPostLimit(userId);
+  const session = await mongoose.startSession();
 
+  let post!: mongoose.HydratedDocument<IPost>;
+  let hashtagIds: mongoose.Types.ObjectId[] = [];
   const hashtagNames = extractHashtags(content);
-  const hashtags = await syncHashtags([], hashtagNames);
 
-  const post = await Post.create({
-    author: userId,
-    content,
-    hashtags
-  });
+  try {
+    await session.withTransaction(async () => {
+      // Force concurrent post creations for the same user
+      // to conflict and retry at the transaction level.
+      await User.updateOne(
+        {
+          _id: userId,
+          status: "active",
+        },
+        {
+          $inc: {
+            postCreationVersion: 1,
+          },
+        },
+        { session }
+      );
 
+      await checkPostLimit(userId, session);
+
+      hashtagIds = await syncHashtags([], hashtagNames, session);
+
+      const posts = await Post.create(
+        [
+          {
+            author: userId,
+            content,
+            hashtags: hashtagIds,
+          },
+        ],
+        { session }
+      );
+
+      post = posts[0];
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  // Cloudinary is intentionally outside the DB transaction.
   if (file) {
     let uploadedPublicId: string | undefined;
 
@@ -131,6 +161,15 @@ const createPost = async (
       await post.save();
     } catch (error) {
       await Post.deleteOne({ _id: post._id });
+
+      // Roll back hashtag counters because the DB transaction
+      // has already committed before the Cloudinary upload.
+      if (hashtagIds.length > 0) {
+        await Hashtag.updateMany(
+          { _id: { $in: hashtagIds } },
+          { $inc: { postsCount: -1 } }
+        );
+      }
 
       if (uploadedPublicId) {
         await deleteCloudinaryImage(uploadedPublicId);
