@@ -17,7 +17,7 @@ export const SUBSCRIPTION_PLANS: Record<
     price: 0,
     currency: "INR",
     billingInterval: "monthly",
-    postLimit: 1,
+    postLimit: 3,
   },
 
   bronze: {
@@ -25,7 +25,7 @@ export const SUBSCRIPTION_PLANS: Record<
     price: 100,
     currency: "INR",
     billingInterval: "monthly",
-    postLimit: 3,
+    postLimit: 5,
   },
 
   silver: {
@@ -33,7 +33,7 @@ export const SUBSCRIPTION_PLANS: Record<
     price: 300,
     currency: "INR",
     billingInterval: "monthly",
-    postLimit: 5,
+    postLimit: 15,
   },
 
   gold: {

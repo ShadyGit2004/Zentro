@@ -11,6 +11,7 @@ const transporter = nodemailer.createTransport({
 
 import { verificationEmail } from "../utils/email/verificationEmail";
 import { resetPasswordEmail } from "../utils/email/resetPasswordEmail";
+import { subscriptionInvoiceEmail } from "../utils/email/subscriptionInvoiceEmail";
 
 const sendVerificationEmail = async (
   email: string,
@@ -25,7 +26,6 @@ const sendVerificationEmail = async (
   const verificationUrl = `${frontendUrl}/auth/verify-email?token=${token}`;
 
   await transporter.sendMail({
-    // from: `"Zentro" <${emailConfig.user}>`,
     to: email,
     subject: "Verify your Zentro email",
     html: verificationEmail(verificationUrl),
@@ -45,11 +45,56 @@ const sendPasswordResetEmail = async (
   const resetUrl = `${frontendUrl}/auth/reset-password?token=${token}`;
 
   await transporter.sendMail({
-    // from: `"Zentro" <${emailConfig.user}>`,
     to: email,
     subject: "Reset your Zentro password",
     html: resetPasswordEmail(resetUrl),
   });
 };
 
-export { sendVerificationEmail, sendPasswordResetEmail };
+interface SendSubscriptionInvoiceEmailInput {
+  email: string;
+  displayName: string;
+  plan: string;
+  amount: number;
+  currency: string;
+  paymentDate: Date;
+  providerPaymentId: string;
+  providerOrderId: string;
+  periodStart: Date;
+  periodEnd: Date;
+}
+
+const sendSubscriptionInvoiceEmail = async ({
+  email,
+  displayName,
+  plan,
+  amount,
+  currency,
+  paymentDate,
+  providerPaymentId,
+  providerOrderId,
+  periodStart,
+  periodEnd,
+}: SendSubscriptionInvoiceEmailInput): Promise<void> => {
+  await transporter.sendMail({
+    to: email,
+    subject: `Zentro Subscription Payment Receipt — ${plan}`,
+    html: subscriptionInvoiceEmail({
+      displayName,
+      plan,
+      amount,
+      currency,
+      paymentDate,
+      providerPaymentId,
+      providerOrderId,
+      periodStart,
+      periodEnd,
+    }),
+  });
+};
+
+export {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendSubscriptionInvoiceEmail,
+};
