@@ -2,10 +2,12 @@ import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import AppError from "../utils/appError"; 
 
-import { 
+import {
   createPaymentOrder as createPaymentOrderService,
   verifyPayment as verifyPaymentService,
-  handleRazorpayWebhookEvent 
+  handleRazorpayWebhookEvent,
+  getCurrentSubscription as getCurrentSubscriptionService,
+  getPaymentHistory as getPaymentHistoryService,
 } from "../services/payment/payment.service";
 
 interface RawBodyRequest extends Request {
@@ -141,5 +143,72 @@ const handleRazorpayWebhook = async (
   }
 };
 
+const getCurrentSubscription = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
 
-export { createPaymentOrder, verifyPayment, handleRazorpayWebhook };
+    const subscription = await getCurrentSubscriptionService(req.user.userId);
+
+    return res.status(200).json({
+      success: true,
+      data: subscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getPaymentHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new AppError(401, "UNAUTHORIZED", "Authentication required");
+    }
+
+      const limitValue = Number(req.query.limit);
+
+      const limit = req.query.limit
+        ? Math.min(Math.max(limitValue, 1), 50)
+        : 20;
+
+      if (!Number.isInteger(limit) || limit < 1) {
+        throw new AppError(
+          400,
+          "INVALID_LIMIT",
+          "Limit must be a positive integer"
+        );
+      }
+
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+
+    const result = await getPaymentHistoryService(
+      req.user.userId,
+      limit,
+      cursor
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export {
+  createPaymentOrder,
+  verifyPayment,
+  handleRazorpayWebhook,
+  getCurrentSubscription,
+  getPaymentHistory,
+};

@@ -158,7 +158,7 @@ export default function Profile({ userId }: ProfileProps) {
   const currentImage = profile.profileImage?.url ?? undefined;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+    <div className="mx-auto w-full max-w-2xl py-6">
       {/* Profile Header */}
       <section className="rounded-2xl border p-5">
         <div className="flex flex-col gap-5 sm:flex-row">

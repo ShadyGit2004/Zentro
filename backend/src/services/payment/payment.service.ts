@@ -1,8 +1,10 @@
 import crypto from "crypto";
 
+import User from "../../models/user.model";
+import { sendSubscriptionInvoiceEmail } from "../email.service";
 import Payment, { type IPayment } from "../../models/payment.model";
 import Subscription from "../../models/subscription.model";
-import { SUBSCRIPTION_PLANS } from "../../config/subscription";
+import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "../../config/subscription";
 import { paymentConfig } from "../../config/payment";
 import paymentProvider from "./payment.provider";
 import type {
@@ -11,8 +13,110 @@ import type {
   VerifyPaymentInput,
 } from "./payment.types";
 import AppError from "../../utils/appError";
+import Post from "../../models/post.model";
 
 type PaidPlan = "bronze" | "silver" | "gold";
+
+const getPostUsage = async (userId: string) => {
+  const now = new Date();
+
+  let plan: SubscriptionPlan = "free";
+  let periodStart: Date;
+  let periodEnd: Date;
+  let subscriptionStatus: "active" | "expired" = "active";
+  let subscription = null;
+
+  subscription = await Subscription.findOne({
+    user: userId,
+    status: "active",
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (subscription && subscription.endDate && subscription.endDate > now) {
+    plan = subscription.plan;
+
+    periodStart = subscription.startDate ?? now;
+    periodEnd = subscription.endDate;
+  } else {
+    if (subscription && subscription.endDate && subscription.endDate <= now) {
+      await Subscription.updateOne(
+        { _id: subscription._id },
+        { $set: { status: "expired" } }
+      );
+
+      subscriptionStatus = "expired";
+    }
+
+    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  const planConfig = SUBSCRIPTION_PLANS[plan];
+
+  const postsUsed = await Post.countDocuments({
+    author: userId,
+    createdAt: {
+      $gte: periodStart,
+      $lt: periodEnd,
+    },
+  });
+
+  return {
+    plan,
+    subscription,
+    subscriptionStatus,
+    postLimit: planConfig.postLimit,
+    postsUsed,
+    postsRemaining:
+      planConfig.postLimit === null
+        ? null
+        : Math.max(planConfig.postLimit - postsUsed, 0),
+    periodStart,
+    periodEnd,
+  };
+};
+
+const checkPostLimit = async (userId: string) => {
+  const usage = await getPostUsage(userId);
+
+  // Gold / unlimited
+  if (usage.postLimit === null) {
+    return usage;
+  }
+
+  if (usage.postsUsed >= usage.postLimit) {
+    throw new AppError(
+      403,
+      "POST_LIMIT_REACHED",
+      `You have reached your ${
+        SUBSCRIPTION_PLANS[usage.plan].name
+      } plan post limit of ${usage.postLimit} posts for this period`
+    );
+  }
+
+  return usage;
+};
+
+const getCurrentSubscription = async (userId: string) => {
+  const usage = await getPostUsage(userId);
+  const planConfig = SUBSCRIPTION_PLANS[usage.plan];
+
+  return {
+    plan: usage.plan,
+    planName: planConfig.name,
+    status: usage.subscriptionStatus,
+    price: planConfig.price,
+    currency: planConfig.currency,
+    billingInterval: planConfig.billingInterval,
+    postLimit: usage.postLimit,
+    postsUsed: usage.postsUsed,
+    postsRemaining: usage.postsRemaining,
+    periodStart: usage.periodStart,
+    periodEnd: usage.periodEnd,
+  };
+};
 
 const createPaymentOrder = async (userId: string, plan: PaidPlan) => {
   const planConfig = SUBSCRIPTION_PLANS[plan];
@@ -93,25 +197,6 @@ const activatePaidPayment = async (
     throw new AppError(404, "PAYMENT_NOT_FOUND", "Payment not found");
   }
 
-  // Webhook + frontend callback dono aa sakte hain.
-  // Already paid payment ko dobara process nahi karna.
-  if (payment.status === "paid") {
-    return {
-      verified: true,
-      providerOrderId: payment.providerOrderId,
-      providerPaymentId: payment.providerPaymentId,
-      subscriptionId: payment.subscription,
-    };
-  }
-
-  if (payment.status !== "created") {
-    throw new AppError(
-      400,
-      "INVALID_PAYMENT_STATUS",
-      "Payment cannot be processed in its current state"
-    );
-  }
-
   if (!payment.subscription) {
     throw new AppError(
       500,
@@ -120,49 +205,173 @@ const activatePaidPayment = async (
     );
   }
 
-  const startDate = new Date();
-  const endDate = new Date(startDate);
-  endDate.setMonth(endDate.getMonth() + 1);
+  const session = await Payment.startSession();
 
-  const subscription = await Subscription.findOneAndUpdate(
-    {
-      _id: payment.subscription,
-      user: payment.user,
-    },
-    {
-      $set: {
-        plan: payment.plan,
-        status: "active",
-        startDate,
-        endDate,
-        provider: payment.provider,
-      },
-      $unset: {
-        providerCustomerId: 1,
-        providerSubscriptionId: 1,
-      },
-    },
-    {
-      new: true,
+  try {
+    let result: {
+      verified: boolean;
+      providerOrderId: string;
+      providerPaymentId?: string;
+      subscriptionId: unknown;
+      shouldSendInvoice: boolean;
+      paymentId: unknown;
+    };
+
+    await session.withTransaction(async () => {
+      const currentPayment = await Payment.findOneAndUpdate(
+        {
+          _id: payment._id,
+          status: "created",
+        },
+        {
+          $set: {
+            providerPaymentId,
+            status: "paid",
+            paidAt: new Date(),
+          },
+        },
+        {
+          new: true,
+          session,
+        }
+      );
+
+      // Another request (verify/webhook) already processed this payment.
+      if (!currentPayment) {
+        const existingPayment = await Payment.findById(payment._id).session(
+          session
+        );
+
+        if (!existingPayment) {
+          throw new AppError(404, "PAYMENT_NOT_FOUND", "Payment not found");
+        }
+
+        if (existingPayment.status === "paid") {
+          result = {
+            verified: true,
+            providerOrderId: existingPayment.providerOrderId,
+            providerPaymentId: existingPayment.providerPaymentId,
+            subscriptionId: existingPayment.subscription,
+            shouldSendInvoice: !existingPayment.invoiceEmailSentAt,
+            paymentId: existingPayment._id,
+          };
+
+          return;
+        }
+
+        throw new AppError(
+          400,
+          "INVALID_PAYMENT_STATUS",
+          "Payment cannot be processed in its current state"
+        );
+      }
+
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      const subscription = await Subscription.findOneAndUpdate(
+        {
+          _id: currentPayment.subscription,
+          user: currentPayment.user,
+          status: "pending",
+        },
+        {
+          $set: {
+            plan: currentPayment.plan,
+            status: "active",
+            startDate,
+            endDate,
+            provider: currentPayment.provider,
+          },
+          $unset: {
+            providerCustomerId: 1,
+            providerSubscriptionId: 1,
+          },
+        },
+        {
+          new: true,
+          session,
+        }
+      );
+
+      if (!subscription) {
+        throw new AppError(
+          404,
+          "SUBSCRIPTION_NOT_FOUND",
+          "Subscription not found"
+        );
+      }
+
+      result = {
+        verified: true,
+        providerOrderId: currentPayment.providerOrderId,
+        providerPaymentId: currentPayment.providerPaymentId,
+        subscriptionId: subscription._id,
+        shouldSendInvoice: !currentPayment.invoiceEmailSentAt,
+        paymentId: currentPayment._id,
+      };
+    });
+
+    // Transaction committed successfully.
+    // Email is intentionally outside the transaction.
+
+    if (result!.shouldSendInvoice) {
+      const currentPayment = await Payment.findById(result!.paymentId).lean();
+
+      if (currentPayment && !currentPayment.invoiceEmailSentAt) {
+        const user = await User.findById(currentPayment.user)
+          .select("email displayName username")
+          .lean();
+
+        const subscription = await Subscription.findById(
+          currentPayment.subscription
+        ).lean();
+
+        if (user && subscription) {
+          try {
+            await sendSubscriptionInvoiceEmail({
+              email: user.email,
+              displayName: user.displayName || user.username,
+              plan: subscription.plan,
+              amount: currentPayment.amount,
+              currency: currentPayment.currency,
+              paymentDate: currentPayment.paidAt!,
+              providerPaymentId: currentPayment.providerPaymentId!,
+              providerOrderId: currentPayment.providerOrderId,
+              periodStart: subscription.startDate!,
+              periodEnd: subscription.endDate!,
+            });
+
+            await Payment.updateOne(
+              {
+                _id: currentPayment._id,
+                invoiceEmailSentAt: {
+                  $exists: false,
+                },
+              },
+              {
+                $set: {
+                  invoiceEmailSentAt: new Date(),
+                },
+              }
+            );
+          } catch (error) {
+            console.error("Subscription invoice email failed:", error);
+          }
+        }
+      }
     }
-  );
 
-  if (!subscription) {
-    throw new AppError(404, "SUBSCRIPTION_NOT_FOUND", "Subscription not found");
+    return {
+      verified: result!.verified,
+      providerOrderId: result!.providerOrderId,
+      providerPaymentId: result!.providerPaymentId,
+      subscriptionId: result!.subscriptionId,
+    };
+  } finally {
+    await session.endSession();
   }
-
-  payment.providerPaymentId = providerPaymentId;
-  payment.status = "paid";
-  payment.paidAt = new Date();
-
-  await payment.save();
-
-  return {
-    verified: true,
-    providerOrderId: payment.providerOrderId,
-    providerPaymentId: payment.providerPaymentId,
-    subscriptionId: subscription._id,
-  };
 };
 
 const verifyPayment = async (userId: string, input: VerifyPaymentInput) => {
@@ -266,4 +475,55 @@ const handleRazorpayWebhookEvent = async (
   }
 };
 
-export { createPaymentOrder, verifyPayment, handleRazorpayWebhookEvent };
+const getPaymentHistory = async (
+  userId: string,
+  limit: number = 10,
+  cursor?: string
+) => {
+  const query: {
+    user: string;
+    _id?: {
+      $lt: string;
+    };
+  } = {
+    user: userId,
+  };
+
+  if (cursor) {
+    query._id = {
+      $lt: cursor,
+    };
+  }
+
+  const payments = await Payment.find(query)
+    .sort({ _id: -1 })
+    .limit(limit + 1)
+    .select(
+      "_id plan amount currency status provider providerOrderId providerPaymentId paidAt failedAt refundedAt createdAt"
+    )
+    .lean();
+
+  const hasNextPage = payments.length > limit;
+
+  const items = hasNextPage ? payments.slice(0, limit) : payments;
+
+  const nextCursor = hasNextPage ? String(items[items.length - 1]._id) : null;
+
+  return {
+    data : items,
+    pagination: {
+      nextCursor,
+      hasNextPage,
+    },
+  };
+};
+
+export {
+  createPaymentOrder,
+  verifyPayment,
+  handleRazorpayWebhookEvent,
+  getPostUsage,
+  checkPostLimit,
+  getCurrentSubscription,
+  getPaymentHistory,
+};

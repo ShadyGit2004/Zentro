@@ -14,6 +14,8 @@ import {
   createPaymentOrder,
   handleRazorpayWebhook,
   verifyPayment,
+  getCurrentSubscription,
+  getPaymentHistory,
 } from "../controllers/payment.controller";
 
 const router = Router();
@@ -34,6 +36,22 @@ router.post(
   requireActiveUser,
   validate(verifyPaymentSchema),
   verifyPayment
+);
+
+router.get(
+  "/subscription",
+  authMiddleware,
+  requireVerifiedEmail,
+  requireActiveUser,
+  getCurrentSubscription
+);
+
+router.get(
+  "/history",
+  authMiddleware,
+  requireVerifiedEmail,
+  requireActiveUser,
+  getPaymentHistory
 );
 
 router.post("/webhook", handleRazorpayWebhook);

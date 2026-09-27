@@ -10,6 +10,7 @@ import Bookmark from "../models/bookmark.model";
 import Repost from "../models/repost.model";
 import Hashtag from "../models/hashtag.model";
 import extractHashtags from "../utils/hashtag.utils";
+import { checkPostLimit } from "./payment/payment.service";
 
 const syncHashtags = async (
   oldHashtagIds: mongoose.Types.ObjectId[],
@@ -94,6 +95,8 @@ const createPost = async (
       "Post must contain text or an image"
     );
   }
+
+  await checkPostLimit(userId);
 
   const hashtagNames = extractHashtags(content);
   const hashtags = await syncHashtags([], hashtagNames);
