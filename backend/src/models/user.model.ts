@@ -19,6 +19,7 @@ export interface IUser extends Document {
     browserEnabled: boolean;
     keywords: string[];
   };
+  postCreationVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,7 +94,7 @@ const userSchema = new Schema<IUser>(
       enum: ["active", "suspended", "deleted"],
       default: "active",
     },
-    
+
     notificationPreferences: {
       browserEnabled: {
         type: Boolean,
@@ -104,6 +105,10 @@ const userSchema = new Schema<IUser>(
         type: [String],
         default: [],
       },
+    },
+    postCreationVersion: {
+      type: Number,
+      default: 0,
     },
   },
   {
