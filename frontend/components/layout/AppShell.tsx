@@ -164,6 +164,8 @@ export default function AppShell({ children }: AppShellProps) {
                 const isActive =
                   item.label === "Profile"
                     ? pathname.includes(`/profile`)
+                    : item.label === "Settings"
+                    ? pathname.includes(item.href || `${item.href}/`)
                     : pathname === item.href;
 
                 return (
