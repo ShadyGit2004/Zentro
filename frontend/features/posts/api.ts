@@ -12,8 +12,12 @@ export const createPost = async (
 ): Promise<CreatePostResponse> => {
   const formData = new FormData();
 
-  if(!payload.content?.trim() && !payload.image){
-    throw new Error("Content or image must contain to create post")
+  if (!payload.content?.trim() && !payload.image && !payload.audio) {
+    throw new Error("Content or media must be provided to create post");
+  }
+
+  if (payload.image && payload.audio) {
+    throw new Error("A post can contain either an image or an audio file, not both");
   }
 
   if(payload.content){
@@ -22,6 +26,10 @@ export const createPost = async (
 
   if (payload.image) {
     formData.append("image", payload.image);
+  }
+
+  if (payload.audio) {
+    formData.append("audio", payload.audio);
   }
 
   const response = await api.post<CreatePostResponse>("/posts", formData);
@@ -35,8 +43,12 @@ export const updatePost = async (
 ): Promise<UpdatePostResponse> => {
   const formData = new FormData();
 
-  if(!payload.content?.trim() && !payload.image){
-    throw new Error("Content or image must contain to update post")
+  if (!payload.content?.trim() && !payload.image && !payload.audio) {
+    throw new Error("Content or media must be provided to update post");
+  }
+
+  if (payload.image && payload.audio) {
+    throw new Error("A post can contain either an image or an audio file, not both");
   }
 
   if (payload.content !== undefined) {
@@ -45,6 +57,10 @@ export const updatePost = async (
 
   if (payload.image) {
     formData.append("image", payload.image);
+  }
+
+  if (payload.audio) {
+    formData.append("audio", payload.audio);
   }
 
   const response = await api.patch<UpdatePostResponse>(
