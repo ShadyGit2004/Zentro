@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import NotificationItem from "./NotificationItem";
 import NotificationsSkeleton from "./NotificationsSkeleton";
 import {
@@ -11,7 +13,8 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function Notifications() {
-const { user } = useAuth();
+  const t = useTranslations("notifications");
+  const { user } = useAuth();
   const notificationsQuery = useNotifications(Boolean(user));
   const markAsReadMutation = useMarkNotificationAsRead();
   const markAllMutation = useMarkAllNotificationsAsRead();
@@ -55,7 +58,7 @@ const { user } = useAuth();
         <div className="py-12 text-center text-sm text-destructive">
           {getApiErrorMessage(
             notificationsQuery.error,
-            "Something went wrong while loading notifications."
+            t("error")
           )}
         </div>
       </div>
@@ -67,11 +70,11 @@ const { user } = useAuth();
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">  
           <div>
-            <h1 className="text-xl font-semibold">Notifications</h1>
+            <h1 className="text-xl font-semibold">{t("title")}</h1>
 
             {unreadCount > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">
-                {unreadCount} unread
+                {t("unread", { count: unreadCount })}
               </p>
             )}
           </div>
@@ -84,14 +87,14 @@ const { user } = useAuth();
             disabled={markAllMutation.isPending}
             className="rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {markAllMutation.isPending ? "Marking..." : "Mark all as read"}
+            {markAllMutation.isPending ? t("marking") : t("markAllAsRead")}
           </button>
         )}
       </div>
 
       {notifications.length === 0 ? (
         <div className="rounded-xl border py-12 text-center">
-          <p className="text-sm text-muted-foreground">No notifications yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noNotifications")}</p>
         </div>
       ) : (
         <>
@@ -113,8 +116,8 @@ const { user } = useAuth();
               className="mt-4 w-full rounded-xl border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               {notificationsQuery.isFetchingNextPage
-                ? "Loading..."
-                : "Load more"}
+                ? t("loading")
+                : t("loadMore")}
             </button>
           )}
         </>

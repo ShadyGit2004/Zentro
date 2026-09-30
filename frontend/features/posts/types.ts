@@ -3,6 +3,7 @@ import { FeedPost } from "../feed/types";
 export interface CreatePostPayload {
   content?: string;
   image?: File;
+  audio?: File;
 }
 
 export interface CreatePostResponse {
@@ -12,6 +13,7 @@ export interface CreatePostResponse {
       _id: string;
       content: string;
       media?: {
+        type?: "image" | "audio";
         url: string;
         publicId: string;
       };
@@ -36,6 +38,7 @@ export interface CreatePostResponse {
 export interface UpdatePostPayload {
   content?: string;
   image?: File;
+  audio?: File;
 }
 
 export interface UpdatePostResponse {
@@ -45,6 +48,7 @@ export interface UpdatePostResponse {
       _id: string;
       content: string;
       media?: {
+        type?: "image" | "audio";
         url: string;
         publicId: string;
       };

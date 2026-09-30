@@ -5,7 +5,7 @@ import authMiddleware from "../middlewares/auth.middleware";
 import requireVerifiedEmail from "../middlewares/require-verified-email.middleware";
 import requireActiveUser from "../middlewares/require-active-user.middleware";
 import validate from "../middlewares/validate.middleware";
-import uploadImage from "../middlewares/upload.middleware";
+import {uploadPostMedia} from "../middlewares/upload.middleware";
 
 // Schemas
 import {
@@ -35,7 +35,7 @@ router.post(
   authMiddleware,
   requireActiveUser,
   requireVerifiedEmail,
-  uploadImage.single("image"),
+  uploadPostMedia,
   validate(createPostSchema),
   create
 );
@@ -76,7 +76,7 @@ router.route("/:postId")
   authMiddleware,
   requireActiveUser,
   requireVerifiedEmail,
-  uploadImage.single("image"),
+  uploadPostMedia,
   validate(updatePostSchema),
   update
 )

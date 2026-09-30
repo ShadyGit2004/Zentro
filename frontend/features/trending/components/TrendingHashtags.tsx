@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { Hash } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useTrendingHashtags } from "../hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 const TrendingHashtags = () => {
+  const t = useTranslations("trending");
   const { data, isLoading, isError, error } = useTrendingHashtags(10);
 
   if (isLoading) {
     return (
       <section className="rounded-xl border bg-card p-4">
-        <h2 className="mb-4 text-base font-semibold">Trending</h2>
+        <h2 className="mb-4 text-base font-semibold">{t("title")}</h2>
 
         {/* Desktop loading */}
         <div className="hidden space-y-4 lg:block">
@@ -40,10 +42,10 @@ const TrendingHashtags = () => {
   if (isError) {
     return (
       <section className="rounded-xl border bg-card p-4">
-        <h2 className="mb-1 text-base font-semibold">Trending</h2>
+        <h2 className="mb-1 text-base font-semibold">{t("title")}</h2>
 
         <p className="text-sm text-muted-foreground">
-          {getApiErrorMessage(error, "Unable to load trending hashtags.")}
+          {getApiErrorMessage(error, t("error"))}
         </p>
       </section>
     );
@@ -54,10 +56,10 @@ const TrendingHashtags = () => {
   if (hashtags.length === 0) {
     return (
       <section className="rounded-xl border bg-card p-4">
-        <h2 className="mb-1 text-base font-semibold">Trending</h2>
+        <h2 className="mb-1 text-base font-semibold">{t("title")}</h2>
 
         <p className="text-sm text-muted-foreground">
-          No trending hashtags right now.
+          {t("noTrending")}
         </p>
       </section>
     );
@@ -65,7 +67,7 @@ const TrendingHashtags = () => {
 
   return (
     <section className="rounded-xl border bg-card p-4">
-      <h2 className="mb-4 text-base font-semibold">Trending</h2>
+      <h2 className="mb-4 text-base font-semibold">{t("title")}</h2>
 
       {/* Desktop */}
       <div className="hidden space-y-1 lg:block">
@@ -82,9 +84,7 @@ const TrendingHashtags = () => {
             </div>
 
             <p className="ml-6 text-xs text-muted-foreground">
-              {hashtag.recentPostsCount}{" "}
-              {hashtag.recentPostsCount === 1 ? "post" : "posts"} in the last
-              24h
+              {t("postsCount", { count: hashtag.recentPostsCount })}
             </p>
           </Link>
         ))}

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, CircleAlert, Loader2, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +16,9 @@ import Link from "next/link";
 import ZentroLogo from "@/components/brand/ZentroLogo";
 
 function VerifyEmail() {
+  const t = useTranslations("verifyEmail");
+  const tAuth = useTranslations("auth");
+
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -60,15 +64,15 @@ function VerifyEmail() {
         });
 
         setStatus("success");
-        toast.success("Email verified successfully.");
+        toast.success(t("emailVerified"));
 
         setMessage(
           response.data?.data?.message ||
-            "Your email has been verified successfully."
+            t("emailVerified")
         );
       } catch (error: unknown) {
         setStatus("error");
-        toast.error("Unable to verify your email.");
+        toast.error(t("verificationFailed"));
 
         const apiError = error as {
           response?: {
@@ -82,13 +86,13 @@ function VerifyEmail() {
 
         setMessage(
           apiError.response?.data?.error?.message ||
-            "Email verification failed. The link may be invalid or expired."
+            t("verificationFailed")
         );
       }
     };
 
     verifyEmail();
-  }, [token, user?.emailVerifiedAt, loading, router]);
+  }, [token, user?.emailVerifiedAt, loading, router, t]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -111,10 +115,10 @@ function VerifyEmail() {
       const response = await resendVerification({
         email,
       });      
-      toast.success(response.data.message ||"Verification email sent.");
+      toast.success(response.data.message || t("checkEmail"));
 
       setResendMessage(
-        response.data?.message || "A new verification email has been sent."
+        response.data?.message || t("checkEmail")
       );
 
       setCooldown(60);
@@ -129,11 +133,11 @@ function VerifyEmail() {
         };
       };
 
-      toast.error("Unable to send verification email.");
+      toast.error(t("verificationFailed"));
 
       setResendError(
         apiError.response?.data?.error?.message ||
-          "Unable to resend verification email. Please try again."
+          t("verificationFailed")
       );
     } finally {
       setResending(false);
@@ -151,11 +155,11 @@ function VerifyEmail() {
               </div>
 
               <h1 className="text-2xl font-semibold tracking-tight">
-                Verifying your email
+                {t("verifying")}
               </h1>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                Please wait while we verify your email address.
+                {t("verifyingDesc")}
               </p>
             </>
           )}
@@ -167,22 +171,21 @@ function VerifyEmail() {
               </div>
 
               <h1 className="text-2xl font-semibold tracking-tight">
-                Check your email
+                {t("checkEmail")}
               </h1>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                We&apos;ve sent a verification link to
+                {t("checkEmailDesc")}
               </p>
 
               {email && <p className="mt-1 font-medium">{email}</p>}
 
               <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                Open your inbox and click the verification link to verify your
-                account.
+                {t("checkEmailInstructions")}
               </p>
 
               <p className="mt-4 text-xs text-muted-foreground">
-                Didn&apos;t receive it? Check your spam or junk folder.
+                {t("checkSpam")}
               </p>
               <Button
                 type="button"
@@ -194,12 +197,12 @@ function VerifyEmail() {
                 {resending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Resending...
+                    {tAuth("resending")}
                   </>
                 ) : cooldown > 0 ? (
-                  `Resend available in ${cooldown}s`
+                  tAuth("resendAvailableIn", { seconds: cooldown })
                 ) : (
-                  "Resend verification email"
+                  tAuth("resendVerificationEmail")
                 )}
               </Button>
 
@@ -220,7 +223,7 @@ function VerifyEmail() {
               </div>
 
               <h1 className="text-2xl font-semibold tracking-tight">
-                Email verified
+                {t("emailVerified")}
               </h1>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -231,7 +234,7 @@ function VerifyEmail() {
                 className="mt-6 w-full"
                 onClick={() => router.push("/auth/login")}
               >
-                Continue to login
+                {tAuth("continueToLogin")}
               </Button>
             </>
           )}
@@ -243,7 +246,7 @@ function VerifyEmail() {
               </div>
 
               <h1 className="text-2xl font-semibold tracking-tight">
-                Verification failed
+                {t("verificationFailed")}
               </h1>
 
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -254,7 +257,7 @@ function VerifyEmail() {
                 className="mt-6 w-full"
                 onClick={() => router.push("/auth/login")}
               >
-                Go to login
+                {tAuth("goToLogin")}
               </Button>
             </>
           )}

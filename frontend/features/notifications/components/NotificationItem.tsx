@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -14,6 +15,7 @@ export default function NotificationItem({
   notification,
   onRead,
 }: NotificationItemProps) {
+  const t = useTranslations("notifications");
   const { actor, type, isRead } = notification;
 
   const initials = actor.displayName
@@ -36,12 +38,12 @@ export default function NotificationItem({
 
   const message =
     type === "like"
-      ? "liked your post"
+      ? t("likedPost")
       : type === "comment"
-      ? "commented on your post"
-      : type === "repost" 
-      ? "reposted your post"
-      : "started following you";
+      ? t("commentedOnPost")
+      : type === "repost"
+      ? t("repostedPost")
+      : t("startedFollowing");
 
   const content = (
     <div

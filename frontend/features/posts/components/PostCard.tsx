@@ -1,13 +1,15 @@
-"use client";
+﻿"use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { memo,  useState } from "react";
+import { memo, useState } from "react";
 import {
   Pencil,
   Heart,
   MessageCircle,
   Trash2,
   ImagePlus,
+  Music2,
   X,
   Bookmark,
   BookmarkCheck,
@@ -32,7 +34,10 @@ import {
   useRepostPost,
   useUnrepostPost,
 } from "../hooks";
-import { useBookmarkPost, useUnbookmarkPost } from "@/features/bookmarks/hooks";
+import {
+  useBookmarkPost,
+  useUnbookmarkPost,
+} from "@/features/bookmarks/hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuth } from "@/features/auth/AuthProvider";
 import type { FeedPost } from "@/features/feed/types";
@@ -41,15 +46,23 @@ import Comments from "@/features/comments/components/Comments";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { updatePostSchema, type UpdatePostFormData } from "../schema";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  updatePostSchema,
+  type UpdatePostFormData,
+} from "../schema";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 
 interface PostCardProps {
   post: FeedPost;
 }
 
-const renderPostContent = (content: string|undefined) => {
-  if(!content) return;
+const renderPostContent = (content: string | undefined) => {
+  if (!content) return;
+
   const parts = content.split(/(#[A-Za-z0-9_]+)/g);
 
   return parts.map((part, index) => {
@@ -72,11 +85,18 @@ const renderPostContent = (content: string|undefined) => {
 };
 
 function PostCard({ post }: PostCardProps) {
-  const formattedDate = new Date(post.createdAt).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const t = useTranslations("post");
+  const tCommon = useTranslations("common");
+  const tComments = useTranslations("comments");
+
+  const formattedDate = new Date(post.createdAt).toLocaleDateString(
+    "en-IN",
+    {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }
+  );
 
   const editForm = useForm<UpdatePostFormData>({
     resolver: zodResolver(updatePostSchema),
@@ -104,6 +124,32 @@ function PostCard({ post }: PostCardProps) {
   const repostMutation = useRepostPost();
   const unrepostMutation = useUnrepostPost();
 
+  const [editImage, setEditImage] = useState<File | undefined>();
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(
+    null
+  );
+
+  const [editAudio, setEditAudio] = useState<File | undefined>();
+  const [editAudioPreview, setEditAudioPreview] = useState<string | null>(
+    null
+  );
+
+  const revokeBlobUrl = (url: string | null) => {
+    if (url?.startsWith("blob:")) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const resetEditMedia = () => {
+    revokeBlobUrl(editImagePreview);
+    revokeBlobUrl(editAudioPreview);
+
+    setEditImage(undefined);
+    setEditImagePreview(null);
+    setEditAudio(undefined);
+    setEditAudioPreview(null);
+  };
+
   const handleBookmark = () => {
     if (post.isBookmarked) {
       unbookmarkMutation.mutate(post._id, {
@@ -111,7 +157,7 @@ function PostCard({ post }: PostCardProps) {
           toast.error(
             getApiErrorMessage(
               error,
-              "Unable to remove bookmark. Please try again."
+              t("unableToRemoveBookmark")
             )
           );
         },
@@ -123,14 +169,16 @@ function PostCard({ post }: PostCardProps) {
     bookmarkMutation.mutate(post._id, {
       onError: (error) => {
         toast.error(
-          getApiErrorMessage(error, "Unable to bookmark post. Please try again.")
+          getApiErrorMessage(error, t("unableToBookmark"))
         );
       },
     });
   };
 
   const handleLike = () => {
-    const mutation = post.isLiked ? unlikeMutation : likeMutation;
+    const mutation = post.isLiked
+      ? unlikeMutation
+      : likeMutation;
 
     mutation.mutate(post._id, {
       onError: (error) => {
@@ -138,8 +186,8 @@ function PostCard({ post }: PostCardProps) {
           getApiErrorMessage(
             error,
             post.isLiked
-              ? "Unable to unlike post. Please try again."
-              : "Unable to like post. Please try again."
+              ? t("unableToUnlikePost")
+              : t("unableToLikePost")
           )
         );
       },
@@ -150,91 +198,148 @@ function PostCard({ post }: PostCardProps) {
     deletePostMutation.mutate(post._id, {
       onSuccess: () => {
         setIsDeleteOpen(false);
-        toast.success("Post deleted successfully.");
+        toast.success(t("postDeleted"));
       },
       onError: (error) => {
         toast.error(
-          getApiErrorMessage(error, "Unable to delete post. Please try again.")
-        );
-      },
-    });
-  };
-
-  const handleRepost = () => {
-    const mutation = post.isReposted ? unrepostMutation : repostMutation;
-
-    mutation.mutate(post._id, {
-      onError: (error) => {
-        toast.error(
-          getApiErrorMessage(error,
-            post.isReposted
-              ? "Unable to remove repost. Please try again."
-              : "Unable to repost. Please try again."
+          getApiErrorMessage(
+            error,
+            t("unableToDeletePost")
           )
         );
       },
     });
   };
 
-  const [editImage, setEditImage] = useState<File | undefined>();
-  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const handleRepost = () => {
+    const mutation = post.isReposted
+      ? unrepostMutation
+      : repostMutation;
 
-  const handleEditImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {    
+    mutation.mutate(post._id, {
+      onError: (error) => {
+        toast.error(
+          getApiErrorMessage(
+            error,
+            post.isReposted
+              ? t("unableToRemoveRepost")
+              : t("unableToRepost")
+          )
+        );
+      },
+    });
+  };
+
+  const handleEditImageChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
 
-    const fileTypes = ["image/jpg", "image/jpeg", "image/png", "image/webp"];
+    const fileTypes = [
+      "image/jpg",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
 
     if (!file) return;
 
     if (!fileTypes.includes(file.type)) {
-      toast.error("Please select an image file [jpg, jpeg, png, webp].");
+      toast.error(t("imageFormatError"));
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be smaller than 5 MB.");
+      toast.error(t("imageSizeError"));
       event.target.value = "";
       return;
     }
 
-    if (editImagePreview?.startsWith("blob:")) {
-      URL.revokeObjectURL(editImagePreview);
-    }   
+    revokeBlobUrl(editImagePreview);
+    revokeBlobUrl(editAudioPreview);
 
     setEditImage(file);
     setEditImagePreview(URL.createObjectURL(file));
+
+    // Image and audio cannot exist together.
+    setEditAudio(undefined);
+    setEditAudioPreview(null);
+  };
+
+  const handleEditAudioChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    const fileTypes = [
+      "audio/mpeg",
+      "audio/wav",
+      "audio/ogg",
+      "audio/mp4",
+      "audio/webm",
+    ];
+
+    if (!file) return;
+
+    if (!fileTypes.includes(file.type)) {
+      toast.error(t("audioFormatError"));
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t("audioSizeError"));
+      event.target.value = "";
+      return;
+    }
+
+    revokeBlobUrl(editAudioPreview);
+    revokeBlobUrl(editImagePreview);
+
+    setEditAudio(file);
+    setEditAudioPreview(URL.createObjectURL(file));
+
+    // Image and audio cannot exist together.
+    setEditImage(undefined);
+    setEditImagePreview(null);
   };
 
   const handleUpdate = (values: UpdatePostFormData) => {
-    if (values.content.trim() === "" && !editImage){
+    if (
+      !values.content.trim() &&
+      !editImage &&
+      !editAudio
+    ) {
       return;
     }
-      updatePostMutation.mutate(
-        {
-          postId: post._id,
-          payload: {
-            content: values.content.trim(),
-            image: editImage,
-          },
+
+    updatePostMutation.mutate(
+      {
+        postId: post._id,
+        payload: {
+          content: values.content.trim(),
+          image: editImage,
+          audio: editAudio,
         },
-        {
-          onSuccess: () => {
-            setIsEditOpen(false);
-            setEditImage(undefined);
-            setEditImagePreview(null);
-            toast.success("Post updated successfully.");
-          },
-          onError: (error) => {
-            toast.error(
-              getApiErrorMessage(
-                error,
-                "Unable to update post. Please try again."
-              )
-            );
-          },
-        }
-      );
+      },
+      {
+        onSuccess: () => {
+          setIsEditOpen(false);
+          resetEditMedia();
+
+          toast.success(t("postUpdated"));
+        },
+        onError: (error) => {
+          toast.error(
+            getApiErrorMessage(
+              error,
+              t("unableToUpdatePost")
+            )
+          );
+        },
+      }
+    );
   };
 
   return (
@@ -250,11 +355,17 @@ function PostCard({ post }: PostCardProps) {
             >
               <Avatar>
                 <AvatarImage
-                  src={post.author.profileImage?.url ?? undefined}
+                  src={
+                    post.author.profileImage?.url ??
+                    undefined
+                  }
                   alt={post.author.displayName}
                 />
+
                 <AvatarFallback>
-                  {post.author.displayName.charAt(0).toUpperCase()}
+                  {post.author.displayName
+                    .charAt(0)
+                    .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
@@ -285,8 +396,21 @@ function PostCard({ post }: PostCardProps) {
                         content: post.content,
                       });
 
-                      setEditImage(undefined);
-                      setEditImagePreview(post.media?.url ?? null);
+                      resetEditMedia();
+
+                      // Show existing media according to its type.
+                      if (post.media?.type === "audio") {
+                        setEditAudioPreview(
+                          post.media.url
+                        );
+                      } else if (
+                        post.media?.type === "image"
+                      ) {
+                        setEditImagePreview(
+                          post.media.url
+                        );
+                      }
+
                       setIsEditOpen(true);
                     }}
                   >
@@ -298,7 +422,9 @@ function PostCard({ post }: PostCardProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => setIsDeleteOpen(true)}
+                    onClick={() =>
+                      setIsDeleteOpen(true)
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -315,11 +441,25 @@ function PostCard({ post }: PostCardProps) {
           {/* Media */}
           {post.media?.url && (
             <div className="mt-3 overflow-hidden rounded-xl border">
-              <img
-                src={post.media.url}
-                alt="Post media"
-                className="max-h-[500px] w-full object-cover"
-              />
+              {post.media.type === "audio" ? (
+                <div className="p-3">
+                  <audio
+                    controls
+                    preload="metadata"
+                    src={post.media.url}
+                    className="w-full"
+                    aria-label={t(
+                      "selectedAudioPreview"
+                    )}
+                  />
+                </div>
+              ) : (
+                <img
+                  src={post.media.url}
+                  alt={t("postMedia")}
+                  className="max-h-[500px] w-full object-cover"
+                />
+              )}
             </div>
           )}
 
@@ -328,39 +468,58 @@ function PostCard({ post }: PostCardProps) {
             <button
               type="button"
               onClick={handleLike}
-              disabled={likeMutation.isPending || unlikeMutation.isPending}
-              className={`flex items-center gap-2 text-sm transition-colors ${
+              disabled={
+                likeMutation.isPending ||
+                unlikeMutation.isPending
+              }
+              className={`flex items-center gap-2 text-sm transition-colors ${post.isLiked
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+              aria-label={
                 post.isLiked
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              aria-label={post.isLiked ? "Unlike post" : "Like post"}
+                  ? t("unlikePost")
+                  : t("likePost")
+              }
             >
               <Heart
                 className="h-4 w-4"
-                fill={post.isLiked ? "currentColor" : "none"}
+                fill={
+                  post.isLiked
+                    ? "currentColor"
+                    : "none"
+                }
               />
               <span>{post.likesCount}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setIsCommentsOpen(true)}
+              onClick={() =>
+                setIsCommentsOpen(true)
+              }
               className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <MessageCircle className="h-4 w-4" />
               <span>{post.commentsCount}</span>
             </button>
+
             <button
               type="button"
               onClick={handleRepost}
-              disabled={repostMutation.isPending || unrepostMutation.isPending}
-              className={`flex items-center gap-2 text-sm transition-colors ${
+              disabled={
+                repostMutation.isPending ||
+                unrepostMutation.isPending
+              }
+              className={`flex items-center gap-2 text-sm transition-colors ${post.isReposted
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+              aria-label={
                 post.isReposted
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              aria-label={post.isReposted ? "Remove repost" : "Repost"}
+                  ? t("removeRepost")
+                  : t("repost")
+              }
             >
               <Repeat2 className="h-4 w-4" />
               <span>{post.repostsCount}</span>
@@ -370,43 +529,72 @@ function PostCard({ post }: PostCardProps) {
               type="button"
               onClick={handleBookmark}
               disabled={
-                bookmarkMutation.isPending || unbookmarkMutation.isPending
+                bookmarkMutation.isPending ||
+                unbookmarkMutation.isPending
               }
-              className={`ml-auto flex items-center gap-2 text-sm transition-colors ${
-                post.isBookmarked
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`ml-auto flex items-center gap-2 text-sm transition-colors ${post.isBookmarked
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               {post.isBookmarked ? (
-                <BookmarkCheck className="h-4 w-4" fill="currentColor" />
+                <BookmarkCheck
+                  className="h-4 w-4"
+                  fill="currentColor"
+                />
               ) : (
                 <Bookmark className="h-4 w-4" />
               )}
 
-              <span>{post.isBookmarked ? "Saved" : "Save"}</span>
-            </button>   
+              <span>
+                {post.isBookmarked
+                  ? t("save")
+                  : t("unsave")}
+              </span>
+            </button>
           </div>
         </div>
       </div>
 
-      <Dialog open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
+      {/* Comments Dialog */}
+      <Dialog
+        open={isCommentsOpen}
+        onOpenChange={setIsCommentsOpen}
+      >
         <DialogContent className="flex max-h-[80vh] flex-col overflow-hidden p-0 sm:max-w-lg">
           <DialogHeader className="shrink-0 border-b px-4 py-4">
-            <DialogTitle>Comments</DialogTitle>
+            <DialogTitle>
+              {tComments("title")}
+            </DialogTitle>
           </DialogHeader>
 
           <Comments postId={post._id} />
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      {/* Edit Dialog */}
+      <Dialog
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open);
+
+          if (!open) {
+            resetEditMedia();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit post</DialogTitle>
+            <DialogTitle>
+              {t("editPost")}
+            </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={editForm.handleSubmit(handleUpdate)}>
+          <form
+            onSubmit={editForm.handleSubmit(
+              handleUpdate
+            )}
+          >
             <Textarea
               {...editForm.register("content")}
               maxLength={280}
@@ -415,11 +603,14 @@ function PostCard({ post }: PostCardProps) {
             />
 
             <div className="mt-4">
+              {/* Image Preview */}
               {editImagePreview && (
                 <div className="relative overflow-hidden rounded-xl border">
                   <img
                     src={editImagePreview}
-                    alt="Post preview"
+                    alt={t(
+                      "selectedImagePreview"
+                    )}
                     className="max-h-[300px] w-full object-cover"
                   />
 
@@ -429,9 +620,45 @@ function PostCard({ post }: PostCardProps) {
                     size="icon"
                     className="absolute right-2 top-2 h-8 w-8"
                     onClick={() => {
+                      revokeBlobUrl(
+                        editImagePreview
+                      );
                       setEditImage(undefined);
                       setEditImagePreview(null);
                     }}
+                    aria-label={t("removeImage")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Audio Preview */}
+              {editAudioPreview && (
+                <div className="relative rounded-xl border p-3">
+                  <audio
+                    controls
+                    preload="metadata"
+                    src={editAudioPreview}
+                    className="w-full"
+                    aria-label={t(
+                      "selectedAudioPreview"
+                    )}
+                  />
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-2 h-8 w-8"
+                    onClick={() => {
+                      revokeBlobUrl(
+                        editAudioPreview
+                      );
+                      setEditAudio(undefined);
+                      setEditAudioPreview(null);
+                    }}
+                    aria-label={t("removeAudio")}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -439,30 +666,56 @@ function PostCard({ post }: PostCardProps) {
               )}
 
               <small className="mt-2 block text-xs text-muted-foreground">
-                You can replace the image, but you can’t remove it completely.
+                {t("replaceMedia")}
               </small>
 
-              <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ImagePlus className="h-4 w-4" />
-                Change image
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={handleEditImageChange}
-                />
-              </label>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {/* Change Image */}
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                  <ImagePlus className="h-4 w-4" />
+                  {t("changeImage")}
+
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={
+                      handleEditImageChange
+                    }
+                  />
+                </label>
+
+                {/* Change Audio */}
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                  <Music2 className="h-4 w-4" />
+                  {t("addAudio")}
+
+                  <input
+                    type="file"
+                    accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"
+                    className="hidden"
+                    onChange={
+                      handleEditAudioChange
+                    }
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="mt-1 flex items-center justify-between">
               {editForm.formState.errors.content && (
                 <p className="text-xs text-destructive">
-                  {editForm.formState.errors.content.message}
+                  {
+                    editForm.formState.errors
+                      .content.message
+                  }
                 </p>
               )}
 
               <span className="ml-auto text-xs text-muted-foreground">
-                {editForm.watch("content")?.length ?? 0}/280
+                {editForm.watch("content")?.length ??
+                  0}
+                /280
               </span>
             </div>
 
@@ -470,47 +723,72 @@ function PostCard({ post }: PostCardProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsEditOpen(false)}
-                disabled={updatePostMutation.isPending}
+                onClick={() =>
+                  setIsEditOpen(false)
+                }
+                disabled={
+                  updatePostMutation.isPending
+                }
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
 
-              <Button type="submit" disabled={updatePostMutation.isPending}>
-                {updatePostMutation.isPending ? "Updating..." : "Update"}
+              <Button
+                type="submit"
+                disabled={
+                  updatePostMutation.isPending
+                }
+              >
+                {updatePostMutation.isPending
+                  ? tCommon("updating")
+                  : tCommon("update")}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      {/* Delete Dialog */}
+      <Dialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete post?</DialogTitle>
+            <DialogTitle>
+              {t("deletePost")}
+            </DialogTitle>
           </DialogHeader>
 
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. Your post will be permanently deleted.
+            {t("deletePostDesc")}
           </p>
 
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsDeleteOpen(false)}
-              disabled={deletePostMutation.isPending}
+              onClick={() =>
+                setIsDeleteOpen(false)
+              }
+              disabled={
+                deletePostMutation.isPending
+              }
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
 
             <Button
               type="button"
               variant="destructive"
               onClick={handleDelete}
-              disabled={deletePostMutation.isPending}
+              disabled={
+                deletePostMutation.isPending
+              }
             >
-              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
+              {deletePostMutation.isPending
+                ? tCommon("deleting")
+                : tCommon("delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

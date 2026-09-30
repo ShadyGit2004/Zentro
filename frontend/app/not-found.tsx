@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Home, SearchX } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function NotFound() {
+  const t = useTranslations("common");
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="flex max-w-md flex-col items-center text-center">
@@ -9,15 +13,14 @@ export default function NotFound() {
           <SearchX className="h-10 w-10 text-muted-foreground" />
         </div>
 
-        <p className="text-sm font-medium text-muted-foreground">Error 404</p>
+        <p className="text-sm font-medium text-muted-foreground">{t("error404")}</p>
 
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          Page not found
+          {t("pageNotFound")}
         </h1>
 
         <p className="mt-3 text-muted-foreground">
-          Sorry, the page you are looking for doesn't exist or may have been
-          moved.
+          {t("pageNotFoundDesc")}
         </p>
 
         <Link
@@ -25,7 +28,7 @@ export default function NotFound() {
           className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
           <Home className="h-4 w-4" />
-          Go to Home
+          {t("goToHome")}
         </Link>
       </div>
     </main>

@@ -13,6 +13,7 @@ export interface FeedPost {
   _id: string;
   content?: string;
   media?: {
+    type?: "image" | "audio";
     url: string;
     publicId: string;
   };

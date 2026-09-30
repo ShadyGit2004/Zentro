@@ -2,8 +2,11 @@ import Link from "next/link";
 
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { getTranslations } from "next-intl/server";
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getTranslations("auth");
+  const tForgot = await getTranslations("forgotPassword"); 
   return (  
     <AuthLayout
       children={
@@ -11,18 +14,18 @@ export default function ForgotPasswordPage() {
           <ForgotPasswordForm />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Remember your password?{" "}
+            {t("rememberPassword")}{" "}
             <Link
               href="/auth/login"
               className="font-medium text-foreground underline underline-offset-4 hover:no-underline"
             >
-              Back to login
+              {t("backToLogin")}
             </Link>
           </p>
         </>
       }
-      heroHeading={"Forgot your password?"}
-      heroPara={"Enter your email and we'll send you a reset link."}
+      heroHeading={tForgot("title")}
+      heroPara={tForgot("subtitle")}
     />
   );
 }

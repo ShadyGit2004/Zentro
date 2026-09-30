@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Camera } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   Dialog,
@@ -47,6 +48,8 @@ export default function EditProfileForm({
   userId,
   profile,
 }: EditProfileFormProps) {
+  const t = useTranslations("editProfile");
+  const tCommon = useTranslations("common");
   const { user, updateUser } = useAuth();
 
   const [imgErr, setImgErr] = useState("");
@@ -95,15 +98,15 @@ export default function EditProfileForm({
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
-      setImgErr("Only JPG, JPEG, PNG or WebP images are allowed.");
-      toast.error("Only JPG, JPEG, PNG or WebP images are allowed.");
+      setImgErr(t("imageTypeError"));
+      toast.error(t("imageTypeError"));
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setImgErr("Profile image must be less than 5MB.");
-      toast.error("Profile image must be less than 5MB.");
+      setImgErr(t("imageSizeError"));
+      toast.error(t("imageSizeError"));
       event.target.value = "";
       return;
     }
@@ -152,9 +155,9 @@ export default function EditProfileForm({
       setImagePreview(null);
       onOpenChange(false);
 
-      toast.success("Profile updated successfully.");
+      toast.success(t("profileUpdated"));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to update profile."));
+      toast.error(getApiErrorMessage(error, t("unableToUpdate")));
     }
   };
 
@@ -176,7 +179,7 @@ export default function EditProfileForm({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <form
@@ -186,7 +189,7 @@ export default function EditProfileForm({
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 scrollbar-none">
             <div className="space-y-5">
               <div>
-                <label className="text-sm font-medium">Username</label>
+                <label className="text-sm font-medium">{t("username")}</label>
 
                 <Input {...register("username")} className="mt-1.5" />
 
@@ -198,7 +201,7 @@ export default function EditProfileForm({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Display name</label>
+                <label className="text-sm font-medium">{t("displayName")}</label>
 
                 <Input {...register("displayName")} className="mt-1.5" />
 
@@ -210,7 +213,7 @@ export default function EditProfileForm({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Bio</label>
+                <label className="text-sm font-medium">{t("bio")}</label>
 
                 <Textarea {...register("bio")} className="mt-1.5" rows={4} />
 
@@ -223,7 +226,7 @@ export default function EditProfileForm({
 
               {currentImage && (
                 <div>
-                  <label className="text-sm font-medium">Profile image</label>
+                  <label className="text-sm font-medium">{t("profileImage")}</label>
 
                   <div className="relative mt-1.5 overflow-hidden rounded-xl border">
                     <img
@@ -238,7 +241,7 @@ export default function EditProfileForm({
               <div>
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                   <Camera className="h-4 w-4" />
-                  Change profile image
+                  {t("changeProfileImage")}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -261,11 +264,11 @@ export default function EditProfileForm({
               onClick={() => handleOpenChange(false)}
               disabled={isSaving}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
 
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save changes"}
+              {isSaving ? t("saving") : t("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

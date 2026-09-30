@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import PostCard from "@/features/posts/components/PostCard";
 import { useHashtagPosts } from "@/features/hashtags/hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -9,6 +10,8 @@ import AppShell from "@/components/layout/AppShell";
 import FeedSkeleton from "@/features/feed/components/FeedSkeleton";
 
 export default function HashtagPage() {
+  const t = useTranslations("hashtag");
+  const tCommon = useTranslations("common");
   const params = useParams();
 
   const hashtag =
@@ -49,7 +52,7 @@ export default function HashtagPage() {
         <p className="text-center text-sm text-muted-foreground">
           {getApiErrorMessage(
             error,
-            "Unable to load hashtag posts. Please try again."
+            t("error")
           )}
         </p>
       )}
@@ -62,15 +65,14 @@ export default function HashtagPage() {
             </h1>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              {hashtagInfo?.postsCount ?? 0}{" "}
-              {hashtagInfo?.postsCount === 1 ? "post" : "posts"}
+              {t("postsCount", { count: hashtagInfo?.postsCount ?? 0 })}
             </p>
           </header>
 
           {posts.length === 0 ? (
             <div className="px-4 py-12 text-center">
               <p className="text-sm text-muted-foreground">
-                No posts found for #{hashtag}.
+                {t("noPosts", { hashtag })}
               </p>
             </div>
           ) : (
@@ -87,7 +89,7 @@ export default function HashtagPage() {
                     disabled={isFetchingNextPage}
                     className="text-sm font-medium hover:underline disabled:opacity-50"
                   >
-                    {isFetchingNextPage ? "Loading..." : "Load more"}
+                    {isFetchingNextPage ? tCommon("loading") : tCommon("loadMore")}
                   </button>
                 </div>
               )}

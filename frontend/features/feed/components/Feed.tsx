@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 import PostCard from "@/features/posts/components/PostCard";
 import { useFeed } from "../hooks";
@@ -8,6 +9,7 @@ import FeedSkeleton from "./FeedSkeleton";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function Feed() {
+  const t = useTranslations("feed");
   const {
     data,
     isLoading,
@@ -53,7 +55,7 @@ export default function Feed() {
     return (
       <div className="flex min-h-[300px] items-center justify-center px-4 text-center">
         <p className="text-sm text-muted-foreground">
-          {getApiErrorMessage(error, "Unable to load your feed. Please try again.")}
+          {getApiErrorMessage(error, t("error"))}
         </p>
       </div>
     );
@@ -65,11 +67,11 @@ export default function Feed() {
     return (
       <div className="flex min-h-[300px] items-center justify-center px-4 text-center">
         <div>
-          <h2 className="font-semibold">Your feed is empty</h2>
-
+          <h2 className="font-semibold">{t("noPosts")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Follow people and their posts will appear here.
+            {t("noPostsDesc")}
           </p>
+
         </div>
       </div>
     );

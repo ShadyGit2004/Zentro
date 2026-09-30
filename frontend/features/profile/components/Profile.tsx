@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { UserRound, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ interface ProfileProps {
 type Tab = "posts" | "followers" | "following";
 
 export default function Profile({ userId }: ProfileProps) { 
+  const t = useTranslations("profile");
+  const tCommon = useTranslations("common");
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>("posts");
@@ -42,13 +45,6 @@ export default function Profile({ userId }: ProfileProps) {
 
   const isOwnProfile = user?.id === profile?.id;
 
-  /*
-   * Only fetch the active tab.
-   *
-   * This prevents:
-   * profile + posts + followers + following
-   * from all fetching simultaneously.
-   */
   const { 
     data: postsData,
     isLoading: postsLoading,
@@ -91,15 +87,13 @@ export default function Profile({ userId }: ProfileProps) {
     try {
       if (profile.isFollowing) {
         const response = await unfollowMutation.mutateAsync(profile.id);
-
-        toast.success(response.data.message || "Unfollowed successfully.");
+        toast.success(response.data.message || t("unableToUpdateFollow"));
       } else {
         const response = await followMutation.mutateAsync(profile.id);
-
-        toast.success(response.data.message || "Following successfully.");
+        toast.success(response.data.message || t("unableToUpdateFollow"));
       }
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to update follow status."));
+      toast.error(getApiErrorMessage(error, t("unableToUpdateFollow")));
     }
   };
 
@@ -110,22 +104,18 @@ export default function Profile({ userId }: ProfileProps) {
     try {
       if (isFollowing) {
         const response = await unfollowMutation.mutateAsync(targetUserId);
-
-        toast.success(response.data.message || "Unfollowed successfully.");
+        toast.success(response.data.message || t("unableToUpdateFollow"));
       } else {
         const response = await followMutation.mutateAsync(targetUserId);
-
-        toast.success(response.data.message || "Following successfully.");
+        toast.success(response.data.message || t("unableToUpdateFollow"));
       }
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to update follow status."));
+      toast.error(getApiErrorMessage(error, t("unableToUpdateFollow")));
     }
   };
 
   const posts = postsData?.pages.flatMap((page) => page.data) ?? [];
-
   const followers = followersData?.pages.flatMap((page) => page.data) ?? [];
-
   const following = followingData?.pages.flatMap((page) => page.data) ?? [];
 
   if (isLoading) {
@@ -138,10 +128,10 @@ export default function Profile({ userId }: ProfileProps) {
         <div className="rounded-2xl border p-8 text-center">
           <UserRound className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
 
-          <h2 className="text-lg font-semibold">Profile unavailable</h2>
+          <h2 className="text-lg font-semibold">{t("profileUnavailable")}</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            {getApiErrorMessage(error, "We couldn't load this profile.")}
+            {getApiErrorMessage(error, t("profileUnavailableDesc"))}
           </p>
         </div>
       </div>
@@ -165,7 +155,6 @@ export default function Profile({ userId }: ProfileProps) {
           <div className="relative shrink-0">
             <Avatar className="h-24 w-24">
               <AvatarImage src={currentImage} alt={profile.displayName} />
-
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </div>
@@ -192,7 +181,7 @@ export default function Profile({ userId }: ProfileProps) {
                       followMutation.isPending || unfollowMutation.isPending
                     }
                   >
-                    {profile.isFollowing ? "Following" : "Follow"}
+                    {profile.isFollowing ? tCommon("following") : tCommon("follow")}
                   </Button>
                 )}
               </div>
@@ -210,17 +199,17 @@ export default function Profile({ userId }: ProfileProps) {
         <div className="mt-6 grid grid-cols-3 border-t pt-5">
           <div className="text-center">
             <p className="font-semibold">{profile.postsCount}</p>
-            <p className="text-xs text-muted-foreground">Posts</p>
+            <p className="text-xs text-muted-foreground">{t("posts")}</p>
           </div>
 
           <div className="text-center">
             <p className="font-semibold">{profile.followersCount}</p>
-            <p className="text-xs text-muted-foreground">Followers</p>
+            <p className="text-xs text-muted-foreground">{t("followers")}</p>
           </div>
 
           <div className="text-center">
             <p className="font-semibold">{profile.followingCount}</p>
-            <p className="text-xs text-muted-foreground">Following</p>
+            <p className="text-xs text-muted-foreground">{t("following")}</p>
           </div>
         </div>
       </section>
@@ -229,9 +218,9 @@ export default function Profile({ userId }: ProfileProps) {
       <div className="mt-5 grid grid-cols-3 border-b">
         {(
           [
-            ["posts", "Posts"],
-            ["followers", "Followers"],
-            ["following", "Following"],
+            ["posts", t("posts")],
+            ["followers", t("followers")],
+            ["following", t("following")],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -254,7 +243,7 @@ export default function Profile({ userId }: ProfileProps) {
         <section className="mt-4">
           {isPostsError && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {getApiErrorMessage(postsError, "Unable to load posts.")}
+              {getApiErrorMessage(postsError, t("unableToLoadPosts"))}
             </p>
           )}
           {postsLoading ? (
@@ -262,9 +251,9 @@ export default function Profile({ userId }: ProfileProps) {
           ) : posts.length === 0 ? (
             <div className="flex min-h-[250px] flex-col items-center justify-center text-center">
               <UserRound className="mb-3 h-10 w-10 text-muted-foreground" />
-              <h2 className="font-semibold">No posts yet</h2>
+              <h2 className="font-semibold">{t("noPosts")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Posts from this profile will appear here.
+                {t("noPostsDesc")}
               </p>
             </div>
           ) : (
@@ -281,7 +270,7 @@ export default function Profile({ userId }: ProfileProps) {
               onClick={() => fetchNextPosts()}
               disabled={fetchingPosts}
             >
-              {fetchingPosts ? "Loading..." : "Load more"}
+              {fetchingPosts ? tCommon("loading") : tCommon("loadMore")}
             </Button>
           )}
         </section>
@@ -292,7 +281,7 @@ export default function Profile({ userId }: ProfileProps) {
         <section className="mt-4">
           {isFollowersError && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {getApiErrorMessage(followersError, "Unable to load followers.")}
+              {getApiErrorMessage(followersError, t("unableToLoadFollowers"))}
             </p>
           )}
           {followersLoading ? (
@@ -300,8 +289,8 @@ export default function Profile({ userId }: ProfileProps) {
           ) : followers.length === 0 ? (
             <EmptyList
               icon={<Users className="h-10 w-10" />}
-              title="No followers yet"
-              description="Followers will appear here."
+              title={t("noFollowers")}
+              description={t("noFollowersDesc")}
             />
           ) : (
             <div className="divide-y rounded-xl border">
@@ -326,7 +315,7 @@ export default function Profile({ userId }: ProfileProps) {
               onClick={() => fetchNextFollowers()}
               disabled={fetchingFollowers}
             >
-              {fetchingFollowers ? "Loading..." : "Load more"}
+              {fetchingFollowers ? tCommon("loading") : tCommon("loadMore")}
             </Button>
           )}
         </section>
@@ -339,7 +328,7 @@ export default function Profile({ userId }: ProfileProps) {
             <p className="mt-1 text-sm text-muted-foreground">
               {getApiErrorMessage(
                 followingError,
-                "Unable to load following users."
+                t("unableToLoadFollowing")
               )}
             </p>
           )}
@@ -348,8 +337,8 @@ export default function Profile({ userId }: ProfileProps) {
           ) : following.length === 0 ? (
             <EmptyList
               icon={<Users className="h-10 w-10" />}
-              title="Not following anyone"
-              description="Accounts followed by this user will appear here."
+              title={t("notFollowingAnyone")}
+              description={t("notFollowingDesc")}
             />
           ) : (
             <div className="divide-y rounded-xl border">
@@ -374,7 +363,7 @@ export default function Profile({ userId }: ProfileProps) {
               onClick={() => fetchNextFollowing()}
               disabled={fetchingFollowing}
             >
-              {fetchingFollowing ? "Loading..." : "Load more"}
+              {fetchingFollowing ? tCommon("loading") : tCommon("loadMore")}
             </Button>
           )}
         </section>
@@ -404,6 +393,8 @@ function ProfileListRow({
   onFollowToggle: (userId: string, isFollowing: boolean) => void;
   isPending: boolean;
 }) {
+  const tCommon = useTranslations("common");
+
   const initials = user.displayName
     .split(" ")
     .map((name) => name.charAt(0))
@@ -444,10 +435,10 @@ function ProfileListRow({
           disabled={isPending}
           onClick={() => onFollowToggle(user._id, user.isFollowing)}
         >
-          {user.isFollowing ? "Following" : "Follow"}
+          {user.isFollowing ? tCommon("following") : tCommon("follow")}
         </Button>
       )}
-      {isSelf && <span className="text-sm text-muted-foreground"> me </span>}
+      {isSelf && <span className="text-sm text-muted-foreground">{tCommon("me")}</span>}
     </div>
   );
 }
