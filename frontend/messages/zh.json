@@ -163,7 +163,13 @@
     "repost": "转发",
     "removeRepost": "移除转发",
     "removeImage": "移除图片",
-    "addImage": "添加图片"
+    "addImage": "添加图片",
+    "audioFormatError": "请选择 MP3、WAV、OGG、M4A 或 WebM 音频文件。",
+    "audioSizeError": "音频文件必须小于 10 MB。",
+    "removeAudio": "删除音频",
+    "addAudio": "添加音频",
+    "selectedAudioPreview": "已选择音频的预览",
+    "replaceMedia": "您可以使用其他文件替换现有的图片或音频。"    
   },
   "comments": {
     "title": "评论",

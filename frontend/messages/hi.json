@@ -46,7 +46,7 @@
   "auth": {
     "email": "ईमेल",
     "password": "पासवर्ड",
-    "forgotPassword": "पासवर्ड भूल गए?",    
+    "forgotPassword": "पासवर्ड भूल गए?",
     "continueWithGoogle": "Google के साथ जारी रखें",
     "signIn": "साइन इन करें",
     "signingIn": "साइन इन हो रहा है...",
@@ -163,7 +163,13 @@
     "repost": "रीपोस्ट",
     "removeRepost": "रीपोस्ट हटाएं",
     "removeImage": "छवि हटाएं",
-    "addImage": "छवि जोड़ें"
+    "addImage": "छवि जोड़ें",
+    "audioFormatError": "कृपया MP3, WAV, OGG, M4A या WebM ऑडियो फ़ाइल चुनें।",
+    "audioSizeError": "ऑडियो 10 MB से कम होना चाहिए।",
+    "removeAudio": "ऑडियो हटाएं",
+    "addAudio": "ऑडियो जोड़ें",
+    "selectedAudioPreview": "चयनित ऑडियो का पूर्वावलोकन",
+    "replaceMedia": "आप मौजूदा इमेज या ऑडियो को किसी दूसरी फ़ाइल से बदल सकते हैं।"
   },
   "comments": {
     "title": "टिप्पणियां",

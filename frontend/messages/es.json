@@ -163,7 +163,13 @@
     "repost": "Republicar",
     "removeRepost": "Quitar republicación",
     "removeImage": "Eliminar imagen",
-    "addImage": "Añadir imagen"
+    "addImage": "Añadir imagen",
+    "audioFormatError": "Selecciona un archivo de audio MP3, WAV, OGG, M4A o WebM.",
+    "audioSizeError": "El audio debe ser menor de 10 MB.",
+    "removeAudio": "Eliminar audio",
+    "addAudio": "Añadir audio",
+    "selectedAudioPreview": "Vista previa del audio seleccionado",
+    "replaceMedia": "Puedes reemplazar la imagen o el audio existente por otro archivo."
   },
   "comments": {
     "title": "Comentarios",

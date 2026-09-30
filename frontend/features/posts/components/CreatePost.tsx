@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { AudioLines, ImagePlus, Loader2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -12,16 +12,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreatePost } from "../hooks";
 import { createPostSchema, type CreatePostFormData } from "../schema";
 
-import {toast} from "sonner";
+import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+
+const IMAGE_TYPES = ["image/jpg", "image/jpeg", "image/png", "image/webp"];
+const AUDIO_TYPES = [
+  "audio/mpeg",
+  "audio/wav",
+  "audio/ogg",
+  "audio/mp4",
+  "audio/webm",
+];
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
 
 export default function CreatePost() {
   const t = useTranslations("post");
   const tCommon = useTranslations("common");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   const [image, setImage] = useState<File | undefined>();
   const [imagePreview, setImagePreview] = useState<string | undefined>();
+
+  const [audio, setAudio] = useState<File | undefined>();
+  const [audioPreview, setAudioPreview] = useState<string | undefined>();
 
   const createPostMutation = useCreatePost();
 
@@ -40,34 +57,7 @@ export default function CreatePost() {
 
   const content = watch("content");
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    const fileTypes = ["image/jpg", "image/jpeg", "image/png", "image/webp"];
-
-    if (!file) return;
-
-    if (!fileTypes.includes(file.type)) {
-      toast.error(t("imageFormatError"));
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(t("imageSizeError"));
-      event.target.value = "";
-      return;
-    }
-
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }    
-
-    setImage(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
-
-  const removeImage = () => {
+  const clearImage = () => {
     if (imagePreview) {
       URL.revokeObjectURL(imagePreview);
     }
@@ -75,32 +65,116 @@ export default function CreatePost() {
     setImage(undefined);
     setImagePreview(undefined);
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
     }
   };
 
- const onSubmit = (data: CreatePostFormData) => {
+  const clearAudio = () => {
+    if (audioPreview) {
+      URL.revokeObjectURL(audioPreview);
+    }
 
-   createPostMutation.mutate(
-     { content: data.content, image },
-     {
-       onSuccess: () => {
-         reset();
-         removeImage();
-         toast.success(t("postCreated"));
-       },
+    setAudio(undefined);
+    setAudioPreview(undefined);
 
-       onError: (error:unknown) => {         
-        const err = getApiErrorMessage(error, t("unableToCreatePost"));
-        toast.error(err);
-       },
-     }
-   );
- };
+    if (audioInputRef.current) {
+      audioInputRef.current.value = "";
+    }
+  };
+
+  const handleImageChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!IMAGE_TYPES.includes(file.type)) {
+      toast.error(t("imageFormatError"));
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error(t("imageSizeError"));
+      event.target.value = "";
+      return;
+    }
+
+    // Image and audio cannot be selected together.
+    clearAudio();
+
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleAudioChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!AUDIO_TYPES.includes(file.type)) {
+      toast.error(t("audioFormatError"));
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_AUDIO_SIZE) {
+      toast.error(t("audioSizeError"));
+      event.target.value = "";
+      return;
+    }
+
+    // Audio and image cannot be selected together.
+    clearImage();
+
+    if (audioPreview) {
+      URL.revokeObjectURL(audioPreview);
+    }
+
+    setAudio(file);
+    setAudioPreview(URL.createObjectURL(file));
+  };
+
+  const onSubmit = (data: CreatePostFormData) => {
+    createPostMutation.mutate(
+      {
+        content: data.content,
+        image,
+        audio,
+      },
+      {
+        onSuccess: () => {
+          reset();
+          clearImage();
+          clearAudio();
+          toast.success(t("postCreated"));
+        },
+
+        onError: (error: unknown) => {
+          const err = getApiErrorMessage(
+            error,
+            t("unableToCreatePost")
+          );
+
+          toast.error(err);
+        },
+      }
+    );
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="border-b py-4 px-3">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="border-b py-4 px-3"
+    >
       <Textarea
         {...register("content")}
         placeholder={t("whatsHappening")}
@@ -128,7 +202,7 @@ export default function CreatePost() {
 
           <button
             type="button"
-            onClick={removeImage}
+            onClick={clearImage}
             className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 shadow"
             aria-label={t("removeImage")}
           >
@@ -137,25 +211,69 @@ export default function CreatePost() {
         </div>
       )}
 
+      {audioPreview && (
+        <div className="relative mt-3 rounded-xl border p-3">
+          <audio
+            controls
+            preload="metadata"
+            src={audioPreview}
+            className="w-full"
+            aria-label={t("selectedAudioPreview")}
+          />
+
+          <button
+            type="button"
+            onClick={clearAudio}
+            className="absolute right-2 top-2 rounded-full bg-background p-1.5 shadow"
+            aria-label={t("removeAudio")}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <div className="mt-3 flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-1">
           <input
-            ref={fileInputRef}
+            ref={imageInputRef}
             type="file"
-            accept="image/jpg, image/jpeg, image/png, image/webp"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={handleImageChange}
+          />
+
+          <input
+            ref={audioInputRef}
+            type="file"
+            accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"
+            className="hidden"
+            onChange={handleAudioChange}
           />
 
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={createPostMutation.isPending}
+            onClick={() => imageInputRef.current?.click()}
+            disabled={
+              createPostMutation.isPending || !!audio
+            }
             aria-label={t("addImage")}
           >
             <ImagePlus className="h-5 w-5" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => audioInputRef.current?.click()}
+            disabled={
+              createPostMutation.isPending || !!image
+            }
+            aria-label={t("addAudio")}
+          >
+            <AudioLines className="h-5 w-5" />
           </Button>
         </div>
 
@@ -168,8 +286,7 @@ export default function CreatePost() {
             type="submit"
             disabled={
               createPostMutation.isPending ||
-              (!image &&
-              !content?.trim())
+              (!image && !audio && !content?.trim())
             }
           >
             {createPostMutation.isPending ? (
