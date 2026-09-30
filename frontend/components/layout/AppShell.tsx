@@ -14,6 +14,7 @@ import {
   User,
   Settings,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useUnreadNotificationsCount } from "@/features/notifications/hooks";
 
@@ -42,6 +43,8 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("common");
+  const tNav = useTranslations("nav");
 
   const { user, loading, clearAuth } = useAuth();
 
@@ -65,7 +68,7 @@ export default function AppShell({ children }: AppShellProps) {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        Redirecting...
+        {t("redirecting")}
       </div>
     );
   }
@@ -90,6 +93,7 @@ export default function AppShell({ children }: AppShellProps) {
 
   interface NavItem {
     label: string;
+    translationKey: string;
     icon: React.ReactNode;
     href: string;
   }
@@ -97,16 +101,19 @@ export default function AppShell({ children }: AppShellProps) {
   const navItems: NavItem[] = [
     {
       label: "Home",
+      translationKey: "home",
       icon: <Home className="h-5 w-5" />,
       href: "/home",
     },
     {
       label: "Search",
+      translationKey: "search",
       icon: <Search className="h-5 w-5" />,
       href: "/search",
     },
     {
       label: "Notifications",
+      translationKey: "notifications",
       icon: (
         <div className="relative">
           <Bell className="h-5 w-5" />
@@ -122,16 +129,19 @@ export default function AppShell({ children }: AppShellProps) {
     },
     {
       label: "Bookmarks",
+      translationKey: "bookmarks",
       icon: <Bookmark className="h-5 w-5" />,
       href: "/bookmarks",
     },
     {
       label: "Profile",
+      translationKey: "profile",
       icon: <User className="h-5 w-5" />,
       href: `/profile/${user?.id}`,
     },
     {
       label: "Settings",
+      translationKey: "settings",
       icon: <Settings className="h-5 w-5" />,
       href: "/settings",
     },
@@ -176,7 +186,7 @@ export default function AppShell({ children }: AppShellProps) {
                     onClick={() => router.push(item.href)}
                   >
                     {item.icon}
-                    {item.label}
+                    {t(item.translationKey as Parameters<typeof t>[0])}
                   </Button>
                 );
               })}
@@ -189,7 +199,7 @@ export default function AppShell({ children }: AppShellProps) {
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
-                Logout
+                {t("logout")}
               </Button>
             </div>
           </aside>
@@ -203,7 +213,7 @@ export default function AppShell({ children }: AppShellProps) {
                     variant="ghost"
                     size="icon"
                     onClick={handleBack}
-                    aria-label="Go back"
+                    aria-label={t("goBack")}
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
@@ -244,7 +254,7 @@ export default function AppShell({ children }: AppShellProps) {
                           .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="sr-only">Profile menu</span>
+                    <span className="sr-only">{tNav("profileMenu")}</span>
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="end" className="w-44">
@@ -252,7 +262,7 @@ export default function AppShell({ children }: AppShellProps) {
                       onClick={() => router.push(`/profile/${user.id}`)}
                     >
                       <User className="mr-2 h-4 w-4" />
-                      Profile
+                      {t("profile")}
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
@@ -262,7 +272,7 @@ export default function AppShell({ children }: AppShellProps) {
                       className="text-destructive focus:text-destructive data-highlighted:text-destructive"
                     >
                       <LogOut className="mr-2 h-4 w-4 stroke-destructive" />
-                      Logout
+                      {t("logout")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -293,10 +303,12 @@ export default function AppShell({ children }: AppShellProps) {
                       : "text-muted-foreground"
                   }
                   onClick={() => router.push(item.href)}
-                  aria-label={item.label}
+                  aria-label={t(item.translationKey as Parameters<typeof t>[0])}
                 >
                   {item.icon}
-                  <span className="sr-only">{item.label}</span>
+                  <span className="sr-only">
+                    {t(item.translationKey as Parameters<typeof t>[0])}
+                  </span>
                 </Button>
               );
             })}

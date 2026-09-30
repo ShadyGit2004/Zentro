@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   useCreatePaymentOrder,
   useCurrentSubscription,
@@ -14,38 +15,6 @@ import type { PaymentStatus, SubscriptionPlan } from "../types";
 import { useRazorpay } from "react-razorpay";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { CurrencyCode } from "react-razorpay/dist/constants/currency";
-
-const PLANS: {
-  plan: SubscriptionPlan;
-  name: string;
-  price: number;
-  postLimit: string;
-}[] = [
-  {
-    plan: "free",
-    name: "Free",
-    price: 0,
-    postLimit: "3 posts / month",
-  },
-  {
-    plan: "bronze",
-    name: "Bronze",
-    price: 100,
-    postLimit: "5 posts / month",
-  },
-  {
-    plan: "silver",
-    name: "Silver",
-    price: 300,
-    postLimit: "15 posts / month",
-  },
-  {
-    plan: "gold",
-    name: "Gold",
-    price: 1000,
-    postLimit: "Unlimited posts",
-  },
-];
 
 const formatDate = (date?: string) => {
   if (!date) {
@@ -86,6 +55,7 @@ const getStatusClasses = (status: PaymentStatus) => {
 };
 
 const SubscriptionPlans = () => {
+  const t = useTranslations("subscription");
   const { Razorpay } = useRazorpay();
   const queryClient = useQueryClient();
 
@@ -97,7 +67,7 @@ const SubscriptionPlans = () => {
     isError: isPaymentHistoryError,
     hasNextPage,
     fetchNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
   } = usePaymentHistory();
 
   const createOrderMutation = useCreatePaymentOrder();
@@ -108,11 +78,45 @@ const SubscriptionPlans = () => {
     "free"
   > | null>(null);
 
+  // Build PLANS array using translated post limits
+  const PLANS: {
+    plan: SubscriptionPlan;
+    name: string;
+    price: number;
+    postLimit: string;
+  }[] = [
+    {
+      plan: "free",
+      name: "Free",
+      price: 0,
+      postLimit: t("postLimit.free"),
+    },
+    {
+      plan: "bronze",
+      name: "Bronze",
+      price: 100,
+      postLimit: t("postLimit.bronze"),
+    },
+    {
+      plan: "silver",
+      name: "Silver",
+      price: 300,
+      postLimit: t("postLimit.silver"),
+    },
+    {
+      plan: "gold",
+      name: "Gold",
+      price: 1000,
+      postLimit: t("postLimit.gold"),
+    },
+  ];
+
   /*
    * useInfiniteQuery returns pages.
    * Flatten all loaded pages into one array for the UI.
    */
-  const paymentHistoryItems = paymentHistory?.pages.flatMap((page) => page.data.data) ?? [];
+  const paymentHistoryItems =
+    paymentHistory?.pages.flatMap((page) => page.data.data) ?? [];
 
   const handleSubscribe = async (plan: Exclude<SubscriptionPlan, "free">) => {
     try {
@@ -149,7 +153,7 @@ const SubscriptionPlans = () => {
             });
 
             if (verification.data.verified) {
-              toast.success("Payment verified successfully.");
+              toast.success(t("paymentVerified"));
 
               await queryClient.invalidateQueries({
                 queryKey: ["current-subscription"],
@@ -159,11 +163,11 @@ const SubscriptionPlans = () => {
                 queryKey: ["payment-history"],
               });
             } else {
-              toast.error("Payment verification failed.");
+              toast.error(t("paymentVerificationFailed"));
             }
           } catch (error) {
             toast.error(
-              getApiErrorMessage(error, "Payment verification failed.")
+              getApiErrorMessage(error, t("paymentVerificationFailed"))
             );
           } finally {
             setProcessingPlan(null);
@@ -181,19 +185,19 @@ const SubscriptionPlans = () => {
     } catch (error) {
       setProcessingPlan(null);
 
-      toast.error(getApiErrorMessage(error, "Unable to start payment."));
+      toast.error(getApiErrorMessage(error, t("unableToStartPayment")));
     }
-  };  
+  };
 
   if (isLoading) {
-    return <SubscriptionSkeleton />;    
+    return <SubscriptionSkeleton />;
   }
 
   if (isError || !data) {
     return (
       <div className="rounded-2xl border p-5">
         <p className="text-sm text-destructive">
-          {getApiErrorMessage(error, "Unable to load subscription.")}
+          {getApiErrorMessage(error, t("unableToLoad"))}
         </p>
       </div>
     );
@@ -201,13 +205,13 @@ const SubscriptionPlans = () => {
 
   const usageText =
     data.postsRemaining === null
-      ? "Unlimited posts"
-      : `${data.postsUsed} / ${data.postLimit} posts used`;
+      ? t("unlimitedPosts")
+      : t("postsUsed", { used: data.postsUsed, limit: data.postLimit ?? 0 });
 
   const remainingText =
     data.postsRemaining === null
-      ? "Unlimited"
-      : `${data.postsRemaining} posts remaining`;
+      ? t("unlimited")
+      : t("postsRemaining", { count: data.postsRemaining });
 
   const progress =
     data.postLimit === null
@@ -216,18 +220,16 @@ const SubscriptionPlans = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Subscription</h1>
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
 
-      <p className="mt-1 text-sm text-muted-foreground">
-        Manage your subscription, usage, plans, and payment history.
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
 
       {/* Current Subscription */}
       <div className="rounded-2xl border p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
-              Current subscription
+              {t("currentSubscription")}
             </p>
 
             <div className="mt-1 flex items-center gap-3">
@@ -240,7 +242,7 @@ const SubscriptionPlans = () => {
                     : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                 }`}
               >
-                {data.status === "active" ? "Active" : "Expired"}
+                {data.status === "active" ? t("active") : t("expired")}
               </span>
             </div>
           </div>
@@ -251,7 +253,7 @@ const SubscriptionPlans = () => {
               {data.price > 0 && (
                 <span className="text-sm font-normal text-muted-foreground">
                   {" "}
-                  /month
+                  {t("perMonth")}
                 </span>
               )}
             </p>
@@ -265,7 +267,7 @@ const SubscriptionPlans = () => {
         {/* Usage */}
         <div className="mt-6">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Post usage</span>
+            <span className="font-medium">{t("postUsage")}</span>
 
             <span className="text-muted-foreground">{usageText}</span>
           </div>
@@ -283,7 +285,8 @@ const SubscriptionPlans = () => {
             <span>{remainingText}</span>
 
             <span>
-              Limit: {data.postLimit === null ? "Unlimited" : data.postLimit}
+              {t("limit")}{" "}
+              {data.postLimit === null ? t("unlimited") : data.postLimit}
             </span>
           </div>
         </div>
@@ -291,7 +294,7 @@ const SubscriptionPlans = () => {
         {/* Subscription Dates */}
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground">Start date</p>
+            <p className="text-xs text-muted-foreground">{t("startDate")}</p>
 
             <p className="mt-1 text-sm font-medium">
               {formatDate(data.periodStart)}
@@ -299,7 +302,7 @@ const SubscriptionPlans = () => {
           </div>
 
           <div className="rounded-xl bg-muted/50 p-3">
-            <p className="text-xs text-muted-foreground">Expiry date</p>
+            <p className="text-xs text-muted-foreground">{t("expiryDate")}</p>
 
             <p className="mt-1 text-sm font-medium">
               {formatDate(data.periodEnd)}
@@ -311,10 +314,10 @@ const SubscriptionPlans = () => {
       {/* Subscription Plans */}
       <div>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">Subscription plans</h2>
+          <h2 className="text-xl font-semibold">{t("subscriptionPlans")}</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Choose a plan according to your monthly post usage.
+            {t("subscriptionPlansDesc")}
           </p>
         </div>
 
@@ -338,7 +341,7 @@ const SubscriptionPlans = () => {
 
                   {isCurrentPlan && (
                     <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                      Current
+                      {t("currentPlan")}
                     </span>
                   )}
                 </div>
@@ -347,7 +350,7 @@ const SubscriptionPlans = () => {
                   ₹{plan.price}
                   {!isFree && (
                     <span className="text-sm font-normal text-muted-foreground">
-                      /month
+                      {t("perMonth")}
                     </span>
                   )}
                 </p>
@@ -362,7 +365,7 @@ const SubscriptionPlans = () => {
                     disabled
                     className="mt-5 w-full rounded-lg border px-4 py-2 text-sm"
                   >
-                    Current plan
+                    {t("currentPlanButton")}
                   </button>
                 ) : isFree ? (
                   <button
@@ -370,7 +373,7 @@ const SubscriptionPlans = () => {
                     disabled
                     className="mt-5 w-full rounded-lg border px-4 py-2 text-sm text-muted-foreground"
                   >
-                    Free plan
+                    {t("freePlanButton")}
                   </button>
                 ) : (
                   <button
@@ -383,7 +386,7 @@ const SubscriptionPlans = () => {
                     }
                     className="mt-5 w-full rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
                   >
-                    {isProcessing ? "Processing..." : "Subscribe"}
+                    {isProcessing ? t("processing") : t("subscribe")}
                   </button>
                 )}
               </div>
@@ -395,31 +398,31 @@ const SubscriptionPlans = () => {
       {/* Payment History */}
       <div className="rounded-2xl border">
         <div className="border-b p-5">
-          <h2 className="text-xl font-semibold">Payment history</h2>
+          <h2 className="text-xl font-semibold">{t("paymentHistory")}</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            View your previous subscription payments.
+            {t("paymentHistoryDesc")}
           </p>
         </div>
 
         {isPaymentHistoryLoading ? (
           <div className="p-5">
             <p className="text-sm text-muted-foreground">
-              Loading payment history...
+              {t("loadingPaymentHistory")}
             </p>
           </div>
         ) : isPaymentHistoryError ? (
           <div className="p-5">
             <p className="text-sm text-destructive">
-              Unable to load payment history.
+              {t("unableToLoadPayments")}
             </p>
           </div>
         ) : paymentHistoryItems.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="font-medium">No payments yet</p>
+            <p className="font-medium">{t("noPayments")}</p>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Your subscription payments will appear here.
+              {t("noPaymentsDesc")}
             </p>
           </div>
         ) : (
@@ -429,15 +432,17 @@ const SubscriptionPlans = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
-                    <th className="px-5 py-3 font-medium">Plan</th>
+                    <th className="px-5 py-3 font-medium">{t("plan")}</th>
 
-                    <th className="px-5 py-3 font-medium">Amount</th>
+                    <th className="px-5 py-3 font-medium">{t("amount")}</th>
 
-                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium">{t("status")}</th>
 
-                    <th className="px-5 py-3 font-medium">Payment date</th>
+                    <th className="px-5 py-3 font-medium">
+                      {t("paymentDate")}
+                    </th>
 
-                    <th className="px-5 py-3 font-medium">Payment ID</th>
+                    <th className="px-5 py-3 font-medium">{t("paymentId")}</th>
                   </tr>
                 </thead>
 
@@ -491,7 +496,7 @@ const SubscriptionPlans = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-semibold capitalize">
-                        {payment.plan} plan
+                        {payment.plan} {t("plan_suffix")}
                       </p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -510,7 +515,7 @@ const SubscriptionPlans = () => {
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      Amount
+                      {t("amount")}
                     </span>
 
                     <span className="font-semibold">
@@ -520,7 +525,7 @@ const SubscriptionPlans = () => {
 
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Razorpay Payment ID
+                      {t("razorpayPaymentId")}
                     </p>
 
                     <p className="mt-1 break-all font-mono text-xs">
@@ -530,7 +535,7 @@ const SubscriptionPlans = () => {
 
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Razorpay Order ID
+                      {t("razorpayOrderId")}
                     </p>
 
                     <p className="mt-1 break-all font-mono text-xs">
@@ -550,7 +555,7 @@ const SubscriptionPlans = () => {
                   disabled={isFetchingNextPage}
                   className="rounded-lg border px-5 py-2 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isFetchingNextPage ? "Loading..." : "Load more"}
+                  {isFetchingNextPage ? t("loading") : t("loadMore")}
                 </button>
               </div>
             )}

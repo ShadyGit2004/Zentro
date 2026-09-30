@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Bookmark as BookmarkIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import PostCard from "@/features/posts/components/PostCard";
 import { useBookmarkedPosts } from "../hooks";
@@ -9,6 +10,7 @@ import BookmarkSkeleton from "./BookmarkSkeleton";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 const Bookmark = () => {
+  const t = useTranslations("bookmarks");
   const {
     data,
     isLoading,
@@ -56,7 +58,7 @@ const Bookmark = () => {
     return (
       <div className="rounded-xl border p-6 text-center">
         <p className="text-sm text-muted-foreground">
-          {getApiErrorMessage(error, "Failed to load your bookmarks.")}
+          {getApiErrorMessage(error, t("failedToLoad"))}
         </p>
       </div>
     );
@@ -67,10 +69,10 @@ const Bookmark = () => {
       <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
         <BookmarkIcon className="mb-3 h-10 w-10 text-muted-foreground" />
 
-        <h2 className="text-lg font-semibold">No bookmarks yet</h2>
+        <h2 className="text-lg font-semibold">{t("noBookmarks")}</h2>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Posts you bookmark will appear here.
+          {t("noBookmarksDesc")}
         </p>
       </div>
     );

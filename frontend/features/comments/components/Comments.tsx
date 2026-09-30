@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface CommentsProps {
 }
 
 export default function Comments({ postId }: CommentsProps) {
+  const t = useTranslations("comments");
   const { user } = useAuth();
 
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
@@ -61,13 +63,13 @@ export default function Comments({ postId }: CommentsProps) {
       {
         onSuccess: () => {
           form.reset();
-          toast.success("Comment added.");
+          toast.success(t("commentAdded"));
         },
         onError: (error) => {
           toast.error(
             getApiErrorMessage(
               error,
-              "Unable to add comment. Please try again."
+              t("unableToAdd")
             )
           );
         },
@@ -85,13 +87,13 @@ export default function Comments({ postId }: CommentsProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Comment deleted.");
+          toast.success(t("commentDeleted"));
         },
         onError: (error) => {
           toast.error(
             getApiErrorMessage(
               error,
-              "Unable to delete comment. Please try again."
+              t("unableToDelete")
             )
           );
         },
@@ -112,14 +114,14 @@ export default function Comments({ postId }: CommentsProps) {
           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
             {getApiErrorMessage(
               error,
-              "Unable to load comments. Please try again."
+              t("unableToLoad")
             )}
           </div>
         )}
 
         {!isLoading && !isError && comments.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No comments yet.
+            {t("noComments")}
           </div>
         )}
 
@@ -165,7 +167,7 @@ export default function Comments({ postId }: CommentsProps) {
                       ) : (
                         <Trash2 className="mr-1 h-3.5 w-3.5" />
                       )}
-                      Delete
+                      {t("delete")}
                     </Button>
                   )}
                 </div>
@@ -184,10 +186,10 @@ export default function Comments({ postId }: CommentsProps) {
                   {isFetchingNextPage ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
+                      {t("loading")}
                     </>
                   ) : (
-                    "Load more"
+                    t("loadMore")
                   )}
                 </Button>
               </div>
@@ -214,7 +216,7 @@ export default function Comments({ postId }: CommentsProps) {
             <div className="flex gap-2">
               <Input
                 {...form.register("content")}
-                placeholder="Write a comment..."
+                placeholder={t("writeComment")}
                 maxLength={500}
                 disabled={createCommentMutation.isPending}
               />
@@ -223,7 +225,7 @@ export default function Comments({ postId }: CommentsProps) {
                 type="submit"
                 size="icon"
                 disabled={createCommentMutation.isPending}
-                aria-label="Add comment"
+                aria-label={t("addComment")}
               >
                 {createCommentMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

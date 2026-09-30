@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,9 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { toast } from "sonner";
 
 export default function ForgotPasswordForm() {
+  const t = useTranslations("forgotPassword");
+  const tAuth = useTranslations("auth");
+
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -39,10 +43,10 @@ export default function ForgotPasswordForm() {
       setSuccess(false);
 
       const res = await forgotPassword(data);
-      toast.success(res.data.message || "If the account exists, a reset email has been sent.");
+      toast.success(res.data.message || t("checkEmailDesc"));
       setSuccess(true);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Unable to process your request. Please try again."));
+      toast.error(getApiErrorMessage(error, t("checkEmailDesc")));
       setServerError(getApiErrorMessage(error));
     } finally {
       setLoading(false);
@@ -56,11 +60,10 @@ export default function ForgotPasswordForm() {
           <CheckCircle2 className="h-6 w-6" />
         </div>
 
-        <h2 className="text-lg font-semibold">Check your email</h2>
+        <h2 className="text-lg font-semibold">{t("checkEmail")}</h2>
 
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          If an account exists with that email, we&apos;ve sent a password reset
-          link.
+          {t("checkEmailDesc")}
         </p>
       </div>
     );
@@ -73,7 +76,7 @@ export default function ForgotPasswordForm() {
       noValidate
     >
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{tAuth("email")}</Label>
 
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -82,7 +85,7 @@ export default function ForgotPasswordForm() {
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t("emailPlaceholder")}
             className="pl-9"
             aria-invalid={!!errors.email}
             {...register("email")}
@@ -107,10 +110,10 @@ export default function ForgotPasswordForm() {
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Sending reset link...
+            {tAuth("sendingResetLink")}
           </>
         ) : (
-          "Send reset link"
+          tAuth("sendResetLink")
         )}
       </Button>
     </form>

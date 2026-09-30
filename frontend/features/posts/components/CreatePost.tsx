@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,8 @@ import {toast} from "sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function CreatePost() {
+  const t = useTranslations("post");
+  const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [image, setImage] = useState<File | undefined>();
@@ -45,13 +48,13 @@ export default function CreatePost() {
     if (!file) return;
 
     if (!fileTypes.includes(file.type)) {
-      toast.error("Please select an image file [jpg, jpeg, png, webp].");
+      toast.error(t("imageFormatError"));
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be smaller than 5 MB.");
+      toast.error(t("imageSizeError"));
       event.target.value = "";
       return;
     }
@@ -85,11 +88,11 @@ export default function CreatePost() {
        onSuccess: () => {
          reset();
          removeImage();
-         toast.success("Post created successfully.");
+         toast.success(t("postCreated"));
        },
 
        onError: (error:unknown) => {         
-        const err = getApiErrorMessage(error, "Unable to create post. Please try again.");
+        const err = getApiErrorMessage(error, t("unableToCreatePost"));
         toast.error(err);
        },
      }
@@ -100,7 +103,7 @@ export default function CreatePost() {
     <form onSubmit={handleSubmit(onSubmit)} className="border-b py-4 px-3">
       <Textarea
         {...register("content")}
-        placeholder="What’s happening?"
+        placeholder={t("whatsHappening")}
         maxLength={280}
         disabled={createPostMutation.isPending}
         className="min-h-20 resize-none border-0 px-1 text-base shadow-none focus-visible:ring-0"
@@ -116,7 +119,7 @@ export default function CreatePost() {
         <div className="relative mt-3 overflow-hidden rounded-xl border">
           <Image
             src={imagePreview}
-            alt="Selected image preview"
+            alt={t("selectedImagePreview")}
             width={800}
             height={500}
             unoptimized
@@ -127,7 +130,7 @@ export default function CreatePost() {
             type="button"
             onClick={removeImage}
             className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 shadow"
-            aria-label="Remove image"
+            aria-label={t("removeImage")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -150,7 +153,7 @@ export default function CreatePost() {
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={createPostMutation.isPending}
-            aria-label="Add image"
+            aria-label={t("addImage")}
           >
             <ImagePlus className="h-5 w-5" />
           </Button>
@@ -172,10 +175,10 @@ export default function CreatePost() {
             {createPostMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Posting...
+                {tCommon("posting")}
               </>
             ) : (
-              "Post"
+              tCommon("post")
             )}
           </Button>
         </div>
@@ -183,7 +186,7 @@ export default function CreatePost() {
 
       {createPostMutation.isError && (
         <p className="mt-2 text-sm text-destructive">
-          Unable to create post. Please try again.
+          {t("unableToCreatePost")}
         </p>
       )}
     </form>

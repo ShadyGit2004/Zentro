@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,8 @@ interface NotificationPreferencesProps {
 const NotificationPreferences = ({
   preferences,
 }: NotificationPreferencesProps) => {
+  const t = useTranslations("notificationSettings");
+  const tCommon = useTranslations("common");
   const updatePreferencesMutation = useUpdateNotificationPreferences();
 
   const [browserEnabled, setBrowserEnabled] = useState(preferences?.browserEnabled || false);
@@ -32,14 +35,12 @@ const NotificationPreferences = ({
   const handleBrowserToggle = async (enabled: boolean) => {
     if (enabled) {
       if (!("Notification" in window)) {
-        toast.error("Browser notifications are not supported.");
+        toast.error(t("notSupported"));
         return;
       }
 
       if (Notification.permission === "denied") {
-        toast.error(
-          "Notifications are blocked. Allow them from your browser settings."
-        );
+        toast.error(t("blocked"));
         return;
       }
 
@@ -47,7 +48,7 @@ const NotificationPreferences = ({
         const permission = await Notification.requestPermission();
 
         if (permission !== "granted") {
-          toast.error("Notification permission was not granted.");
+          toast.error(t("permissionDenied"));
           return;
         }
       }
@@ -62,12 +63,12 @@ const NotificationPreferences = ({
     if (!keyword) return;
 
     if (keyword?.length > 50) {
-      toast.error("Keyword cannot exceed 50 characters.");
+      toast.error(t("keywordTooLong"));
       return;
     }
 
     if (keywords?.length >= 20) {
-      toast.error("You can add up to 20 keywords.");
+      toast.error(t("tooManyKeywords"));
       return;
     }
 
@@ -97,10 +98,10 @@ const NotificationPreferences = ({
           setBrowserEnabled(response.data.browserEnabled);
           setKeywords(response.data.keywords);
 
-          toast.success("Notification preferences updated.");
+          toast.success(t("saved"));
         },
         onError: () => {
-          toast.error("Failed to update notification preferences.");
+          toast.error(t("saveFailed"));
         },
       }
     );
@@ -115,9 +116,9 @@ const NotificationPreferences = ({
           </div>
 
           <div>
-            <p className="text-sm font-medium">Browser notifications</p>
+            <p className="text-sm font-medium">{t("browserNotifications")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Get notified when posts match your selected keywords.
+              {t("browserNotificationsDesc")}
             </p>
           </div>
         </div>
@@ -130,10 +131,10 @@ const NotificationPreferences = ({
       </div>
 
       <div className="mt-5">
-        <p className="text-sm font-medium">Keywords</p>
+        <p className="text-sm font-medium">{t("keywords")}</p>
 
         <p className="mt-1 text-xs text-muted-foreground">
-          Add words you want to receive notifications for.
+          {t("keywordsDesc")}
         </p>
 
         <div className="mt-3 flex gap-2">
@@ -146,7 +147,7 @@ const NotificationPreferences = ({
                 handleAddKeyword();
               }
             }}
-            placeholder="e.g. cricket"
+            placeholder={t("keywordPlaceholder")}
             maxLength={50}
             disabled={keywords?.length >= 20}
           />
@@ -157,7 +158,7 @@ const NotificationPreferences = ({
             onClick={handleAddKeyword}
             disabled={!keywordInput.trim() || keywords?.length >= 20}
           >
-            Add
+            {tCommon("add")}
           </Button>
         </div>
 
@@ -184,7 +185,7 @@ const NotificationPreferences = ({
         )}
 
         <p className="mt-2 text-xs text-muted-foreground">
-          {keywords?.length}/20 keywords
+          {t("keywordsCount", { count: keywords?.length })}
         </p>
       </div>
 
@@ -194,7 +195,7 @@ const NotificationPreferences = ({
           onClick={handleSave}
           disabled={updatePreferencesMutation.isPending}
         >
-          {updatePreferencesMutation.isPending ? "Saving..." : "Save"}
+          {updatePreferencesMutation.isPending ? t("saving") : tCommon("save")}
         </Button>
       </div>
     </div>

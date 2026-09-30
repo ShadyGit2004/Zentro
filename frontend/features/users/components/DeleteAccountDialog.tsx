@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import {
   Dialog,
@@ -26,6 +27,8 @@ export default function DeleteAccountDialog({
   open,
   onOpenChange,
 }: DeleteAccountDialogProps) {
+  const t = useTranslations("deleteAccount");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const { clearAuth } = useAuth();
 
@@ -37,13 +40,13 @@ export default function DeleteAccountDialog({
         clearAuth();
         onOpenChange(false);
 
-        toast.success("Account deleted successfully.");
+        toast.success(t("deleted"));
 
         router.replace("/auth/login");
       },
 
       onError: (error) => {
-        toast.error(getApiErrorMessage(error, "Unable to delete account."));
+        toast.error(getApiErrorMessage(error, t("unableToDelete")));
       },
     });
   };
@@ -52,12 +55,11 @@ export default function DeleteAccountDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete account?</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
-          This action cannot be undone. Your account and associated data will be
-          permanently deleted.
+          {t("desc")}
         </p>
 
         <DialogFooter>
@@ -66,7 +68,7 @@ export default function DeleteAccountDialog({
             onClick={() => onOpenChange(false)}
             disabled={mutation.isPending}
           >
-            Cancel
+            {tCommon("cancel")}
           </Button>
 
           <Button
@@ -74,7 +76,7 @@ export default function DeleteAccountDialog({
             disabled={mutation.isPending}
             onClick={handleDelete}
           >
-            {mutation.isPending ? "Deleting..." : "Delete account"}
+            {mutation.isPending ? t("deleting") : tCommon("delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

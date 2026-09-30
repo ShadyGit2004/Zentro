@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import RegisterForm from "./RegisterForm";
 import AuthLayout from "@/components/auth/AuthLayout";
-export default function RegisterPage() {
+
+export default async function RegisterPage() {
+  const t = await getTranslations("auth");
+  const tReg = await getTranslations("register");
+
   return (
     <AuthLayout
       children={
@@ -11,31 +16,25 @@ export default function RegisterPage() {
           <div className="rounded-2xl border bg-background p-6 shadow-sm sm:p-8">
             <RegisterForm />
 
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">OR</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {t("alreadyHaveAccount")}{" "}
               <Link
                 href="/auth/login"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
-                Sign in
+                {t("signInLink")}
                 <ArrowRight className="ml-1 inline size-3.5" />
               </Link>
             </p>
           </div>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            By creating an account, you agree to use Zentro responsibly.
+            {t("agreeToTerms")}
           </p>
         </>
       }
-      heroHeading={"Create your account"}
-      heroPara={"Join Zentro and start sharing what matters."}
+      heroHeading={tReg("createYourAccount")}
+      heroPara={tReg("joinZentro")}
     />
   );
-};
+}

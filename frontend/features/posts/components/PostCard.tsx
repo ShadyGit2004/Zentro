@@ -1,5 +1,5 @@
-"use client";
-
+﻿"use client";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { memo,  useState } from "react";
 import {
@@ -72,6 +72,10 @@ const renderPostContent = (content: string|undefined) => {
 };
 
 function PostCard({ post }: PostCardProps) {
+  const t = useTranslations("post");
+  const tCommon = useTranslations("common");
+  const tComments = useTranslations("comments");
+
   const formattedDate = new Date(post.createdAt).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -111,7 +115,7 @@ function PostCard({ post }: PostCardProps) {
           toast.error(
             getApiErrorMessage(
               error,
-              "Unable to remove bookmark. Please try again."
+              t("unableToRemoveBookmark")
             )
           );
         },
@@ -123,7 +127,7 @@ function PostCard({ post }: PostCardProps) {
     bookmarkMutation.mutate(post._id, {
       onError: (error) => {
         toast.error(
-          getApiErrorMessage(error, "Unable to bookmark post. Please try again.")
+          getApiErrorMessage(error, t("unableToBookmark"))
         );
       },
     });
@@ -138,8 +142,8 @@ function PostCard({ post }: PostCardProps) {
           getApiErrorMessage(
             error,
             post.isLiked
-              ? "Unable to unlike post. Please try again."
-              : "Unable to like post. Please try again."
+              ? t("unableToUnlikePost")
+              : t("unableToLikePost")
           )
         );
       },
@@ -150,11 +154,11 @@ function PostCard({ post }: PostCardProps) {
     deletePostMutation.mutate(post._id, {
       onSuccess: () => {
         setIsDeleteOpen(false);
-        toast.success("Post deleted successfully.");
+        toast.success(t("postDeleted"));
       },
       onError: (error) => {
         toast.error(
-          getApiErrorMessage(error, "Unable to delete post. Please try again.")
+          getApiErrorMessage(error, t("unableToDeletePost"))
         );
       },
     });
@@ -168,8 +172,8 @@ function PostCard({ post }: PostCardProps) {
         toast.error(
           getApiErrorMessage(error,
             post.isReposted
-              ? "Unable to remove repost. Please try again."
-              : "Unable to repost. Please try again."
+              ? t("unableToRemoveRepost")
+              : t("unableToRepost")
           )
         );
       },
@@ -187,13 +191,13 @@ function PostCard({ post }: PostCardProps) {
     if (!file) return;
 
     if (!fileTypes.includes(file.type)) {
-      toast.error("Please select an image file [jpg, jpeg, png, webp].");
+      toast.error(t("imageFormatError"));
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be smaller than 5 MB.");
+      toast.error(t("imageSizeError"));
       event.target.value = "";
       return;
     }
@@ -223,13 +227,13 @@ function PostCard({ post }: PostCardProps) {
             setIsEditOpen(false);
             setEditImage(undefined);
             setEditImagePreview(null);
-            toast.success("Post updated successfully.");
+            toast.success(t("postUpdated"));
           },
           onError: (error) => {
             toast.error(
               getApiErrorMessage(
                 error,
-                "Unable to update post. Please try again."
+                t("unableToUpdatePost")
               )
             );
           },
@@ -317,7 +321,7 @@ function PostCard({ post }: PostCardProps) {
             <div className="mt-3 overflow-hidden rounded-xl border">
               <img
                 src={post.media.url}
-                alt="Post media"
+                alt={t("postMedia")}
                 className="max-h-[500px] w-full object-cover"
               />
             </div>
@@ -334,8 +338,7 @@ function PostCard({ post }: PostCardProps) {
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              aria-label={post.isLiked ? "Unlike post" : "Like post"}
-            >
+              aria-label={post.isLiked ? t("unlikePost") : t("likePost")}>
               <Heart
                 className="h-4 w-4"
                 fill={post.isLiked ? "currentColor" : "none"}
@@ -360,8 +363,7 @@ function PostCard({ post }: PostCardProps) {
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              aria-label={post.isReposted ? "Remove repost" : "Repost"}
-            >
+              aria-label={post.isReposted ? t("removeRepost") : t("repost")}>
               <Repeat2 className="h-4 w-4" />
               <span>{post.repostsCount}</span>
             </button>
@@ -384,7 +386,7 @@ function PostCard({ post }: PostCardProps) {
                 <Bookmark className="h-4 w-4" />
               )}
 
-              <span>{post.isBookmarked ? "Saved" : "Save"}</span>
+              <span>{post.isBookmarked ? t("save") : t("unsave")}</span>
             </button>   
           </div>
         </div>
@@ -393,7 +395,7 @@ function PostCard({ post }: PostCardProps) {
       <Dialog open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
         <DialogContent className="flex max-h-[80vh] flex-col overflow-hidden p-0 sm:max-w-lg">
           <DialogHeader className="shrink-0 border-b px-4 py-4">
-            <DialogTitle>Comments</DialogTitle>
+            <DialogTitle>{tComments("title")}</DialogTitle>
           </DialogHeader>
 
           <Comments postId={post._id} />
@@ -403,7 +405,7 @@ function PostCard({ post }: PostCardProps) {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit post</DialogTitle>
+            <DialogTitle>{t("editPost")}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={editForm.handleSubmit(handleUpdate)}>
@@ -419,7 +421,7 @@ function PostCard({ post }: PostCardProps) {
                 <div className="relative overflow-hidden rounded-xl border">
                   <img
                     src={editImagePreview}
-                    alt="Post preview"
+                    alt={t("selectedImagePreview")}
                     className="max-h-[300px] w-full object-cover"
                   />
 
@@ -439,12 +441,12 @@ function PostCard({ post }: PostCardProps) {
               )}
 
               <small className="mt-2 block text-xs text-muted-foreground">
-                You can replace the image, but you can’t remove it completely.
+                {t("cannotRemoveImage")}
               </small>
 
               <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                 <ImagePlus className="h-4 w-4" />
-                Change image
+                {t("changeImage")}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -473,11 +475,11 @@ function PostCard({ post }: PostCardProps) {
                 onClick={() => setIsEditOpen(false)}
                 disabled={updatePostMutation.isPending}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
 
               <Button type="submit" disabled={updatePostMutation.isPending}>
-                {updatePostMutation.isPending ? "Updating..." : "Update"}
+                {updatePostMutation.isPending ? tCommon("updating") : tCommon("update")}
               </Button>
             </DialogFooter>
           </form>
@@ -487,11 +489,11 @@ function PostCard({ post }: PostCardProps) {
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete post?</DialogTitle>
+            <DialogTitle>{t("deletePost")}</DialogTitle>
           </DialogHeader>
 
           <p className="text-sm text-muted-foreground">
-            This action cannot be undone. Your post will be permanently deleted.
+            {t("deletePostDesc")}
           </p>
 
           <DialogFooter>
@@ -501,7 +503,7 @@ function PostCard({ post }: PostCardProps) {
               onClick={() => setIsDeleteOpen(false)}
               disabled={deletePostMutation.isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
 
             <Button
@@ -510,7 +512,7 @@ function PostCard({ post }: PostCardProps) {
               onClick={handleDelete}
               disabled={deletePostMutation.isPending}
             >
-              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
+              {deletePostMutation.isPending ? tCommon("deleting") : tCommon("delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

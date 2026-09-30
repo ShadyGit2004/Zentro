@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useSearchHashtags } from "@/features/hashtags/hooks";
 
@@ -16,6 +17,8 @@ import HashtagSearchResult from "./HashtagSearchResult";
 type SearchTab = "users" | "posts";
 
 export default function Search() {
+  const t = useTranslations("search");
+  const tCommon = useTranslations("common");
 
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
@@ -39,11 +42,9 @@ export default function Search() {
   const hashtagQuery = useSearchHashtags(isHashtagSearch ? query : "");
 
   const users = usersQuery.data?.pages.flatMap((page) => page.data) ?? [];
-
   const posts = postsQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
   const activeQuery = isUsersTab ? usersQuery : postsQuery;
-
   const results = isUsersTab ? users : posts;
 
   const isSearching = activeQuery.isLoading;
@@ -59,7 +60,7 @@ export default function Search() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-xl font-semibold">Search</h1>
+        <h1 className="text-xl font-semibold">{t("title")}</h1>
       </div>
 
       {/* Search input */}
@@ -72,8 +73,8 @@ export default function Search() {
         <Input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Search users, posts or #hashtags..."
-          aria-label="Search users, posts or #hashtags"
+          placeholder={t("placeholder")}
+          aria-label={t("ariaLabel")}
           className="h-11 rounded-xl pl-9"
         />
       </div>
@@ -83,7 +84,7 @@ export default function Search() {
         <div
           className="mt-4 grid grid-cols-2 rounded-xl bg-muted p-1"
           role="tablist"
-          aria-label="Search results"
+          aria-label={t("searchResults")}
         >
           <button
             type="button"
@@ -94,7 +95,7 @@ export default function Search() {
               isUsersTab ? "bg-background shadow-sm" : "text-muted-foreground"
             }`}
           >
-            Users
+            {t("users")}
           </button>
 
           <button
@@ -106,7 +107,7 @@ export default function Search() {
               !isUsersTab ? "bg-background shadow-sm" : "text-muted-foreground"
             }`}
           >
-            Posts
+            {t("posts")}
           </button>
         </div>
       )}
@@ -120,7 +121,7 @@ export default function Search() {
             <p className="py-8 text-center text-sm text-destructive">
               {getApiErrorMessage(
                 hashtagQuery.error,
-                "Something went wrong while searching hashtags."
+                t("errorHashtags")
               )}
             </p>
           )}
@@ -129,7 +130,7 @@ export default function Search() {
             !hashtagQuery.isError &&
             hashtagQuery.data?.length === 0 && (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                No hashtags found.
+                {t("noHashtags")}
               </p>
             )}
 
@@ -146,7 +147,7 @@ export default function Search() {
         {/* Initial state */}
         {query.length < 2 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            Search for users or posts.
+            {t("initialPrompt")}
           </p>
         )}
 
@@ -156,15 +157,14 @@ export default function Search() {
         {/* Error */}
         {query.length >= 2 && !isSearching && isError && (
           <p className="py-8 text-center text-sm text-destructive">
-            {getApiErrorMessage(activeQuery.error, "Something went wrong while searching."
-            )}
+            {getApiErrorMessage(activeQuery.error, t("errorUsers"))}
           </p>
         )}
 
         {/* Empty */}
         {query.length >= 2 && !isSearching && !isError && !hasResults && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No {isUsersTab ? "users" : "posts"} found.
+            {isUsersTab ? t("noUsers") : t("noPosts")}
           </p>
         )}
 
@@ -194,7 +194,7 @@ export default function Search() {
             disabled={activeQuery.isFetchingNextPage}
             className="mt-4 w-full rounded-xl border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {activeQuery.isFetchingNextPage ? "Loading..." : "Load more"}
+            {activeQuery.isFetchingNextPage ? tCommon("loading") : tCommon("loadMore")}
           </button>
         )}
       </div>

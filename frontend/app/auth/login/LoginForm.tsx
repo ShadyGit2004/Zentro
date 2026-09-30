@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,9 @@ import { toast } from "sonner";
 
 export default function LoginForm() {
   const router = useRouter();
-  
+  const t = useTranslations("auth");
+  const tLogin = useTranslations("login");
+
   const { setAuth } = useAuth();
 
   const [loading, setLoading] = useState(false);
@@ -44,11 +47,11 @@ export default function LoginForm() {
       setServerError("");
 
       const res = await loginUser(data);
-      toast.success("Logged in successfully.");
+      toast.success(tLogin("loginSuccess"));
       setAuth(res.data.accessToken, res.data.user);
       router.push("/home");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Unable to log in. Please check your credentials."));
+      toast.error(getApiErrorMessage(error, tLogin("unableToLogin")));
       setServerError(getApiErrorMessage(error));
     } finally {
       setLoading(false);
@@ -65,7 +68,7 @@ export default function LoginForm() {
       setAuth(res.data.accessToken, res.data.user);
       router.push("/home");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Google sign-in failed. Please try again."));
+      toast.error(getApiErrorMessage(error, tLogin("googleSignInFailed")));
       setServerError(getApiErrorMessage(error));
     } finally {
       setGoogleLoading(false);
@@ -76,13 +79,13 @@ export default function LoginForm() {
     <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("email")}</Label>
 
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={tLogin("emailPlaceholder")}
             aria-invalid={!!errors.email}
             {...register("email")}
           />
@@ -94,13 +97,13 @@ export default function LoginForm() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("password")}</Label>
 
             <Link
               href="/auth/forgot-password"
               className="text-xs font-medium text-muted-foreground hover:text-foreground"
             >
-              Forgot password?
+              {t("forgotPassword")}
             </Link>
           </div>
 
@@ -109,7 +112,7 @@ export default function LoginForm() {
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="Enter your password"
+              placeholder={tLogin("passwordPlaceholder")}
               className="pr-10"
               aria-invalid={!!errors.password}
               {...register("password")}
@@ -119,7 +122,7 @@ export default function LoginForm() {
               type="button"
               onClick={() => setShowPassword((previous) => !previous)}
               className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("hidePassword") : t("showPassword")}
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -153,10 +156,10 @@ export default function LoginForm() {
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Signing in...
+              {t("signingIn")}
             </>
           ) : (
-            "Sign in"
+            t("signIn")
           )}
         </Button>
       </form>
@@ -168,7 +171,7 @@ export default function LoginForm() {
 
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-muted/40 px-3 text-muted-foreground">
-            Or continue with
+            {t("or")}
           </span>
         </div>
       </div>
@@ -183,12 +186,12 @@ export default function LoginForm() {
         {googleLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Connecting to Google...
+            {t("continueWithGoogle")}
           </>
         ) : (
           <>
             <span className="text-base font-semibold">G</span>
-            Continue with Google
+            {t("continueWithGoogle")}
           </>
         )}
       </Button>

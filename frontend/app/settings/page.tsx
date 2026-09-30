@@ -2,9 +2,10 @@
 
 import { Settings, UserRound, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import NotificationPreferences from "@/features/notification-preferences/components/BrowserNotificationSettings";
 import EditProfileForm from "@/features/users/components/EditProfileForm";
 import ChangePasswordDialog from "@/features/users/components/ChangePasswordDialog";
@@ -17,6 +18,8 @@ import Link from "next/link";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function SettingsPage() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
   const { data: currentUser, isLoading, isError, error } = useCurrentUser();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -29,11 +32,11 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      {(isError || !currentUser) 
+      {(isError || !currentUser)
       ? (
       <div className="rounded-2xl border p-5">
           <p className="text-sm text-destructive">
-            {getApiErrorMessage(error, "Unable to load subscription.")}
+            {getApiErrorMessage(error, t("unableToLoad"))}
           </p>
       </div>
       ) : (
@@ -42,21 +45,20 @@ export default function SettingsPage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2">
             <Settings className="h-5 w-5 shrink-0" />
-
-            <h1 className="text-xl font-bold sm:text-2xl">Settings</h1>
+            <h1 className="text-xl font-bold sm:text-2xl">{t("title")}</h1>
           </div>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage your account, security, and notification preferences.
+            {t("subtitle")}
           </p>
+          <LanguageSwitcher />
         </div>
 
         {/* Profile */}
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <UserRound className="h-4 w-4 shrink-0" />
-
-            <h2 className="text-sm font-semibold">Profile</h2>
+            <h2 className="text-sm font-semibold">{t("profile")}</h2>
           </div>
 
           <div className="rounded-2xl border p-4 sm:p-5">
@@ -95,20 +97,20 @@ export default function SettingsPage() {
                   )}
 
                   <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-xs text-muted-foreground">{t("email")}</p>
 
                     <p className="break-all text-sm">{currentUser?.email}</p>
 
                     {currentUser?.emailVerifiedAt && (
                       <p className="mt-1 text-xs text-green-600">
-                        ✓ Email verified
+                        {t("emailVerified")}
                       </p>
                     )}
                   </div>
 
                   {currentUser && (
                     <p className="text-xs text-muted-foreground">
-                      Joined{" "}
+                      {t("joined")}{" "}
                       {new Date(currentUser.createdAt).toLocaleDateString(
                         "en-US",
                         {
@@ -126,7 +128,7 @@ export default function SettingsPage() {
                 className="w-full shrink-0 sm:w-auto"
                 onClick={() => setIsEditOpen(true)}
               >
-                Edit profile
+                {t("editProfile")}
               </Button>
             </div>
           </div>
@@ -136,18 +138,17 @@ export default function SettingsPage() {
         <section className="mt-6 space-y-3 sm:mt-8">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 shrink-0" />
-
-            <h2 className="text-sm font-semibold">Security</h2>
+            <h2 className="text-sm font-semibold">{t("security")}</h2>
           </div>
 
           {/* Change Password */}
           <div className="rounded-2xl border p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-sm font-medium">Change password</p>
+                <p className="text-sm font-medium">{t("changePassword")}</p>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Update your account password.
+                  {t("changePasswordDesc")}
                 </p>
               </div>
 
@@ -156,7 +157,7 @@ export default function SettingsPage() {
                 className="w-full shrink-0 sm:w-auto"
                 onClick={() => setIsPasswordOpen(true)}
               >
-                Change password
+                {t("changePassword")}
               </Button>
             </div>
           </div>
@@ -170,10 +171,10 @@ export default function SettingsPage() {
         {/* Notifications */}
         <section className="mt-6 space-y-3 sm:mt-8">
           <div>
-            <h2 className="text-sm font-semibold">Notifications</h2>
+            <h2 className="text-sm font-semibold">{t("notifications")}</h2>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Manage your browser notification preferences.
+              {t("notificationsDesc")}
             </p>
           </div>
 
@@ -189,20 +190,20 @@ export default function SettingsPage() {
         {/* Subscription */}
         <section className="mt-8 space-y-3">
           <div>
-            <h2 className="text-sm font-semibold">Subscription</h2>
+            <h2 className="text-sm font-semibold">{t("subscription")}</h2>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Choose a plan that fits your needs.
+              {t("subscriptionDesc")}
             </p>
           </div>
 
           <div className="rounded-2xl border p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Subscription</h2>
+                <h2 className="text-lg font-semibold">{t("subscription")}</h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Manage your plan, post usage, and payment history.
+                  {t("manageSubscriptionDesc")}
                 </p>
               </div>
 
@@ -210,7 +211,7 @@ export default function SettingsPage() {
                 href="/settings/subscription"
                 className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
               >
-                Manage subscription
+                {t("manageSubscription")}
               </Link>
             </div>
           </div>
@@ -222,17 +223,17 @@ export default function SettingsPage() {
             <Trash2 className="h-4 w-4 shrink-0 text-destructive" />
 
             <h2 className="text-sm font-semibold text-destructive">
-              Danger Zone
+              {t("dangerZone")}
             </h2>
           </div>
 
           <div className="rounded-2xl border border-destructive/30 p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-sm font-medium">Delete account</p>
+                <p className="text-sm font-medium">{t("deleteAccount")}</p>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Permanently delete your account and associated data.
+                  {t("deleteAccountDesc")}
                 </p>
               </div>
 
@@ -241,7 +242,7 @@ export default function SettingsPage() {
                 className="w-full shrink-0 sm:w-auto"
                 onClick={() => setIsDeleteOpen(true)}
               >
-                Delete account
+                {t("deleteAccount")}
               </Button>
             </div>
           </div>

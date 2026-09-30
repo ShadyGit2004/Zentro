@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import {
   Dialog,
@@ -30,6 +32,8 @@ export default function ChangePasswordDialog({
   open,
   onOpenChange,
 }: ChangePasswordDialogProps) {
+  const t = useTranslations("changePassword");
+  const tCommon = useTranslations("common");
   const mutation = useUpdatePassword();
 
   const form = useForm<UpdatePasswordFormData>({
@@ -48,12 +52,12 @@ export default function ChangePasswordDialog({
         newPassword: values.newPassword,
       });
 
-      toast.success("Password updated successfully.");
+      toast.success(t("updated"));
 
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to update password."));
+      toast.error(getApiErrorMessage(error, t("unableToUpdate")));
     }
   };
 
@@ -69,16 +73,16 @@ export default function ChangePasswordDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change password</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <div className="space-y-3">
-            <label className="text-sm font-medium">Current password</label>
+            <label className="text-sm font-medium">{t("currentPassword")}</label>
 
             <Input
               type="password"
-              placeholder="Current password"
+              placeholder={t("currentPasswordPlaceholder")}
               {...form.register("currentPassword")}
             />
 
@@ -90,11 +94,11 @@ export default function ChangePasswordDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">New password</label>
+            <label className="text-sm font-medium">{t("newPassword")}</label>
 
             <Input
               type="password"
-              placeholder="New password"
+              placeholder={t("newPasswordPlaceholder")}
               {...form.register("newPassword")}
             />
 
@@ -106,11 +110,11 @@ export default function ChangePasswordDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Confirm new password</label>
+            <label className="text-sm font-medium">{t("confirmNewPassword")}</label>
 
             <Input
               type="password"
-              placeholder="Confirm new password"
+              placeholder={t("confirmNewPasswordPlaceholder")}
               {...form.register("confirmPassword")}
             />
 
@@ -128,11 +132,11 @@ export default function ChangePasswordDialog({
               onClick={() => handleOpenChange(false)}
               disabled={mutation.isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
 
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Updating..." : "Update password"}
+              {mutation.isPending ? t("updating") : t("updatePassword")}
             </Button>
           </DialogFooter>
         </form>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Monitor, Smartphone, Tablet } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   Collapsible,
@@ -15,6 +16,8 @@ import { useLoginHistory } from "../hooks";
 import { getApiErrorMessage } from "@/lib/api-error";
 
 export default function LoginHistory() {
+  const t = useTranslations("loginHistory");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
 
   const {
@@ -34,10 +37,10 @@ export default function LoginHistory() {
     <Collapsible className="w-full" open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border p-4 text-left">
         <div>
-          <p className="text-sm font-semibold">Login History</p>
+          <p className="text-sm font-semibold">{t("title")}</p>
 
           <p className="text-xs text-muted-foreground">
-            View recent devices and sessions
+            {t("subtitle")}
           </p>
         </div>
 
@@ -49,10 +52,10 @@ export default function LoginHistory() {
       <CollapsibleContent className="mt-3 w-full">
         <section className="rounded-2xl border p-5">
           <div>
-            <h2 className="text-lg font-semibold">Login History</h2>
+            <h2 className="text-lg font-semibold">{t("title")}</h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Recent devices and sessions used to access your account.
+              {t("desc")}
             </p>
           </div>
 
@@ -68,14 +71,14 @@ export default function LoginHistory() {
               </div>
             ) : isError ? (
               <div className="rounded-xl border p-4 text-sm text-destructive">
-                {getApiErrorMessage(error, "Unable to load login history.")}
+                {getApiErrorMessage(error, t("unableToLoad"))}
               </div>
             ) : loginHistory.length === 0 ? (
               <div className="rounded-xl border p-6 text-center">
-                <p className="text-sm font-medium">No login history</p>
+                <p className="text-sm font-medium">{t("noHistory")}</p>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Your recent login activity will appear here.
+                  {t("noHistoryDesc")}
                 </p>
               </div>
             ) : (
@@ -107,7 +110,7 @@ export default function LoginHistory() {
                                 : "bg-muted text-muted-foreground"
                             }`}
                           >
-                            {session.status === "active" ? "Active" : "Revoked"}
+                            {session.status === "active" ? t("active") : t("revoked")}
                           </span>
                         </div>
 
@@ -116,15 +119,15 @@ export default function LoginHistory() {
                         </p>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          IP: {session.ipAddress}
+                          {t("ip")}: {session.ipAddress}
                         </p>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Logged in {new Date(session.loginAt).toLocaleString()}
+                          {t("loggedIn")} {new Date(session.loginAt).toLocaleString()}
                         </p>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Last active{" "}
+                          {t("lastActive")}{" "}
                           {new Date(session.lastUsedAt).toLocaleString()}
                         </p>
                       </div>
@@ -140,7 +143,7 @@ export default function LoginHistory() {
                       disabled={isFetchingNextPage}
                       className="w-full text-sm font-medium text-primary disabled:opacity-50"
                     >
-                      {isFetchingNextPage ? "Loading..." : "Load more"}
+                      {isFetchingNextPage ? tCommon("loading") : tCommon("loadMore")}
                     </Button>
                   </div>
                 )}
