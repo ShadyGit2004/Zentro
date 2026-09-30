@@ -4,6 +4,7 @@ export interface IPost extends Document {
   author: mongoose.Types.ObjectId;
   content?: string;
   media?: {
+    type: "image" | "audio";
     url: string;
     publicId: string;
   };
@@ -56,12 +57,9 @@ const postSchema = new Schema<IPost>(
     },
 
     media: {
-      url: {
-        type: String,
-      },
-      publicId: {
-        type: String,
-      },
+      type: { type: String, enum: ["image", "audio"] },
+      url: { type: String },
+      publicId: { type: String },
     },
   },
   {

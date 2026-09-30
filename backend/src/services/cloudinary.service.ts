@@ -177,3 +177,33 @@ export const deleteCloudinaryImage = (publicId: string): Promise<void> => {
     );
   });
 };
+
+export const uploadPostAudio = (buffer: Buffer, postId: string): Promise<UploadApiResponse> => {
+  return new Promise((resolve, reject) => {
+    const publicId = `${postId}-${randomUUID()}`;
+    cloudinary.uploader.upload_stream(
+      {
+        folder: "zentro/post-audio",
+        public_id: publicId,
+        resource_type: "video",
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        if (!result) return reject(new Error("Cloudinary upload failed"));
+        resolve(result);
+      }
+    ).end(buffer);
+  });
+};
+
+export const deleteCloudinaryAudio = (publicId: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(publicId, { resource_type: "video" }, (error) => {
+      if (error) return reject(error);
+      resolve();
+    });
+  });
+};
+
+export const deleteCloudinaryPostMedia = (publicId: string, type?: "image" | "audio"): Promise<void> =>
+  type === "audio" ? deleteCloudinaryAudio(publicId) : deleteCloudinaryImage(publicId);

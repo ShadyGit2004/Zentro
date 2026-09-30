@@ -5,7 +5,12 @@ import Like from "../models/like.model";
 import Comment from "../models/comment.model";
 import Notification from "../models/notification.model";
 import AppError from "../utils/appError";
-import { uploadPostImage, deleteCloudinaryImage, getOptimizedPostImageUrl } from "./cloudinary.service";
+import {
+  uploadPostImage,
+  uploadPostAudio,
+  deleteCloudinaryPostMedia,
+  getOptimizedPostImageUrl,
+} from "./cloudinary.service";
 import Bookmark from "../models/bookmark.model";
 import Repost from "../models/repost.model";
 import Hashtag from "../models/hashtag.model";
@@ -89,7 +94,7 @@ const createPost = async (
   }
 
   if (!content && !file) {
-    throw new AppError(400, "EMPTY_POST", "Post must contain text or an image");
+    throw new AppError(400, "EMPTY_POST", "Post must contain text or media");
   }
 
   const session = await mongoose.startSession();
@@ -139,31 +144,27 @@ const createPost = async (
   // Cloudinary is intentionally outside the DB transaction.
   if (file) {
     let uploadedPublicId: string | undefined;
+    const isAudio = file.mimetype.startsWith("audio/");
 
     try {
-      const uploadedImage = await uploadPostImage(
-        file.buffer,
-        post._id.toString()
-      );
+      const uploadedMedia = isAudio
+        ? await uploadPostAudio(file.buffer, post._id.toString())
+        : await uploadPostImage(file.buffer, post._id.toString());
 
-      uploadedPublicId = uploadedImage.public_id;
-
-      const optimizedUrl = getOptimizedPostImageUrl(
-        uploadedImage.public_id,
-        uploadedImage.version
-      );
+      uploadedPublicId = uploadedMedia.public_id;
 
       post.media = {
-        url: optimizedUrl,
-        publicId: uploadedImage.public_id,
+        type: isAudio ? "audio" : "image",
+        url: isAudio
+          ? uploadedMedia.secure_url
+          : getOptimizedPostImageUrl(uploadedMedia.public_id, uploadedMedia.version),
+        publicId: uploadedMedia.public_id,
       };
 
       await post.save();
     } catch (error) {
       await Post.deleteOne({ _id: post._id });
 
-      // Roll back hashtag counters because the DB transaction
-      // has already committed before the Cloudinary upload.
       if (hashtagIds.length > 0) {
         await Hashtag.updateMany(
           { _id: { $in: hashtagIds } },
@@ -172,7 +173,17 @@ const createPost = async (
       }
 
       if (uploadedPublicId) {
-        await deleteCloudinaryImage(uploadedPublicId);
+        try {
+          await deleteCloudinaryPostMedia(
+            uploadedPublicId,
+            isAudio ? "audio" : "image"
+          );
+        } catch (cleanupError) {
+          console.error(
+            "Failed to cleanup uploaded post media from Cloudinary:",
+            cleanupError
+          );
+        }
       }
 
       throw error;
@@ -552,11 +563,12 @@ const updatePost = async (
     throw new AppError(
       400,
       "NO_UPDATE_DATA",
-      "Provide content or image to update"
+      "Provide content or media to update"
     );
   }
 
   const oldPublicId = post.media?.publicId;
+  const oldMediaType = post.media?.type;
 
   if (content !== undefined) {    
     const oldHashtagIds = post.hashtags ?? [];
@@ -569,32 +581,36 @@ const updatePost = async (
   }
 
   if (file) {
-    const uploadedImage = await uploadPostImage(
-      file.buffer,
-      post._id.toString()
-    );
-
-    const optimizedUrl = getOptimizedPostImageUrl(
-      uploadedImage.public_id,
-      uploadedImage.version
-    );
+    const isAudio = file.mimetype.startsWith("audio/");
+    const uploadedMedia = isAudio
+      ? await uploadPostAudio(file.buffer, post._id.toString())
+      : await uploadPostImage(file.buffer, post._id.toString());
 
     const newMedia = {
-      url: optimizedUrl,
-      publicId: uploadedImage.public_id,
+      type: isAudio ? "audio" as const : "image" as const,
+      url: isAudio
+        ? uploadedMedia.secure_url
+        : getOptimizedPostImageUrl(uploadedMedia.public_id, uploadedMedia.version),
+      publicId: uploadedMedia.public_id,
     };
 
     try {
       post.media = newMedia;
-
       await post.save();
     } catch (error) {
-      await deleteCloudinaryImage(newMedia.publicId);
+      await deleteCloudinaryPostMedia(newMedia.publicId, newMedia.type);
       throw error;
     }
 
     if (oldPublicId) {
-      await deleteCloudinaryImage(oldPublicId);
+      try {
+        await deleteCloudinaryPostMedia(oldPublicId, oldMediaType);
+      } catch (error) {
+        console.error(
+          "Failed to delete old post media from Cloudinary:",
+          error
+        );
+      }
     }
   } else {
     await post.save();
@@ -678,7 +694,7 @@ const deletePost = async (userId: string, postId: string) => {
   // Delete it only after DB transaction successfully commits.
   if (post.media?.publicId) {
     try {
-      await deleteCloudinaryImage(post.media.publicId);
+      await deleteCloudinaryPostMedia(post.media.publicId, post.media.type);
     } catch (error) {
       // DB deletion is already committed.
       // Do not rollback DB data because Cloudinary deletion failed.
