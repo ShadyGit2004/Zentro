@@ -50,6 +50,7 @@ router.post(
 
 router.post(
   "/verify-email",
+  authRateLimiter,
   validate(verifyEmailSchema),
   verifyEmail
 );
