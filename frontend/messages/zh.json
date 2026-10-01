@@ -242,7 +242,11 @@
     "dangerZone": "危险区域",
     "deleteAccount": "删除账户",
     "deleteAccountDesc": "永久删除您的账户及相关数据。",
-    "unableToLoad": "无法加载订阅。"
+    "unableToLoad": "无法加载订阅。",
+    "language": "语言",
+    "languageDesc": "选择您偏好的 Zentro 界面语言。",
+    "appLanguage": "应用语言",
+    "appLanguageDesc": "选择您希望在 Zentro 中使用的语言。"
   },
   "changePassword": {
     "title": "更改密码",

@@ -242,7 +242,11 @@
     "dangerZone": "खतरा क्षेत्र",
     "deleteAccount": "खाता हटाएं",
     "deleteAccountDesc": "अपना खाता और संबंधित डेटा स्थायी रूप से हटाएं।",
-    "unableToLoad": "सदस्यता लोड नहीं हो सकी।"
+    "unableToLoad": "सदस्यता लोड नहीं हो सकी।",
+    "language": "भाषा",
+    "languageDesc": "Zentro इंटरफ़ेस के लिए अपनी पसंदीदा भाषा चुनें।",
+    "appLanguage": "ऐप भाषा",
+    "appLanguageDesc": "Zentro को किस भाषा में उपयोग करना है, उसे चुनें।"
   },
   "changePassword": {
     "title": "पासवर्ड बदलें",
