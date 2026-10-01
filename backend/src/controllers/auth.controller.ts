@@ -85,7 +85,13 @@ const login = async (
   next: NextFunction
 ) => {
   try {
-    
+
+    console.log({
+      ip: req.ip,
+      ips: req.ips,
+      forwardedFor: req.headers["x-forwarded-for"],
+    });
+
     const result = await loginUser(req.body, {
       userAgent: req.get("user-agent"),
       ipAddress: req.ip,
