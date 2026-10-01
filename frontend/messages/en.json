@@ -242,7 +242,11 @@
     "dangerZone": "Danger Zone",
     "deleteAccount": "Delete account",
     "deleteAccountDesc": "Permanently delete your account and associated data.",
-    "unableToLoad": "Unable to load settings."
+    "unableToLoad": "Unable to load settings.",
+    "language": "Language",
+    "languageDesc": "Choose your preferred language for the Zentro interface.",
+    "appLanguage": "App Language",
+    "appLanguageDesc": "Select the language you want to use across Zentro."
   },
   "changePassword": {
     "title": "Change password",

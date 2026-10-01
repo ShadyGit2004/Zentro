@@ -242,7 +242,11 @@
     "dangerZone": "Опасная зона",
     "deleteAccount": "Удалить аккаунт",
     "deleteAccountDesc": "Навсегда удалите ваш аккаунт и связанные данные.",
-    "unableToLoad": "Не удалось загрузить подписку."
+    "unableToLoad": "Не удалось загрузить подписку.",
+    "language": "Язык",
+    "languageDesc": "Выберите предпочитаемый язык интерфейса Zentro.",
+    "appLanguage": "Язык приложения",
+    "appLanguageDesc": "Выберите язык, который хотите использовать в Zentro."
   },
   "changePassword": {
     "title": "Изменить пароль",

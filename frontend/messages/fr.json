@@ -242,7 +242,11 @@
     "dangerZone": "Zone dangereuse",
     "deleteAccount": "Supprimer le compte",
     "deleteAccountDesc": "Supprimez définitivement votre compte et les données associées.",
-    "unableToLoad": "Impossible de charger l'abonnement."
+    "unableToLoad": "Impossible de charger l'abonnement.",
+    "language": "Langue",
+    "languageDesc": "Choisissez votre langue préférée pour l’interface de Zentro.",
+    "appLanguage": "Langue de l’application",
+    "appLanguageDesc": "Sélectionnez la langue que vous souhaitez utiliser sur Zentro."
   },
   "changePassword": {
     "title": "Changer le mot de passe",

@@ -242,7 +242,11 @@
     "dangerZone": "Zona de perigo",
     "deleteAccount": "Excluir conta",
     "deleteAccountDesc": "Exclua permanentemente sua conta e os dados associados.",
-    "unableToLoad": "Não foi possível carregar a assinatura."
+    "unableToLoad": "Não foi possível carregar a assinatura.",
+    "language": "Idioma",
+    "languageDesc": "Escolha seu idioma preferido para a interface do Zentro.",
+    "appLanguage": "Idioma do aplicativo",
+    "appLanguageDesc": "Selecione o idioma que deseja usar no Zentro."
   },
   "changePassword": {
     "title": "Alterar senha",
