@@ -12,6 +12,15 @@ const authRateLimiter = rateLimit({
       message: "Too many requests. Please try again later.",
     },
   },
+  handler: (req, res, next, options) => {
+    console.log("RATE LIMIT HIT", {
+      ip: req.ip,
+      ips: req.ips,
+      forwardedFor: req.headers["x-forwarded-for"],
+    });
+
+    res.status(options.statusCode).json(options.message);
+  },
 });
 
 export default authRateLimiter;
