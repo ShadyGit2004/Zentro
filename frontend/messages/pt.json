@@ -169,7 +169,13 @@
     "removeAudio": "Remover áudio",
     "addAudio": "Adicionar áudio",
     "selectedAudioPreview": "Pré-visualização do áudio selecionado",
-    "replaceMedia": "Você pode substituir a imagem ou o áudio existente por outro arquivo."
+    "replaceMedia": "Você pode substituir a imagem ou o áudio existente por outro arquivo.",
+    "noTextToTranslate": "Não há texto para traduzir",
+    "unableToTranslate": "Não foi possível traduzir a publicação",
+    "translationLanguage": "Idioma da tradução",
+    "translating": "Traduzindo...",
+    "showOriginal": "Mostrar original",
+    "translate": "Traduzir"
   },
   "comments": {
     "title": "Comentários",

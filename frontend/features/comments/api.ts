@@ -4,6 +4,7 @@ import type {
   CreateCommentResponse,
   DeleteCommentResponse,
   GetCommentsResponse,
+  TranslateCommentResponse,
 } from "./types";
 
 export const getComments = async (
@@ -42,6 +43,21 @@ export const deleteComment = async (
 ): Promise<DeleteCommentResponse> => {
   const response = await api.delete<DeleteCommentResponse>(
     `/posts/${postId}/comments/${commentId}`
+  );
+
+  return response.data;
+};
+
+export const translateComment = async (
+  postId: string,
+  commentId: string,
+  targetLanguage: string
+): Promise<TranslateCommentResponse> => {
+  const response = await api.post<TranslateCommentResponse>(
+    `/posts/${postId}/comments/${commentId}/translate`,
+    {
+      targetLanguage,
+    }
   );
 
   return response.data;

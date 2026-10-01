@@ -56,9 +56,21 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 
+import { translatePost } from "../api";
+
 interface PostCardProps {
   post: FeedPost;
 }
+
+const TRANSLATION_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "ru", label: "Russian" },
+  { code: "pt", label: "Portuguese" },
+  { code: "zh", label: "Chinese" },
+] as const;
 
 const renderPostContent = (content: string | undefined) => {
   if (!content) return;
@@ -111,6 +123,11 @@ function PostCard({ post }: PostCardProps) {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const [translatedPosts, setTranslatedPosts] = useState<Record<string, string>>({});
+  const [translationLanguage, setTranslationLanguage] = useState("hi");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showOriginalPost, setShowOriginalPost] = useState(false);
 
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -228,6 +245,36 @@ function PostCard({ post }: PostCardProps) {
         );
       },
     });
+  };
+
+  const handleTranslatePost = async () => {
+    if (!post.content?.trim()) {
+      toast.error(t("noTextToTranslate"));
+      return;
+    }
+
+    // Translation already exists for this language.
+    if (translatedPosts[translationLanguage]) {
+      setShowOriginalPost(false);
+      return;
+    }
+
+    setIsTranslating(true);
+
+    try {
+      const response = await translatePost(post._id, translationLanguage);
+
+      setTranslatedPosts((current) => ({
+        ...current,
+        [translationLanguage]: response.data.translatedText,
+      }));
+
+      setShowOriginalPost(false);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t("unableToTranslate")));
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleEditImageChange = (
@@ -355,17 +402,12 @@ function PostCard({ post }: PostCardProps) {
             >
               <Avatar>
                 <AvatarImage
-                  src={
-                    post.author.profileImage?.url ??
-                    undefined
-                  }
+                  src={post.author.profileImage?.url ?? undefined}
                   alt={post.author.displayName}
                 />
 
                 <AvatarFallback>
-                  {post.author.displayName
-                    .charAt(0)
-                    .toUpperCase()}
+                  {post.author.displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
 
@@ -400,15 +442,9 @@ function PostCard({ post }: PostCardProps) {
 
                       // Show existing media according to its type.
                       if (post.media?.type === "audio") {
-                        setEditAudioPreview(
-                          post.media.url
-                        );
-                      } else if (
-                        post.media?.type === "image"
-                      ) {
-                        setEditImagePreview(
-                          post.media.url
-                        );
+                        setEditAudioPreview(post.media.url);
+                      } else if (post.media?.type === "image") {
+                        setEditImagePreview(post.media.url);
                       }
 
                       setIsEditOpen(true);
@@ -422,9 +458,7 @@ function PostCard({ post }: PostCardProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() =>
-                      setIsDeleteOpen(true)
-                    }
+                    onClick={() => setIsDeleteOpen(true)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -435,8 +469,54 @@ function PostCard({ post }: PostCardProps) {
 
           {/* Content */}
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-            {renderPostContent(post.content)}
+            {showOriginalPost
+              ? renderPostContent(post.content)
+              : translatedPosts[translationLanguage] ??
+                renderPostContent(post.content)}
           </p>
+
+          {post.content?.trim() && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <select
+                value={translationLanguage}
+                onChange={(event) => {
+                  setTranslationLanguage(event.target.value);
+                  setShowOriginalPost(false);
+                }}
+                disabled={isTranslating}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+                aria-label={t("translationLanguage")}
+              >
+                {TRANSLATION_LANGUAGES.map((language) => (
+                  <option key={language.code} value={language.code}>
+                    {language.label}
+                  </option>
+                ))}
+              </select>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs"
+                onClick={() => {
+                  if (translatedPosts[translationLanguage]) {
+                    setShowOriginalPost((current) => !current);
+                    return;
+                  }
+
+                  handleTranslatePost();
+                }}
+                disabled={isTranslating}
+              >
+                {isTranslating
+                  ? t("translating")
+                  : translatedPosts[translationLanguage] && !showOriginalPost
+                  ? t("showOriginal")
+                  : t("translate")}
+              </Button>
+            </div>
+          )}
 
           {/* Media */}
           {post.media?.url && (
@@ -448,9 +528,7 @@ function PostCard({ post }: PostCardProps) {
                     preload="metadata"
                     src={post.media.url}
                     className="w-full"
-                    aria-label={t(
-                      "selectedAudioPreview"
-                    )}
+                    aria-label={t("selectedAudioPreview")}
                   />
                 </div>
               ) : (
@@ -468,36 +546,24 @@ function PostCard({ post }: PostCardProps) {
             <button
               type="button"
               onClick={handleLike}
-              disabled={
-                likeMutation.isPending ||
-                unlikeMutation.isPending
-              }
-              className={`flex items-center gap-2 text-sm transition-colors ${post.isLiked
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-                }`}
-              aria-label={
+              disabled={likeMutation.isPending || unlikeMutation.isPending}
+              className={`flex items-center gap-2 text-sm transition-colors ${
                 post.isLiked
-                  ? t("unlikePost")
-                  : t("likePost")
-              }
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={post.isLiked ? t("unlikePost") : t("likePost")}
             >
               <Heart
                 className="h-4 w-4"
-                fill={
-                  post.isLiked
-                    ? "currentColor"
-                    : "none"
-                }
+                fill={post.isLiked ? "currentColor" : "none"}
               />
               <span>{post.likesCount}</span>
             </button>
 
             <button
               type="button"
-              onClick={() =>
-                setIsCommentsOpen(true)
-              }
+              onClick={() => setIsCommentsOpen(true)}
               className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <MessageCircle className="h-4 w-4" />
@@ -507,19 +573,13 @@ function PostCard({ post }: PostCardProps) {
             <button
               type="button"
               onClick={handleRepost}
-              disabled={
-                repostMutation.isPending ||
-                unrepostMutation.isPending
-              }
-              className={`flex items-center gap-2 text-sm transition-colors ${post.isReposted
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-                }`}
-              aria-label={
+              disabled={repostMutation.isPending || unrepostMutation.isPending}
+              className={`flex items-center gap-2 text-sm transition-colors ${
                 post.isReposted
-                  ? t("removeRepost")
-                  : t("repost")
-              }
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={post.isReposted ? t("removeRepost") : t("repost")}
             >
               <Repeat2 className="h-4 w-4" />
               <span>{post.repostsCount}</span>
@@ -529,43 +589,31 @@ function PostCard({ post }: PostCardProps) {
               type="button"
               onClick={handleBookmark}
               disabled={
-                bookmarkMutation.isPending ||
-                unbookmarkMutation.isPending
+                bookmarkMutation.isPending || unbookmarkMutation.isPending
               }
-              className={`ml-auto flex items-center gap-2 text-sm transition-colors ${post.isBookmarked
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-                }`}
+              className={`ml-auto flex items-center gap-2 text-sm transition-colors ${
+                post.isBookmarked
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               {post.isBookmarked ? (
-                <BookmarkCheck
-                  className="h-4 w-4"
-                  fill="currentColor"
-                />
+                <BookmarkCheck className="h-4 w-4" fill="currentColor" />
               ) : (
                 <Bookmark className="h-4 w-4" />
               )}
 
-              <span>
-                {post.isBookmarked
-                  ? t("save")
-                  : t("unsave")}
-              </span>
+              <span>{post.isBookmarked ? t("save") : t("unsave")}</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Comments Dialog */}
-      <Dialog
-        open={isCommentsOpen}
-        onOpenChange={setIsCommentsOpen}
-      >
+      <Dialog open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
         <DialogContent className="flex max-h-[80vh] flex-col overflow-hidden p-0 sm:max-w-lg">
           <DialogHeader className="shrink-0 border-b px-4 py-4">
-            <DialogTitle>
-              {tComments("title")}
-            </DialogTitle>
+            <DialogTitle>{tComments("title")}</DialogTitle>
           </DialogHeader>
 
           <Comments postId={post._id} />
@@ -585,16 +633,10 @@ function PostCard({ post }: PostCardProps) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {t("editPost")}
-            </DialogTitle>
+            <DialogTitle>{t("editPost")}</DialogTitle>
           </DialogHeader>
 
-          <form
-            onSubmit={editForm.handleSubmit(
-              handleUpdate
-            )}
-          >
+          <form onSubmit={editForm.handleSubmit(handleUpdate)}>
             <Textarea
               {...editForm.register("content")}
               maxLength={280}
@@ -608,9 +650,7 @@ function PostCard({ post }: PostCardProps) {
                 <div className="relative overflow-hidden rounded-xl border">
                   <img
                     src={editImagePreview}
-                    alt={t(
-                      "selectedImagePreview"
-                    )}
+                    alt={t("selectedImagePreview")}
                     className="max-h-[300px] w-full object-cover"
                   />
 
@@ -620,9 +660,7 @@ function PostCard({ post }: PostCardProps) {
                     size="icon"
                     className="absolute right-2 top-2 h-8 w-8"
                     onClick={() => {
-                      revokeBlobUrl(
-                        editImagePreview
-                      );
+                      revokeBlobUrl(editImagePreview);
                       setEditImage(undefined);
                       setEditImagePreview(null);
                     }}
@@ -641,9 +679,7 @@ function PostCard({ post }: PostCardProps) {
                     preload="metadata"
                     src={editAudioPreview}
                     className="w-full"
-                    aria-label={t(
-                      "selectedAudioPreview"
-                    )}
+                    aria-label={t("selectedAudioPreview")}
                   />
 
                   <Button
@@ -652,9 +688,7 @@ function PostCard({ post }: PostCardProps) {
                     size="icon"
                     className="absolute right-2 top-2 h-8 w-8"
                     onClick={() => {
-                      revokeBlobUrl(
-                        editAudioPreview
-                      );
+                      revokeBlobUrl(editAudioPreview);
                       setEditAudio(undefined);
                       setEditAudioPreview(null);
                     }}
@@ -679,9 +713,7 @@ function PostCard({ post }: PostCardProps) {
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
-                    onChange={
-                      handleEditImageChange
-                    }
+                    onChange={handleEditImageChange}
                   />
                 </label>
 
@@ -694,9 +726,7 @@ function PostCard({ post }: PostCardProps) {
                     type="file"
                     accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"
                     className="hidden"
-                    onChange={
-                      handleEditAudioChange
-                    }
+                    onChange={handleEditAudioChange}
                   />
                 </label>
               </div>
@@ -705,16 +735,12 @@ function PostCard({ post }: PostCardProps) {
             <div className="mt-1 flex items-center justify-between">
               {editForm.formState.errors.content && (
                 <p className="text-xs text-destructive">
-                  {
-                    editForm.formState.errors
-                      .content.message
-                  }
+                  {editForm.formState.errors.content.message}
                 </p>
               )}
 
               <span className="ml-auto text-xs text-muted-foreground">
-                {editForm.watch("content")?.length ??
-                  0}
+                {editForm.watch("content")?.length ?? 0}
                 /280
               </span>
             </div>
@@ -723,22 +749,13 @@ function PostCard({ post }: PostCardProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() =>
-                  setIsEditOpen(false)
-                }
-                disabled={
-                  updatePostMutation.isPending
-                }
+                onClick={() => setIsEditOpen(false)}
+                disabled={updatePostMutation.isPending}
               >
                 {tCommon("cancel")}
               </Button>
 
-              <Button
-                type="submit"
-                disabled={
-                  updatePostMutation.isPending
-                }
-              >
+              <Button type="submit" disabled={updatePostMutation.isPending}>
                 {updatePostMutation.isPending
                   ? tCommon("updating")
                   : tCommon("update")}
@@ -749,31 +766,20 @@ function PostCard({ post }: PostCardProps) {
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-      >
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {t("deletePost")}
-            </DialogTitle>
+            <DialogTitle>{t("deletePost")}</DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-muted-foreground">
-            {t("deletePostDesc")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("deletePostDesc")}</p>
 
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() =>
-                setIsDeleteOpen(false)
-              }
-              disabled={
-                deletePostMutation.isPending
-              }
+              onClick={() => setIsDeleteOpen(false)}
+              disabled={deletePostMutation.isPending}
             >
               {tCommon("cancel")}
             </Button>
@@ -782,9 +788,7 @@ function PostCard({ post }: PostCardProps) {
               type="button"
               variant="destructive"
               onClick={handleDelete}
-              disabled={
-                deletePostMutation.isPending
-              }
+              disabled={deletePostMutation.isPending}
             >
               {deletePostMutation.isPending
                 ? tCommon("deleting")

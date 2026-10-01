@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Send, Trash2 } from "lucide-react";
@@ -16,9 +16,21 @@ import { getApiErrorMessage } from "@/lib/api-error";
 
 import { useComments, useCreateComment, useDeleteComment } from "../hooks";
 
+import { translateComment } from "../api";
+
 import { createCommentSchema, type CreateCommentFormData } from "../schema";
 
 import CommentsSkeleton from "./CommentsSkeleton";
+
+const TRANSLATION_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "ru", label: "Russian" },
+  { code: "pt", label: "Portuguese" },
+  { code: "zh", label: "Chinese" },
+] as const;
 
 interface CommentsProps {
   postId: string;
@@ -26,11 +38,30 @@ interface CommentsProps {
 
 export default function Comments({ postId }: CommentsProps) {
   const t = useTranslations("comments");
+  const tPost = useTranslations("post");
   const { user } = useAuth();
 
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
     null
   );
+
+  const [translatedComments, setTranslatedComments] = useState<
+    Record<string, Record<string, string>>
+  >({});
+
+  const [translationLanguages, setTranslationLanguages] = useState<
+    Record<string, string>
+  >({});
+
+  const [translatingCommentId, setTranslatingCommentId] = useState<
+    string | null
+  >(null);
+
+  const [showOriginalComments, setShowOriginalComments] = useState<
+    Record<string, boolean>
+  >({});
+
+  const translatingRequests = useRef<Set<string>>(new Set());
 
   const form = useForm<CreateCommentFormData>({
     resolver: zodResolver(createCommentSchema),
@@ -104,6 +135,42 @@ export default function Comments({ postId }: CommentsProps) {
     );
   };
 
+ const handleTranslateComment = async (commentId: string) => {
+   const targetLanguage = translationLanguages[commentId] ?? "hi";
+
+   const cacheKey = `${commentId}:${targetLanguage}`;
+
+   // Already translated → API call mat karo
+   if (translatedComments[commentId]?.[targetLanguage]) {
+     return;
+   }
+
+   // Request already running → second API call mat karo
+   if (translatingRequests.current.has(cacheKey)) {
+     return;
+   }
+
+   translatingRequests.current.add(cacheKey);
+   setTranslatingCommentId(commentId);
+
+   try {
+     const response = await translateComment(postId, commentId, targetLanguage);
+
+     setTranslatedComments((current) => ({
+       ...current,
+       [commentId]: {
+         ...current[commentId],
+         [targetLanguage]: response.data.translatedText,
+       },
+     }));
+   } catch (error) {
+     toast.error(getApiErrorMessage(error, tPost("unableToTranslate")));
+   } finally {
+     translatingRequests.current.delete(cacheKey);
+     setTranslatingCommentId(null);
+   }
+ };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Comments list */}
@@ -112,10 +179,7 @@ export default function Comments({ postId }: CommentsProps) {
 
         {isError && (
           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-            {getApiErrorMessage(
-              error,
-              t("unableToLoad")
-            )}
+            {getApiErrorMessage(error, t("unableToLoad"))}
           </div>
         )}
 
@@ -151,7 +215,75 @@ export default function Comments({ postId }: CommentsProps) {
                     </span>
                   </div>
 
-                  <p className="mt-1 break-words text-sm">{comment.content}</p>
+                  <p className="mt-1 break-words text-sm">
+                    {showOriginalComments[comment._id]
+                      ? comment.content
+                      : translatedComments[comment._id]?.[
+                          translationLanguages[comment._id] ?? "hi"
+                        ] ?? comment.content}
+                  </p>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <select
+                      value={translationLanguages[comment._id] ?? "hi"}
+                      onChange={(event) => {
+                        const language = event.target.value;
+
+                        setTranslationLanguages((current) => ({
+                          ...current,
+                          [comment._id]: language,
+                        }));
+
+                        setShowOriginalComments((current) => ({
+                          ...current,
+                          [comment._id]: false,
+                        }));
+                      }}
+                      disabled={translatingCommentId === comment._id}
+                      className="h-7 rounded-md border bg-background px-2 text-xs"
+                      aria-label={tPost("translationLanguage")}
+                    >
+                      {TRANSLATION_LANGUAGES.map((language) => (
+                        <option key={language.code} value={language.code}>
+                          {language.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        const targetLanguage =
+                          translationLanguages[comment._id] ?? "hi";
+
+                        const cachedTranslation =
+                          translatedComments[comment._id]?.[targetLanguage];
+
+                        if (cachedTranslation) {
+                          setShowOriginalComments((current) => ({
+                            ...current,
+                            [comment._id]: !current[comment._id],
+                          }));
+
+                          return;
+                        }
+
+                        handleTranslateComment(comment._id);
+                      }}
+                      disabled={translatingCommentId === comment._id}
+                    >
+                      {translatingCommentId === comment._id
+                        ? tPost("translating")
+                        : translatedComments[comment._id]?.[
+                            translationLanguages[comment._id] ?? "hi"
+                          ] && !showOriginalComments[comment._id]
+                        ? tPost("showOriginal")
+                        : tPost("translate")}
+                    </Button>
+                  </div>
 
                   {user?.id === comment.author._id && (
                     <Button

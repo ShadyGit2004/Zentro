@@ -80,3 +80,12 @@ export interface UserPostsResponse {
   data: FeedPost[];
   pagination: UserPostsPagination;
 }
+
+export interface TranslatePostResponse {
+  success: boolean;
+  data: {
+    postId: string;
+    targetLanguage: string;
+    translatedText: string;
+  };
+}

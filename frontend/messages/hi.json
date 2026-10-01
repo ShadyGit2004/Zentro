@@ -169,7 +169,13 @@
     "removeAudio": "ऑडियो हटाएं",
     "addAudio": "ऑडियो जोड़ें",
     "selectedAudioPreview": "चयनित ऑडियो का पूर्वावलोकन",
-    "replaceMedia": "आप मौजूदा इमेज या ऑडियो को किसी दूसरी फ़ाइल से बदल सकते हैं।"
+    "replaceMedia": "आप मौजूदा इमेज या ऑडियो को किसी दूसरी फ़ाइल से बदल सकते हैं।",
+    "noTextToTranslate": "अनुवाद करने के लिए कोई टेक्स्ट नहीं है",
+    "unableToTranslate": "पोस्ट का अनुवाद नहीं हो सका",
+    "translationLanguage": "अनुवाद की भाषा",
+    "translating": "अनुवाद हो रहा है...",
+    "showOriginal": "मूल दिखाएं",
+    "translate": "अनुवाद करें"
   },
   "comments": {
     "title": "टिप्पणियां",
