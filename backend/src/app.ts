@@ -26,6 +26,8 @@ import notFoundMiddleware from "./middlewares/notFound.middleware";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Application Middlewares
 app.use(helmet());
 app.use(
