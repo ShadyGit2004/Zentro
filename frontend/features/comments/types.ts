@@ -41,3 +41,12 @@ export interface DeleteCommentResponse {
   success: boolean;
   data: unknown;
 }
+
+export interface TranslateCommentResponse {
+  success: boolean;
+  data: {
+    commentId: string;
+    targetLanguage: string;
+    translatedText: string;
+  };
+}

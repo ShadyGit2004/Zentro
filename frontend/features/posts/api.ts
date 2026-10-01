@@ -2,6 +2,7 @@ import api from "@/lib/axios";
 import type {
   CreatePostPayload,
   CreatePostResponse,
+  TranslatePostResponse,
   UpdatePostPayload,
   UpdatePostResponse,
   UserPostsResponse,
@@ -107,5 +108,19 @@ export const repostPost = async (postId: string) => {
 
 export const unrepostPost = async (postId: string) => {
   const response = await api.delete(`/posts/${postId}/repost`);
+  return response.data;
+};
+
+export const translatePost = async (
+  postId: string,
+  targetLanguage: string
+): Promise<TranslatePostResponse> => {
+  const response = await api.post<TranslatePostResponse>(
+    `/posts/${postId}/translate`,
+    {
+      targetLanguage,
+    }
+  );
+
   return response.data;
 };

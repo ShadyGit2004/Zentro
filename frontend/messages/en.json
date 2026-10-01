@@ -169,7 +169,13 @@
     "removeAudio": "Remove audio",
     "addAudio": "Add audio",
     "replaceMedia": "You can replace the existing image or audio with another file.",
-    "selectedAudioPreview": "Selected audio preview"
+    "selectedAudioPreview": "Selected audio preview",
+    "noTextToTranslate": "There is no text to translate",
+    "unableToTranslate": "Unable to translate post",
+    "translationLanguage": "Translation language",
+    "translating": "Translating...",
+    "showOriginal": "Show original",
+    "translate": "Translate"
   },
   "comments": {
     "title": "Comments",

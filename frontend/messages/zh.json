@@ -169,7 +169,13 @@
     "removeAudio": "删除音频",
     "addAudio": "添加音频",
     "selectedAudioPreview": "已选择音频的预览",
-    "replaceMedia": "您可以使用其他文件替换现有的图片或音频。"    
+    "replaceMedia": "您可以使用其他文件替换现有的图片或音频。",
+    "noTextToTranslate": "没有可翻译的文本",
+    "unableToTranslate": "无法翻译帖子",
+    "translationLanguage": "翻译语言",
+    "translating": "正在翻译...",
+    "showOriginal": "显示原文",
+    "translate": "翻译"    
   },
   "comments": {
     "title": "评论",
