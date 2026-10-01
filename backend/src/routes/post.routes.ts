@@ -28,6 +28,9 @@ import {
   remove as removeBookmark,
 } from "../controllers/bookmark.controller";
 
+import { translatePost } from "../controllers/translation.controller";
+import { translateContentSchema } from "../validators/translation.validator";
+
 const router = Router();
 
 router.post(
@@ -54,19 +57,27 @@ router.get(
 );
 
 router
-  .route("/:postId/bookmark")
-  .post(
-    authMiddleware, 
-    requireActiveUser, 
-    requireVerifiedEmail, 
-    createBookmark
-  )
-  .delete(
-    authMiddleware,
-    requireActiveUser,
-    requireVerifiedEmail,
-    removeBookmark
-  );
+.route("/:postId/bookmark")
+.post(
+  authMiddleware, 
+  requireActiveUser, 
+  requireVerifiedEmail, 
+  createBookmark
+)
+.delete(
+  authMiddleware,
+  requireActiveUser,
+  requireVerifiedEmail,
+  removeBookmark
+);
+
+router.post(
+  "/:postId/translate",
+  authMiddleware,
+  requireActiveUser,
+  validate(translateContentSchema),
+  translatePost
+);
 
 router.route("/:postId")
 .get(

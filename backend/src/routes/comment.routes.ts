@@ -15,6 +15,10 @@ import {
   remove
 } from "../controllers/comment.controller";
 
+import { translateComment } from "../controllers/translation.controller";
+
+import { translateContentSchema } from "../validators/translation.validator";
+
 const router = Router({ mergeParams: true, });
 
 router
@@ -27,6 +31,14 @@ router
     create
   )
   .get(getAll);
+
+router.post(
+  "/:commentId/translate",
+  authMiddleware,
+  requireActiveUser,
+  validate(translateContentSchema),
+  translateComment
+);
 
 router.delete(
   "/:commentId",
