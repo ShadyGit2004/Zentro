@@ -1,28 +1,35 @@
-🗄️ Database Design — Twitter/X Clone
-1. Sabse pehle: Database Design hota kya hai?
+# 🗄️ Database Design — Twitter/X Clone
 
-SRS mein humne bola:
+## 1. What is Database Design?
 
-User post create karega, like karega, comment karega, follow karega.
+In the SRS, we defined requirements such as:
 
-Lekin database ko ye samajhna padega:
+* Users can create posts.
+* Users can like posts.
+* Users can comment on posts.
+* Users can follow other users.
 
-User ka data kahan rahega?
-Post kis user ki hai?
-Like kisne kiya?
-Comment kisne kiya aur kis post par?
-Kaun kisko follow karta hai?
-Duplicate like/follow kaise prevent hoga?
-Data ko efficiently kaise query karenge?
+The database needs to determine:
 
-Ye sab Database Design decide karta hai.
+* Where will user data be stored?
+* Which user owns a particular post?
+* Who liked a post?
+* Who commented and on which post?
+* Who follows whom?
+* How will duplicate likes/follows be prevented?
+* How will data be queried efficiently?
 
-2. MongoDB kyun?
+All of these decisions are part of **Database Design**.
 
-Hum MongoDB use kar rahe hain, jo document-oriented NoSQL database hai.
+---
+
+## 2. Why MongoDB?
+
+We are using MongoDB, which is a document-oriented NoSQL database.
 
 Basic structure:
 
+```text
 Database
    ↓
 Collections
@@ -30,9 +37,11 @@ Collections
 Documents
    ↓
 Fields
+```
 
-SQL mein:
+In SQL databases:
 
+```text
 Database
    ↓
 Tables
@@ -40,9 +49,11 @@ Tables
 Rows
    ↓
 Columns
+```
 
-MongoDB mein roughly:
+MongoDB example:
 
+```text
 MongoDB
    ↓
 users
@@ -51,10 +62,15 @@ users
    username: "...",
    email: "..."
 }
-3. Hamare Initial Collections
+```
 
-P0 requirements ko dekhte hue initial database mein:
+---
 
+## 3. Initial Collections
+
+Based on the P0 requirements, the initial database will contain:
+
+```text
 twitter_clone
 │
 ├── users
@@ -62,76 +78,91 @@ twitter_clone
 ├── comments
 ├── likes
 └── follows
+```
 
-Later P1/P2 features ke liye collections add ho sakti hain:
+Additional collections can be introduced later for P1/P2 features:
 
+```text
 notifications
 bookmarks
 hashtags
 reposts
 media
+```
 
-Abhi future features ke liye unnecessarily schema nahi banayenge.
+We will avoid creating unnecessary schemas for future features until those requirements are finalized.
 
-4. Sabse Important Concept — Relationships
+---
 
-Relational database mein hum relationships ko tables + foreign keys se represent karte hain.
+## 4. Most Important Concept — Relationships
 
-MongoDB mein bhi relationships hote hain, lekin unko represent karne ke multiple approaches hain:
+In relational databases, relationships are represented using tables and foreign keys.
 
-Option A — Embed
+MongoDB also supports relationships, but there are multiple ways to represent them.
 
-Data ko document ke andar rakhna.
+### Option A — Embed
 
-Option B — Reference
+Store related data directly inside the document.
 
-Dusre document ka _id store karna.
+### Option B — Reference
+
+Store the `_id` of another document.
 
 Example:
 
+```js
 Post
 {
    author: ObjectId("...")
 }
+```
 
-Yahan Post ke andar poora User nahi hai.
+The complete User object is not stored inside the Post.
 
-Sirf User ka reference hai.
+Only the User's reference is stored.
 
-5. User aur Post Relationship
+---
+
+## 5. User and Post Relationship
 
 Requirement:
 
-One user can create many posts.
+> One user can create many posts.
 
-So:
+Therefore:
 
+```text
 User
   │
   ├──── Post
   ├──── Post
   ├──── Post
   └──── Post
+```
 
-Ye:
+This is a **One-to-Many relationship**.
 
-One-to-Many relationship hai.
+In the database:
 
-Database mein Post ke andar:
-
-author → User._id
+```text
+Post.author → User._id
+```
 
 Conceptually:
 
+```text
 users
    │
    │ _id
    ▼
 posts.author
-Why reference?
+```
 
-Agar User ka poora object har Post ke andar copy kar den:
+### Why use a reference?
 
+If we copied the complete User object into every Post:
+
+```js
 {
    author: {
       username: "...",
@@ -139,18 +170,27 @@ Agar User ka poora object har Post ke andar copy kar den:
       profileImage: "..."
    }
 }
+```
 
-toh same data repeatedly store hoga.
+the same user data would be stored repeatedly.
 
-Better:
+Instead:
 
+```js
 {
    author: ObjectId(...)
 }
-6. User Collection
+```
 
-Conceptually User document:
+This avoids unnecessary duplication.
 
+---
+
+## 6. User Collection
+
+Conceptual User document:
+
+```text
 User
 ├── _id
 ├── firebaseUid
@@ -161,154 +201,191 @@ User
 ├── profileImage
 ├── createdAt
 └── updatedAt
-Important
+```
 
-Firebase authentication identity handle karega.
+### Important
 
-MongoDB ka User:
+Firebase Authentication handles the user's identity and authentication.
 
-Application-level user profile
+The MongoDB User document represents the application's user profile.
 
-Firebase:
+```text
+Firebase
+   ↓
+Identity / Authentication
 
-Identity/authentication
+MongoDB
+   ↓
+Application-level User Profile
+```
 
-Ye separation maintain karenge.
+This separation should be maintained.
 
-7. firebaseUid kyun?
+---
 
-Suppose Firebase user:
+## 7. Why is `firebaseUid` Required?
 
+Suppose the Firebase user has:
+
+```text
 firebaseUid = abc123
+```
 
-MongoDB:
+MongoDB can store:
 
+```js
 {
    firebaseUid: "abc123",
    username: "rajat"
 }
+```
 
-Backend Firebase token verify karega aur Firebase UID obtain karega.
+The backend verifies the Firebase token and obtains the Firebase UID.
 
-Phir:
+Then:
 
+```text
 Firebase UID
       ↓
 MongoDB User
+```
 
-Isliye firebaseUid important field hai.
+Therefore, `firebaseUid` is an important field.
 
-Is field par unique index bhi eventually consider karenge.
+A unique index should also be considered for this field.
 
-8. User Email
+---
 
-Email Firebase se authenticated user ka ho sakta hai.
+## 8. User Email
 
-MongoDB mein bhi application use-cases ke liye store kar sakte hain:
+The user's email may come from Firebase Authentication.
 
+We can also store the email in MongoDB for application-level use cases:
+
+```text
 email
+```
 
-But important:
+However:
 
-Password MongoDB mein nahi store karenge.
+> Passwords should not be stored in MongoDB when Firebase Authentication is responsible for password authentication.
 
-Firebase password authentication handle karega.
+Firebase handles password authentication.
 
-9. Followers / Following
+---
 
-Ab interesting relationship aata hai.
+## 9. Followers / Following
+
+Now we have a more interesting relationship.
 
 Requirement:
 
-User A can follow User B.
+> User A can follow User B.
 
-Ye many-to-many relationship hai.
+This is a **Many-to-Many relationship**.
 
-Because:
+For example:
 
+```text
 User A → follows → User B
 User A → follows → User C
 
 User B → follows → User A
 User B → follows → User D
+```
 
-Ek user multiple users ko follow kar sakta hai.
+A user can follow multiple users, and a user can also be followed by multiple users.
 
-Aur ek user ko multiple users follow kar sakte hain.
+---
 
-10. Follow Collection
+## 10. Follow Collection
 
-Iske liye dedicated collection use karna better hai:
+A dedicated collection is appropriate for this relationship:
 
+```text
 follows
+```
 
 Conceptually:
 
+```text
 Follow
 ├── _id
 ├── follower
 ├── following
 └── createdAt
+```
 
 Example:
 
+```js
 {
    follower: UserA,
    following: UserB
 }
+```
 
 Meaning:
 
-User A follows User B.
+> User A follows User B.
 
-11. Duplicate Follow Problem
+---
+
+## 11. Preventing Duplicate Follows
 
 Suppose:
 
+```text
 User A → User B
+```
 
-Already follow kar raha hai.
+already exists.
 
-User dobara follow button press kare.
+If User A presses the Follow button again, the database should not contain:
 
-Database mein ye nahi hona chahiye:
-
+```text
 A → B
 A → B
 A → B
+```
 
-Therefore business rule:
+Therefore, the following combination must be unique:
 
-Same follower + same following combination unique hona chahiye.
+```text
+follower + following
+```
 
-Database level par eventually:
+At the database level, this can be enforced using a **compound unique index**.
 
-unique(follower, following)
+This is an important real-world database design principle.
 
-compound unique index use karenge.
+Frontend button disabling alone is not sufficient for enforcing data integrity.
 
-Ye real-world database design ka important part hai.
+---
 
-Sirf frontend button disable karna security nahi hai.
+## 12. Self-Follow
 
-12. Self-Follow
+The following relationship should not be allowed:
 
-User:
-
+```text
 A → A
+```
 
-allowed nahi hona chahiye.
+This is a business rule:
 
-Ye business rule hai:
-
+```text
 follower !== following
+```
 
-Isko backend/service layer par enforce karenge.
+The rule should be enforced at the backend/service layer.
 
-13. Post Collection
+---
+
+## 13. Post Collection
 
 Conceptually:
 
+```text
 Post
 ├── _id
 ├── author
@@ -316,48 +393,66 @@ Post
 ├── media
 ├── createdAt
 └── updatedAt
+```
 
 Example:
 
+```js
 {
    author: ObjectId(...),
    content: "Learning backend architecture!",
    media: [],
    createdAt: ...
 }
-14. Post → User Relationship
+```
+
+---
+
+## 14. Post → User Relationship
+
+Relationship:
+
+```text
 User
   │
   │ creates
   ▼
 Post
+```
 
-Database:
+Database representation:
 
+```text
 posts.author
        ↓
    users._id
+```
 
-Isse hum easily query kar sakte hain:
+This allows us to efficiently query:
 
-Is user ki saari posts lao.
+> Retrieve all posts created by a particular user.
 
-15. Comment Collection
+---
+
+## 15. Comment Collection
 
 Requirement:
 
-User kisi post par comment kar sakta hai.
+> A user can comment on a post.
 
-Comment ke do important relationships hain:
+A Comment has two important relationships:
 
+```text
 Comment
    │
    ├── author → User
    │
    └── post → Post
+```
 
 Conceptually:
 
+```text
 Comment
 ├── _id
 ├── author
@@ -365,55 +460,74 @@ Comment
 ├── content
 ├── createdAt
 └── updatedAt
+```
 
 Example:
 
+```js
 {
    author: UserA,
    post: Post123,
    content: "Nice post!"
 }
-16. Like Collection
+```
 
-Likes ko initially separate collection rakhna clean approach hai.
+---
 
+## 16. Like Collection
+
+Initially, likes will be stored in a separate collection.
+
+```text
 Like
 ├── _id
 ├── user
 ├── post
 └── createdAt
+```
 
 Example:
 
+```js
 {
    user: UserA,
    post: Post123
 }
+```
 
 Meaning:
 
-User A liked Post 123.
+> User A liked Post 123.
 
-17. Duplicate Like Problem
+---
 
-Same user same post ko multiple times like nahi kar sakta.
+## 17. Preventing Duplicate Likes
 
-So:
+The same user should not be able to like the same post multiple times.
 
+Therefore:
+
+```text
 user + post
+```
 
-unique combination hona chahiye.
+must be a unique combination.
 
 Conceptually:
 
+```text
 unique(user, post)
+```
 
-Ye compound unique index se enforce karenge.
+This can be enforced using a **compound unique index**.
 
-18. Complete Relationship Diagram
+---
 
-Ab poora database dekho:
+## 18. Complete Relationship Diagram
 
+The overall database relationship can be represented as:
+
+```text
                     ┌─────────────┐
                     │    USER     │
                     └──────┬──────┘
@@ -433,13 +547,18 @@ Ab poora database dekho:
                             │
                             ▼
                            POST
+```
 
+Follow relationship:
 
+```text
 USER ─────── follower ──────> USER
           via FOLLOW
+```
 
 More formally:
 
+```text
 User 1 ──────── * Post
 User 1 ──────── * Comment
 User 1 ──────── * Like
@@ -448,10 +567,15 @@ User 1 ──────── * Follow (as following)
 
 Post 1 ──────── * Comment
 Post 1 ──────── * Like
-19. Why Likes Separate Collection?
+```
 
-Ek alternative tha:
+---
 
+## 19. Why Store Likes in a Separate Collection?
+
+An alternative approach would be:
+
+```js
 Post
 {
    content: "...",
@@ -461,32 +585,38 @@ Post
       userId3
    ]
 }
+```
 
-Ye initially simple lagta hai.
+This looks simple initially.
 
-Lekin production-style system mein separate likes collection ke benefits hain:
+However, a separate `likes` collection provides better flexibility for a production-style system:
 
+```text
 likes
 ├── user
 ├── post
 └── createdAt
+```
 
-We can efficiently ask:
+We can efficiently query:
 
-Has User A liked Post B?
+> Has User A liked Post B?
 
-and:
+We can also efficiently determine:
 
-How many likes does Post B have?
+> How many likes does Post B have?
 
-with proper indexes.
+with appropriate indexes.
 
-Aur future mein like-related functionality expand karna easier hai.
+It also makes it easier to expand like-related functionality later.
 
-20. Why Comments Separate Collection?
+---
 
-Alternative:
+## 20. Why Store Comments in a Separate Collection?
 
+An alternative would be:
+
+```js
 Post
 {
    comments: [
@@ -495,117 +625,146 @@ Post
       {...}
    ]
 }
+```
 
-Problem:
+The problem is that a popular post could potentially receive thousands or more comments, making a single Post document unnecessarily large.
 
-Agar ek popular post ke thousands/millions comments ho gaye toh single Post document huge ho sakta hai.
+Instead:
 
-Better:
-
+```text
 posts
 comments
+```
 
-Separate documents.
+are stored separately.
 
-Then pagination possible:
+This also allows pagination:
 
+```text
 GET /posts/:id/comments?page=1
-21. Database Indexing
+```
 
-Ye bahut important topic hai.
+---
 
-Index ko simple language mein samjho:
+## 21. Database Indexing
 
-Database ka shortcut / lookup structure jo frequently searched data ko faster find karne mein help karta hai.
+Indexing is a very important database concept.
 
-Example:
+An index can be thought of as a **lookup structure that helps the database find frequently queried data faster**.
 
-Feed ke liye humein frequently:
+For example, a feed may frequently require:
 
+```text
 posts
 ORDER BY createdAt DESC
+```
 
-karna hoga.
-
-So createdAt based indexing useful ho sakti hai.
+Therefore, an index involving `createdAt` can be useful.
 
 Similarly:
 
+```text
 likes:
-(user, post) unique
+(user, post) → unique
 
 follows:
-(follower, following) unique
+(follower, following) → unique
+```
 
-Aur queries ke according additional indexes design karenge.
+Additional indexes should be designed according to actual query patterns.
 
-Index blindly har field par nahi lagana.
+Indexes should not be added blindly to every field.
 
-Reason:
+Why?
 
-Index reads ko faster karta hai, but writes/storage cost bhi add karta hai.
+Indexes can improve read performance, but they also introduce:
 
-Ye exactly wahi database thinking hai jo real projects mein important hai.
+* Additional storage requirements
+* Additional write/update overhead
 
-22. Initial Index Strategy
+Understanding this trade-off is an important part of real-world database design.
+
+---
+
+## 22. Initial Index Strategy
 
 Conceptually:
 
-Users
+### Users
+
+```text
 firebaseUid → unique
 username → unique
+```
 
-Username requirement final API design mein confirm karenge.
-
-Posts
+### Posts
 
 Likely:
 
+```text
 author + createdAt
 createdAt
+```
 
 depending on actual query patterns.
 
-Likes
+### Likes
+
+```text
 user + post → unique
 post + createdAt
-Follows
+```
+
+### Follows
+
+```text
 follower + following → unique
 follower
 following
-Comments
+```
+
+### Comments
+
+```text
 post + createdAt
 author
+```
 
-Ye initial design direction hai; exact indexes actual query patterns ke baad finalize karenge.
+This is an initial indexing strategy. Exact indexes should be finalized based on actual API queries and access patterns.
 
-23. Data Duplication vs References
+---
 
-MongoDB mein ek important principle:
+## 23. Data Duplication vs References
 
-Har relationship ko blindly reference bhi nahi karna aur blindly embed bhi nahi karna.
+MongoDB does not require every relationship to be referenced, nor should everything be embedded.
 
-Decision depend karta hai:
+The decision depends on:
 
-data size
-access pattern
-update frequency
-relationship type
-pagination
-scalability
+* Data size
+* Access patterns
+* Update frequency
+* Relationship type
+* Pagination requirements
+* Scalability requirements
 
-Hamare case mein:
+For our application:
 
+```text
 Post → User
 Comment → User + Post
 Like → User + Post
 Follow → User + User
+```
 
-References appropriate hain.
+References are appropriate.
 
-24. Complete Initial Schema Overview
-USERS
-────────────────────────
+---
+
+## 24. Complete Initial Schema Overview
+
+### USERS
+
+```text
 _id
 firebaseUid
 username
@@ -615,128 +774,139 @@ bio
 profileImage
 createdAt
 updatedAt
+```
 
+### POSTS
 
-POSTS
-────────────────────────
+```text
 _id
 author → User
 content
 media
 createdAt
 updatedAt
+```
 
+### COMMENTS
 
-COMMENTS
-────────────────────────
+```text
 _id
 author → User
 post → Post
 content
 createdAt
 updatedAt
+```
 
+### LIKES
 
-LIKES
-────────────────────────
+```text
 _id
 user → User
 post → Post
 createdAt
+```
 
+### FOLLOWS
 
-FOLLOWS
-────────────────────────
+```text
 _id
 follower → User
 following → User
 createdAt
-25. Ek Important Decision: Like Count Store Karein?
+```
 
-Question:
+---
 
-Post par:
+## 25. Important Decision: Should We Store Like Count?
 
-likesCount: 100
+A common question is:
 
-store karein ya har baar likes collection count karein?
+> Should we store `likesCount: 100` in the Post document, or count documents in the Likes collection every time?
 
-Option A
-count likes collection
+### Option A — Count the Likes Collection
 
-Accurate but frequent counting expensive ho sakta hai.
+This can provide accurate counts but may become expensive when performed frequently at scale.
 
-Option B
+### Option B — Store a Counter
 
-Post mein:
+Store:
 
+```text
 likesCount
+```
 
-store karo.
+directly in the Post document.
 
-Fast read.
+This makes reads faster, but consistency must be maintained when likes are added or removed.
 
-But consistency maintain karni padegi.
+For this project, denormalized counters can be introduced deliberately later as a performance optimization.
 
-For our project, hum denormalized counters ko later deliberately introduce kar sakte hain.
+The same approach can apply to:
 
-Same concept:
-
+```text
 commentsCount
 followersCount
 followingCount
+```
 
-Ye abhi blindly add nahi karenge.
+We will not add these fields blindly.
 
-Pehle basic correct model banayenge, phir performance optimization.
+First, we establish a correct basic data model and then introduce performance optimizations based on actual requirements.
 
-26. Soft Delete?
+---
 
-Post delete karne ke do approaches:
+## 26. Soft Delete
 
-Hard delete
+There are two common approaches to deleting a Post.
 
-Database se permanently remove.
+### Hard Delete
 
+Permanently remove the document from the database.
+
+```text
 DELETE
-Soft delete
+```
+
+### Soft Delete
+
+Store:
+
+```text
 deletedAt
+```
 
-set kar do.
+The data remains in the database but is excluded from normal queries.
 
-Data database mein rehta hai but normal queries mein show nahi hota.
+Soft deletes can be useful in real-world systems, especially when moderation or audit requirements exist.
 
-Real-world systems mein soft delete useful ho sakta hai, especially moderation/audit requirements ke liye.
+For the initial MVP, hard delete is simpler unless future requirements require soft deletion.
 
-Hamare initial MVP mein hard delete simpler hai, unless later requirements change.
+---
 
-27. Database Security Rules
+## 27. Database Security Rules
 
-Database design sirf fields ka naam nahi hai.
+Database design is not only about defining fields and collections.
 
-Rules bhi important hain:
+The system must also enforce rules such as:
 
-User cannot modify another user's profile.
+* A user cannot modify another user's profile.
+* A user cannot edit another user's post.
+* A user cannot delete another user's post.
+* A user cannot create duplicate likes.
+* A user cannot create duplicate follows.
+* A user cannot follow themselves.
+* A comment must reference an existing post.
+* A like must reference an existing post.
+* A follow must reference existing users.
 
-User cannot edit another user's post.
+These rules should primarily be enforced at the backend/service layer, while database constraints and indexes provide additional data-integrity protection.
 
-User cannot delete another user's post.
+---
 
-User cannot duplicate like.
+# 28. Final Database Architecture
 
-User cannot duplicate follow.
-
-User cannot follow themselves.
-
-Comment must reference an existing post.
-
-Like must reference an existing post.
-
-Follow must reference existing users.
-
-Ye rules mostly backend/service layer mein enforce honge, while unique constraints/indexes database level protection provide karenge.
-
-28. Final Database Architecture
+```text
                        MongoDB
                           │
               ┌───────────┴───────────┐
@@ -750,9 +920,11 @@ Ye rules mostly backend/service layer mein enforce honge, while unique constrain
               │
               ▼
             Likes
+```
 
 Actual relationships:
 
+```text
 User
  │
  ├───────────────> Posts
@@ -762,45 +934,58 @@ User
  │                    └──────> Likes
  │
  └───────────────> Follows ───────────> User
-🎯 Database Design Status
+```
 
-Initial database design = DONE ✅
+---
 
-Humne decide kiya:
+# 🎯 Database Design Status
 
-Collections
-    ↓
+## Initial Database Design — Completed ✅
+
+### Collections
+
+```text
 users
 posts
 comments
 likes
 follows
+```
 
-Relationships
-    ↓
-references
+### Relationships
 
-Uniqueness
-    ↓
+```text
+References
+```
+
+### Uniqueness
+
+```text
 likes(user + post)
 follows(follower + following)
+```
 
-Auth identity
-    ↓
+### Authentication Identity
+
+```text
 firebaseUid
+```
 
-Media
-    ↓
-Cloudinary URL/reference
+### Media
 
-Lekin Mongoose schemas abhi nahi likhenge.
+```text
+Cloudinary URL / reference
+```
 
-Next logical step hai:
+Mongoose schemas will be defined in the next phase.
 
-🔌 API Design
+The next logical step is:
 
-Yahan hum database ko APIs se connect karenge:
+# 🔌 API Design
 
+The database will be connected to the application through APIs:
+
+```text
 Requirement
      ↓
 Database
@@ -818,16 +1003,28 @@ Service
 Database
      ↓
 Response
+```
 
-Database Design v1.1
-1. Collections
+---
+
+# Database Design v1.1
+
+## 1. Collections
+
+```text
 users
 posts
 comments
 likes
 follows
 sessions
-2. users
+```
+
+---
+
+## 2. Users
+
+```text
 User
 ├── _id
 ├── email
@@ -843,9 +1040,11 @@ User
 ├── status
 ├── createdAt
 └── updatedAt
+```
 
 Important fields:
 
+```text
 email → unique, normalized lowercase
 username → unique
 passwordHash → only for Email/Password users
@@ -854,16 +1053,23 @@ authProviders → ["password"], ["google"], or ["password","google"]
 emailVerifiedAt → null until verified
 role → initially user
 status → active, suspended, etc.
+```
 
 Indexes:
 
+```text
 email → unique
 username → unique
 firebaseUid → unique + sparse
-3. sessions
+```
 
-New collection for refresh-token/session management.
+---
 
+## 3. Sessions
+
+A new collection for refresh-token/session management.
+
+```text
 Session
 ├── _id
 ├── user
@@ -874,16 +1080,23 @@ Session
 ├── lastUsedAt
 ├── userAgent
 └── ipAddress
+```
 
-Relationships:
+Relationship:
 
+```text
 User 1 ──────── * Sessions
+```
 
-refreshTokenHash stores hash, never the actual refresh token.
+`refreshTokenHash` stores the hash of the refresh token, never the actual refresh token.
 
-expiresAt allows expired sessions to be cleaned automatically.
+`expiresAt` allows expired sessions to be automatically cleaned up.
 
-4. posts
+---
+
+## 4. Posts
+
+```text
 Post
 ├── _id
 ├── author → User
@@ -891,12 +1104,20 @@ Post
 ├── media
 ├── createdAt
 └── updatedAt
+```
 
 Indexes:
 
+```text
 author + createdAt
 createdAt
-5. comments
+```
+
+---
+
+## 5. Comments
+
+```text
 Comment
 ├── _id
 ├── author → User
@@ -904,45 +1125,69 @@ Comment
 ├── content
 ├── createdAt
 └── updatedAt
+```
 
 Indexes:
 
+```text
 post + createdAt
 author
-6. likes
+```
+
+---
+
+## 6. Likes
+
+```text
 Like
 ├── _id
 ├── user → User
 ├── post → Post
 └── createdAt
+```
 
 Indexes:
 
+```text
 user + post → UNIQUE
 post + createdAt
+```
 
-Prevents duplicate likes.
+The unique compound index prevents duplicate likes.
 
-7. follows
+---
+
+## 7. Follows
+
+```text
 Follow
 ├── _id
 ├── follower → User
 ├── following → User
 └── createdAt
+```
 
 Indexes:
 
+```text
 follower + following → UNIQUE
 follower
 following
+```
 
 Business rule:
 
+```text
 follower !== following
+```
 
-No self-follow.
+Self-following is not allowed.
 
-Relationships
+---
+
+# Relationships
+
+```text
                     ┌───────────┐
                     │   User    │
                     └─────┬─────┘
@@ -955,7 +1200,15 @@ Relationships
          Likes           Post
           
 User ──< Follows >── User
-Authentication data flow
+```
+
+---
+
+# Authentication Data Flow
+
+### Email/Password
+
+```text
 Email/Password
       ↓
 passwordHash
@@ -965,13 +1218,15 @@ User
 Session
       ↓
 Refresh Token
+```
 
-Google:
+### Google Authentication
 
+```text
 Google
   ↓
 Firebase UID
   ↓
 User.firebaseUid
   ↓
-Session
+Session```
