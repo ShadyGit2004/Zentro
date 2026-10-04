@@ -1,756 +1,1321 @@
-Software Requirements Specification — Twitter/X Clone
+# Software Requirements Specification (SRS)
 
-Document Version: 1.0
-Project Type: Social Media / Microblogging Platform
-Development Approach: Priority-driven
-Status: Initial Requirements
+**Project:** Twitter/X Inspired Social Media Platform
+**Document Version:** 1.1
+**Document Status:** Baseline / Development Specification
+**Project Type:** Social Media / Microblogging Platform
+**Development Approach:** Priority-Driven, Incremental Development
 
-1. Introduction
-1.1 Purpose
+---
 
-This document defines the requirements for a social media platform inspired by Twitter/X.
+## 1. Introduction
 
-The system will allow registered users to create and manage posts, follow other users, interact with posts, and consume a personalized feed.
+### 1.1 Purpose
 
-The purpose of this SRS is to establish a clear understanding of what the system should do before implementation begins.
+This Software Requirements Specification (SRS) defines the functional and non-functional requirements for a Twitter/X-inspired social media platform.
 
-Important: This document defines requirements, not implementation details. Technology choices, database architecture and API architecture will be decided after requirements analysis.
+The system will allow registered users to create and manage short-form content, maintain their profiles, follow other users, interact with posts, and consume a personalized feed.
 
-2. Product Overview
+The primary purpose of this document is to establish a clear and testable definition of **what the system must do before implementation begins**.
 
-The application is a social networking platform based around short-form user-generated content.
+This document focuses on:
 
-A user will be able to:
+* Functional requirements
+* Non-functional requirements
+* Business rules
+* User roles and capabilities
+* Product scope
+* Acceptance criteria
+* Security requirements
+* Priority classification
+* Requirement traceability
+* Requirement change management
 
-Create an account
-Authenticate into the system
-Manage their profile
-Create posts
-Edit and delete their own posts
-Like/unlike posts
-Comment on posts
-Follow/unfollow other users
-View content from users they follow
+### 1.2 Requirements vs. Implementation
 
-The system should provide appropriate validation, authorization, error handling and responsive user interaction.
+This SRS defines **what the system should accomplish**, not exactly how it will be implemented.
 
-3. Objectives
+For example:
 
-The system should:
+> Requirement: An authenticated user shall be able to create a post.
 
-Provide secure user authentication.
-Allow users to create and manage their own content.
-Allow users to interact with other users and their content.
-Provide a feed based on user relationships.
-Maintain data integrity and ownership.
-Prevent unauthorized operations.
-Provide meaningful validation and error responses.
-Provide a foundation that can be extended with additional social-media features.
-4. Scope
-4.1 In Scope
+The SRS does not dictate whether the implementation must use a particular controller, database schema, framework, or programming language.
 
-The initial product will include:
+Implementation decisions are documented separately through:
 
-Authentication
-Registration
-Login
-Logout
-Authentication state
-Protected operations
-User Management
-View profile
-Edit own profile
-Follow user
-Unfollow user
-View followers/following
-Post Management
-Create post
-View post
-Edit own post
-Delete own post
-Post Interaction
-Like
-Unlike
-Comment
-Feed
-View posts
-View posts from followed users
-Basic feed ordering
-Validation & Security
-Input validation
-Authentication
-Authorization
-Ownership checks
-Error handling
-4.2 Out of Scope for Initial Release
+**SRS → Architecture Design → Database Design → API Design → Implementation → Testing**
 
-The following will not be required for the initial implementation:
+---
 
-Direct messaging
-Complex recommendation algorithm
-Advanced trending algorithm
-Live audio/video
-Advertisement system
-Monetization
-Advanced analytics
-Admin moderation dashboard
-Real-time communication
+# 2. Product Overview
 
-These may be considered later based on priority and requirements.
+The application is a social networking platform centered around short-form user-generated content.
 
-5. User Types
+The initial product will allow users to:
 
-For the initial system, there are two conceptual states:
+* Create an account
+* Authenticate using supported authentication methods
+* Manage their profile
+* Create posts
+* Edit and delete their own posts
+* Like and unlike posts
+* Comment on posts
+* Follow and unfollow other users
+* View followers and following
+* View posts from followed users
+* Consume a basic personalized feed
 
-5.1 Guest User
+The system shall maintain appropriate:
 
-A user who has not authenticated.
+* Authentication
+* Authorization
+* Validation
+* Data integrity
+* Ownership protection
+* Error handling
+* Security controls
+* Responsive user interaction
 
-Can:
+---
 
-Access public pages where permitted
-View basic public content where permitted
-Register
-Login
+# 3. Product Objectives
 
-Cannot:
+The system shall aim to:
 
-Create posts
-Like posts
-Comment
-Follow users
-Edit/delete content
-5.2 Authenticated User
+1. Provide secure and reliable user authentication.
+2. Allow users to create and manage their own content.
+3. Allow users to interact with other users and their content.
+4. Provide a relationship-based social feed.
+5. Maintain data integrity and resource ownership.
+6. Prevent unauthorized operations.
+7. Provide meaningful validation and error responses.
+8. Support multiple authentication methods.
+9. Provide a maintainable foundation for future social-media functionality.
+10. Support incremental evolution as product requirements change.
 
-A registered and authenticated user.
+---
 
-Can:
+# 4. Scope
 
-Manage own profile
-Create posts
-Edit own posts
-Delete own posts
-Like/unlike posts
-Comment
-Follow/unfollow users
-View feed
-6. Requirement Priority System
+## 4.1 In Scope — Initial Product
 
-We'll use:
+### Authentication
 
-Priority	Meaning
-P0	Critical / Must Have
-P1	High Priority
-P2	Medium Priority
-P3	Future / Nice to Have
+* Email/password registration
+* Email/password login
+* Google Sign-In
+* Authentication state
+* Secure session handling
+* Access-token and refresh-token handling
+* Logout
+* Email verification
+* Password recovery
+* Password reset
+* Protected resources
+* Authentication rate limiting
 
-This will be used throughout development.
+### User Management
 
-7. Functional Requirements
-7.1 Authentication
-FR-AUTH-001 — User Registration
+* View profile
+* Edit own profile
+* View followers
+* View following
+* Follow users
+* Unfollow users
 
-Priority: P0
+### Post Management
 
-The system shall allow a new user to create an account by providing the required registration information.
+* Create post
+* View post
+* Edit own post
+* Delete own post
+
+### Post Interaction
+
+* Like
+* Unlike
+* Comment
+
+### Feed
+
+* View relevant posts
+* View posts from followed users
+* Basic chronological ordering
+* Paginated retrieval
+
+### Security and Validation
+
+* Input validation
+* Authentication
+* Authorization
+* Ownership checks
+* Rate limiting
+* Secure credential handling
+* Error handling
+* Session revocation
+
+---
+
+## 4.2 Out of Scope — Initial Release
+
+The following features are intentionally excluded from the initial product scope:
+
+* Direct messaging
+* Real-time chat
+* Complex recommendation algorithms
+* Advanced trending algorithms
+* Live audio/video
+* Advertisement platform
+* Monetization
+* Advanced analytics
+* Full administrative moderation dashboard
+* Advanced content recommendation
+* Real-time notification infrastructure
+
+These capabilities may be evaluated in future product iterations based on priority and requirements.
+
+---
+
+# 5. User Types
+
+## 5.1 Guest User
+
+A guest is a user who has not established an authenticated application session.
+
+A guest may:
+
+* Access publicly available pages where permitted
+* View permitted public content
+* Register
+* Log in
+* Initiate supported authentication flows
+
+A guest shall not:
+
+* Create posts
+* Like posts
+* Comment
+* Follow users
+* Modify protected resources
+* Access authenticated-only feed data
+
+---
+
+## 5.2 Authenticated User
+
+An authenticated user is a registered user with a valid application authentication session.
+
+An authenticated user may:
+
+* Manage their own profile
+* Create posts
+* Edit their own posts
+* Delete their own posts
+* Like/unlike posts
+* Comment on posts
+* Follow/unfollow users
+* View their personalized feed
+* View followers/following relationships
+
+Authentication does not automatically grant permission to modify resources owned by another user.
+
+---
+
+# 6. Requirement Priority System
+
+Requirements shall use the following priority classification:
+
+| Priority | Meaning               |
+| -------- | --------------------- |
+| **P0**   | Critical / Must Have  |
+| **P1**   | High Priority         |
+| **P2**   | Medium Priority       |
+| **P3**   | Future / Nice to Have |
+
+Priority may change during development if product requirements or technical constraints change.
+
+---
+
+# 7. Functional Requirements
+
+## 7.1 Authentication Requirements
+
+### FR-AUTH-001 — User Registration
+
+**Priority:** P0
+
+The system shall allow a new user to create an account using the supported registration information.
 
 The system shall:
 
-Validate required fields.
-Validate email format.
-Ensure username uniqueness.
-Ensure email uniqueness.
-Validate password according to defined password rules.
-Securely store the user's password.
-Create the user account after successful validation.
+* Validate all required fields.
+* Validate email format.
+* Normalize email addresses before comparison/storage.
+* Ensure email uniqueness.
+* Ensure username uniqueness.
+* Validate password requirements.
+* Securely hash passwords before persistence.
+* Create the user account only after successful validation.
+* Establish an authenticated application session where applicable.
 
-Acceptance Criteria
+### Acceptance Criteria
 
-Valid registration creates an account.
-Duplicate username is rejected.
-Duplicate email is rejected.
-Invalid data is rejected.
-Password is never stored as plain text.
-Appropriate error information is returned when registration fails.
-FR-AUTH-002 — User Login
+* Valid registration creates an application account.
+* Duplicate email registration is rejected.
+* Duplicate username registration is rejected.
+* Invalid registration data is rejected.
+* Passwords are never stored in plaintext.
+* Authentication credentials are handled securely.
+* Appropriate error responses are returned for failed registration.
 
-Priority: P0
+---
 
-The system shall allow registered users to authenticate using valid credentials.
+### FR-AUTH-002 — User Login
 
-Acceptance Criteria
+**Priority:** P0
 
-Valid credentials authenticate the user.
-Invalid credentials are rejected.
-Authenticated state is established securely.
-Appropriate error is returned for failed authentication.
-FR-AUTH-003 — Logout
+The system shall allow registered users to authenticate using valid email/password credentials.
 
-Priority: P0
+### Acceptance Criteria
 
-The system shall allow an authenticated user to terminate their authenticated session.
+* Valid credentials establish an authenticated session.
+* Invalid credentials are rejected.
+* Authentication tokens/session credentials are issued securely.
+* Sensitive authentication details are not exposed in responses.
+* Failed authentication returns an appropriate generic error.
 
-7.2 User Profile
-FR-USER-001 — View Profile
+---
 
-Priority: P0
+### FR-AUTH-003 — Google Sign-In
 
-The system shall allow users to view a user's profile and publicly available profile information.
+**Priority:** P0
+
+The system shall allow users to authenticate using Google Sign-In.
+
+The Google identity shall be verified server-side before an application session is established.
+
+The system shall ensure that:
+
+* Google identity information is verified.
+* The external identity is mapped to the corresponding application user.
+* Duplicate application accounts are not silently created for the same identity.
+* The application establishes its own authenticated session after successful verification.
+
+---
+
+### FR-AUTH-004 — Logout
+
+**Priority:** P0
+
+The system shall allow an authenticated user to terminate their application session.
+
+Logout shall invalidate or revoke the applicable refresh session and remove the client-side authentication state.
+
+---
+
+### FR-AUTH-005 — Access and Refresh Sessions
+
+**Priority:** P0
+
+The system shall support secure session handling using short-lived access credentials and longer-lived refresh credentials.
+
+The system shall:
+
+* Use short-lived access tokens.
+* Use a secure refresh-token mechanism.
+* Support refresh-token rotation.
+* Support session revocation.
+* Prevent reuse of invalidated refresh sessions.
+* Avoid exposing refresh tokens to client-side JavaScript where applicable.
+
+---
+
+### FR-AUTH-006 — Email Verification
+
+**Priority:** P1
+
+The system shall support verification of a user's email address.
+
+Verification tokens shall:
+
+* Be time-limited.
+* Be single-use where applicable.
+* Not be stored in plaintext.
+* Be invalidated after successful verification or expiration.
+
+---
+
+### FR-AUTH-007 — Password Recovery
+
+**Priority:** P1
+
+The system shall provide a password-recovery mechanism for users who have forgotten their password.
+
+The system shall:
+
+* Accept a password recovery request.
+* Generate a time-limited recovery mechanism.
+* Avoid exposing whether an email address belongs to an existing account.
+* Allow a valid recovery request to establish a new password.
+* Invalidate recovery credentials after use or expiration.
+* Revoke applicable existing authentication sessions after a successful password reset.
+
+---
+
+### FR-AUTH-008 — Resend Email Verification
+
+**Priority:** P1
+
+The system shall allow eligible users to request another email verification message.
+
+The operation shall be protected against abuse through appropriate rate limiting.
+
+---
+
+### FR-AUTH-009 — Authentication Abuse Protection
+
+**Priority:** P1
+
+Authentication-related endpoints shall implement appropriate protections against:
+
+* Brute-force login attempts
+* Excessive recovery requests
+* Verification-email abuse
+* Automated credential attacks
+* User/account enumeration
+
+---
+
+# 8. Authentication Business Rules
+
+The following rules shall apply:
+
+**BR-AUTH-001**
+A single normalized email address shall represent one application user account unless an explicitly supported account-linking mechanism exists.
+
+**BR-AUTH-002**
+Passwords shall only be stored as secure password hashes.
+
+**BR-AUTH-003**
+Google authentication credentials shall be verified server-side.
+
+**BR-AUTH-004**
+An external Firebase/Google identity token shall not be treated as the application's long-term API authentication credential.
+
+**BR-AUTH-005**
+After successful Google identity verification, the backend shall establish the application's own authenticated session.
+
+**BR-AUTH-006**
+Password-reset and email-verification credentials shall be time-limited.
+
+**BR-AUTH-007**
+Password-reset and verification secrets shall not be stored in plaintext.
+
+**BR-AUTH-008**
+Logout shall invalidate or revoke the applicable application session.
+
+**BR-AUTH-009**
+Authentication alone shall not grant permission to modify another user's resources.
+
+**BR-AUTH-010**
+Existing email/password accounts shall not be silently duplicated when a matching Google identity is introduced.
+
+---
+
+# 9. User Profile Requirements
+
+## FR-USER-001 — View Profile
+
+**Priority:** P0
+
+The system shall allow users to view permitted profile information.
 
 Profile information may include:
 
-Name
-Username
-Bio
-Profile image
-Followers count
-Following count
-User's posts
-FR-USER-002 — Edit Own Profile
+* Display name
+* Username
+* Biography
+* Profile image
+* Followers count
+* Following count
+* User posts
+* Account creation information where applicable
 
-Priority: P0
+---
 
-An authenticated user shall be able to update their own profile information.
+## FR-USER-002 — Edit Own Profile
 
-The system shall prevent users from modifying another user's profile.
+**Priority:** P0
 
-7.3 Follow System
-FR-FOLLOW-001 — Follow User
+An authenticated user shall be able to update their own permitted profile information.
 
-Priority: P0
+The system shall prevent users from modifying another user's protected profile data.
 
-An authenticated user shall be able to follow another user.
+---
 
-Business Rules
+# 10. Follow System
 
-User cannot follow themselves.
-A user cannot create duplicate follow relationships.
-Only authenticated users can follow.
-Target user must exist.
-FR-FOLLOW-002 — Unfollow User
+## FR-FOLLOW-001 — Follow User
 
-Priority: P0
+**Priority:** P0
 
-An authenticated user shall be able to stop following another user.
+An authenticated user shall be able to follow another valid user.
 
-FR-FOLLOW-003 — Followers / Following
+### Business Rules
 
-Priority: P1
+* A user cannot follow themselves.
+* Duplicate follow relationships are prohibited.
+* The target user must exist.
+* Only authenticated users can create follow relationships.
+
+---
+
+## FR-FOLLOW-002 — Unfollow User
+
+**Priority:** P0
+
+An authenticated user shall be able to remove an existing follow relationship.
+
+---
+
+## FR-FOLLOW-003 — Followers and Following
+
+**Priority:** P1
 
 The system shall allow users to view relevant follower and following relationships.
 
-8. Post Management
-FR-POST-001 — Create Post
+Relationship lists shall support controlled retrieval rather than requiring the entire relationship set to be loaded at once.
 
-Priority: P0
+---
+
+# 11. Post Management
+
+## FR-POST-001 — Create Post
+
+**Priority:** P0
 
 An authenticated user shall be able to create a post containing supported content.
 
 The system shall:
 
-Validate post content.
-Associate the post with the authenticated user.
-Record creation time.
-Reject invalid submissions.
-FR-POST-002 — View Post
+* Validate post content.
+* Associate the post with the authenticated user.
+* Record creation time.
+* Reject invalid submissions.
+* Persist only validated content.
 
-Priority: P0
+---
 
-The system shall allow users to view posts according to the application's visibility rules.
+## FR-POST-002 — View Post
 
-FR-POST-003 — Edit Own Post
+**Priority:** P0
 
-Priority: P0
+The system shall allow users to retrieve posts according to the application's visibility rules.
+
+---
+
+## FR-POST-003 — Edit Own Post
+
+**Priority:** P0
 
 A user shall be able to edit posts created by themselves.
 
-A user shall not be able to edit another user's post.
+The system shall reject attempts to modify another user's post.
 
-FR-POST-004 — Delete Own Post
+---
 
-Priority: P0
+## FR-POST-004 — Delete Own Post
+
+**Priority:** P0
 
 A user shall be able to delete posts created by themselves.
 
-A user shall not be able to delete another user's post.
+The system shall reject attempts to delete another user's post.
 
-9. Post Interactions
-FR-INTERACTION-001 — Like Post
+---
 
-Priority: P0
+# 12. Post Interaction Requirements
+
+## FR-INTERACTION-001 — Like Post
+
+**Priority:** P0
 
 An authenticated user shall be able to like a post.
 
-The system shall prevent duplicate likes from the same user on the same post.
+The system shall prevent duplicate likes by the same user on the same post.
 
-FR-INTERACTION-002 — Unlike Post
+---
 
-Priority: P0
+## FR-INTERACTION-002 — Unlike Post
 
-An authenticated user shall be able to remove their like from a post.
+**Priority:** P0
 
-FR-INTERACTION-003 — Comment on Post
+An authenticated user shall be able to remove their existing like from a post.
 
-Priority: P0
+---
 
-An authenticated user shall be able to add a comment to a post.
+## FR-INTERACTION-003 — Comment on Post
+
+**Priority:** P0
+
+An authenticated user shall be able to create a comment on a valid post.
 
 The system shall:
 
-Validate comment content.
-Associate the comment with its author.
-Associate the comment with the target post.
-Record creation time.
-10. Feed
-FR-FEED-001 — User Feed
+* Validate comment content.
+* Associate the comment with its author.
+* Associate the comment with the target post.
+* Record creation time.
+* Reject invalid content.
 
-Priority: P0
+---
 
-The system shall provide an authenticated user with a feed containing relevant posts.
+# 13. Feed Requirements
 
-Initially, the feed should prioritize posts from users the authenticated user follows.
+## FR-FEED-001 — User Feed
 
-FR-FEED-002 — Feed Ordering
+**Priority:** P0
 
-Priority: P1
+The system shall provide authenticated users with a feed containing relevant posts.
 
-The system should provide a predictable ordering mechanism for feed posts.
+The initial feed shall prioritize posts created by:
 
-Initially, chronological ordering may be used.
+* The authenticated user
+* Users followed by the authenticated user
 
-A more advanced ranking/recommendation mechanism can be introduced later.
+---
 
-11. Validation Requirements
+## FR-FEED-002 — Feed Ordering
 
-The system shall validate user input before processing it.
+**Priority:** P1
 
-Examples:
+The initial feed shall use a predictable chronological ordering mechanism.
 
-Registration
-→ required fields
-→ email format
-→ unique username
-→ unique email
-→ password rules
+Posts may initially be ordered by creation time in descending order.
 
-Post
-→ content rules
-→ maximum length
-→ valid media if supported
+Advanced ranking and recommendation algorithms are outside the initial scope.
 
-Comment
-→ non-empty content
-→ maximum length
+---
 
-Exact limits will be defined before implementation.
+## FR-FEED-003 — Feed Pagination
 
-Important: We don't randomly decide these limits while coding.
+**Priority:** P1
 
-12. Authorization Requirements
+The system shall retrieve feed content in controlled pages rather than loading the complete feed dataset in a single request.
 
-Authentication and authorization are different.
+The pagination strategy may evolve toward cursor-based pagination as system scale increases.
 
-Authentication
+---
 
-"Tum kaun ho?"
+# 14. Validation Requirements
 
-Authorization
+The system shall validate input before processing or persisting it.
 
-"Tumhe ye kaam karne ki permission hai?"
+### Registration
 
-Example:
+Validation may include:
 
-Rajat created Post #123.
+* Required fields
+* Email format
+* Username format
+* Username uniqueness
+* Email uniqueness
+* Password requirements
 
-Another user is authenticated.
+### Posts
 
-That doesn't mean they can delete Post #123.
+Validation may include:
 
-The system must verify ownership/permission before performing protected operations.
+* Non-empty content where required
+* Maximum content length
+* Supported media constraints
+* Valid referenced resources
 
-This principle will apply to:
+### Comments
 
-Edit post
-Delete post
-Edit profile
-Delete own resources
-Other protected operations
-13. Business Rules
-BR-001
+Validation may include:
 
-A user must be authenticated to perform protected actions.
+* Non-empty content
+* Maximum content length
+* Valid target post
 
-BR-002
+Exact limits shall be defined as explicit product rules before implementation.
 
-A user cannot follow themselves.
+**Important:** Validation limits shall not be arbitrarily introduced during coding without documenting the corresponding requirement.
 
-BR-003
+---
 
-A user cannot create duplicate follow relationships.
+# 15. Authorization Requirements
 
-BR-004
+Authentication and authorization are separate concerns.
 
-A user cannot create duplicate likes for the same post.
+### Authentication
 
-BR-005
+> **Who are you?**
 
-Only the owner of a post can edit it.
+### Authorization
 
-BR-006
+> **What are you allowed to do?**
 
-Only the owner of a post can delete it.
+For example:
 
-BR-007
+User A created Post #123.
 
-A valid user must exist before another user can follow them.
+User B may be authenticated, but authentication does not grant User B permission to modify Post #123.
 
-BR-008
+The system shall verify ownership or applicable permissions before protected operations.
 
-Deleted resources must not remain incorrectly accessible through normal application flows.
+Authorization shall apply to operations including:
 
-BR-009
+* Editing posts
+* Deleting posts
+* Editing protected profile data
+* Managing owned resources
+* Administrative operations when introduced
+* Other protected operations
 
-Invalid user input must not be persisted.
+---
 
-14. Error Handling Requirements
+# 16. Business Rules
 
-The system shall provide meaningful responses when operations fail.
+| ID     | Business Rule                                                                                                         |
+| ------ | --------------------------------------------------------------------------------------------------------------------- |
+| BR-001 | A user must be authenticated to perform protected actions.                                                            |
+| BR-002 | A user cannot follow themselves.                                                                                      |
+| BR-003 | Duplicate follow relationships are prohibited.                                                                        |
+| BR-004 | Duplicate likes by the same user on the same post are prohibited.                                                     |
+| BR-005 | Only the owner of a post can edit it.                                                                                 |
+| BR-006 | Only the owner of a post can delete it.                                                                               |
+| BR-007 | A valid target user must exist before a follow relationship is created.                                               |
+| BR-008 | Invalid input must not be persisted.                                                                                  |
+| BR-009 | Protected resources must not be modified without sufficient authorization.                                            |
+| BR-010 | Deleted resources must not remain normally accessible through application flows unless explicitly designed otherwise. |
+| BR-011 | Authentication credentials and security secrets must not be exposed through normal API responses.                     |
 
-Examples:
+---
 
-400 → Invalid request
-401 → Not authenticated
-403 → Not authorized
-404 → Resource not found
-409 → Conflict
-422 → Validation failure
-500 → Unexpected server error
+# 17. Error Handling Requirements
 
-Frontend should display user-friendly messages instead of exposing internal implementation details.
+The system shall return consistent and meaningful errors for failed operations.
 
-15. Non-Functional Requirements
-NFR-001 — Security
+The initial HTTP status model shall include:
+
+| Status  | Meaning                                           |
+| ------- | ------------------------------------------------- |
+| **200** | Successful request                                |
+| **201** | Resource successfully created                     |
+| **204** | Successful request with no response body          |
+| **400** | Invalid request                                   |
+| **401** | Authentication required or invalid authentication |
+| **403** | Authenticated but not authorized                  |
+| **404** | Resource not found                                |
+| **409** | Resource/state conflict                           |
+| **422** | Validation failure                                |
+| **429** | Rate limit exceeded                               |
+| **500** | Unexpected server error                           |
+
+Internal implementation details, stack traces, database errors, and sensitive information shall not be exposed to end users in production responses.
+
+The frontend shall convert technical failures into understandable user-facing feedback.
+
+---
+
+# 18. Non-Functional Requirements
+
+## NFR-001 — Security
+
+The system shall:
+
+* Protect authentication credentials.
+* Never store passwords in plaintext.
+* Protect authenticated operations.
+* Validate all externally supplied input.
+* Enforce server-side authorization.
+* Protect sensitive authentication tokens.
+* Apply rate limiting to sensitive endpoints.
+* Protect against unauthorized resource modification.
+* Use secure transport in production.
+* Prevent unnecessary exposure of sensitive information.
+
+---
+
+## NFR-002 — Performance
 
 The system should:
 
-Secure user credentials.
-Protect authenticated operations.
-Validate user input.
-Prevent unauthorized resource modification.
-Protect sensitive authentication information.
-Apply appropriate security controls to APIs.
-NFR-002 — Performance
+* Avoid unnecessary database queries.
+* Retrieve large datasets using pagination.
+* Avoid loading complete collections into memory.
+* Efficiently retrieve feed and relationship data.
+* Use appropriate database indexes.
+* Minimize unnecessary client-side network requests.
 
-The system should avoid unnecessary database queries and should support efficient retrieval of feed and user data.
+Performance-sensitive features shall be optimized based on actual access patterns rather than premature optimization.
 
-Large datasets should not require loading all records at once.
+---
 
-NFR-003 — Scalability
+## NFR-003 — Scalability
 
-The architecture should allow future growth in:
+The architecture shall allow future growth in:
 
-Users
-Posts
-Comments
-Likes
-Followers
-Feed requests
-NFR-004 — Usability
+* Number of users
+* Number of posts
+* Number of comments
+* Number of likes
+* Number of follow relationships
+* Feed requests
+* Authentication traffic
+
+The initial implementation does not need to solve unlimited scale, but architectural decisions should avoid unnecessary blockers to future scaling.
+
+---
+
+## NFR-004 — Availability and Reliability
+
+The system should handle expected failures gracefully.
+
+The application should:
+
+* Return controlled errors when dependencies fail.
+* Avoid exposing internal failures to users.
+* Handle transient failures where appropriate.
+* Prevent inconsistent data states where possible.
+* Provide appropriate logging for operational troubleshooting.
+
+---
+
+## NFR-005 — Usability
 
 The application should provide:
 
-Clear navigation
-Understandable feedback
-Loading states
-Empty states
-Error states
-Consistent UI behavior
-NFR-005 — Responsiveness
+* Clear navigation
+* Understandable feedback
+* Loading states
+* Empty states
+* Error states
+* Consistent interaction patterns
+* Predictable behavior
 
-The application should work across:
+---
 
-Desktop
-Tablet
-Mobile
-NFR-006 — Maintainability
+## NFR-006 — Responsiveness
+
+The application should provide an acceptable experience across:
+
+* Desktop
+* Tablet
+* Mobile
+
+---
+
+## NFR-007 — Maintainability
 
 The codebase should be structured so that:
 
-Features are modular.
-Business logic is separated appropriately.
-Components/modules are reusable.
-Changes can be made without unnecessarily affecting unrelated functionality.
-16. Major User Flows
-Registration
+* Features remain modular.
+* Business logic is separated appropriately.
+* Components/modules are reusable.
+* Changes do not unnecessarily affect unrelated functionality.
+* Requirements can be traced to implementation and tests.
+* Documentation remains synchronized with major architectural changes.
+
+---
+
+## NFR-008 — Observability
+
+Production operation should provide sufficient information for troubleshooting through:
+
+* Structured application logs
+* Request/correlation identifiers where appropriate
+* Authentication/security event logging
+* Error monitoring
+* Basic application metrics
+
+Sensitive credentials and tokens shall never be written to logs.
+
+---
+
+# 19. Major User Flows
+
+## 19.1 Registration
+
+```text
 Guest
- ↓
-Register
- ↓
+  ↓
+Registration
+  ↓
 Validate Input
- ↓
+  ↓
+Check Account Constraints
+  ↓
 Create Account
- ↓
-Authentication
- ↓
+  ↓
+Establish Authentication Session
+  ↓
 Authenticated User
-Create Post
+```
+
+---
+
+## 19.2 Create Post
+
+```text
 Authenticated User
- ↓
+        ↓
 Create Post
- ↓
-Validate
- ↓
-Authorize
- ↓
-Store Post
- ↓
+        ↓
+Validate Content
+        ↓
+Authenticate Request
+        ↓
+Authorize Operation
+        ↓
+Create Post
+        ↓
+Persist Data
+        ↓
 Return Result
- ↓
-Update Feed
-Follow User
+        ↓
+Update Client State
+```
+
+---
+
+## 19.3 Follow User
+
+```text
 Authenticated User
- ↓
-Select User
- ↓
+        ↓
+Select Target User
+        ↓
 Validate Target
- ↓
+        ↓
 Check Self-Follow
- ↓
+        ↓
 Check Existing Relationship
- ↓
-Create Relationship
- ↓
-Update Counts/State
-Like Post
+        ↓
+Create Follow Relationship
+        ↓
+Update Relevant State
+```
+
+---
+
+## 19.4 Like Post
+
+```text
 Authenticated User
- ↓
+        ↓
 Select Post
- ↓
+        ↓
 Validate Post
- ↓
+        ↓
 Check Existing Like
- ↓
+        ↓
 Create Like
- ↓
-Update Like State
-17. Acceptance Criteria — Overall MVP
+        ↓
+Update Relevant State
+```
 
-MVP will be considered functionally complete when:
+---
 
-A new user can register.
-A registered user can login/logout.
-Authentication-protected actions work correctly.
-Users can view and manage their own profile.
-Users can create posts.
-Users can edit their own posts.
-Users can delete their own posts.
-Users can follow/unfollow other users.
-Users can like/unlike posts.
-Users can comment on posts.
-Users can view relevant feed content.
-Unauthorized operations are rejected.
-Invalid input is rejected.
-Major error scenarios are handled.
-Application works responsively.
-18. Priority Backlog
-🔴 P0 — Critical
+# 20. Security Requirements
+
+Security shall be treated as a cross-cutting requirement rather than a feature added after implementation.
+
+The authentication and API layers should include:
+
+```text
+Incoming Request
+      ↓
+Rate Limiting
+      ↓
+CORS / Origin Controls
+      ↓
+Security Headers
+      ↓
 Authentication
-User profile
-Create post
-View post
-Edit own post
-Delete own post
-Follow
-Unfollow
-Like
-Unlike
-Comment
-Basic feed
+      ↓
+Input Validation
+      ↓
 Authorization
-Validation
-Error handling
-🟠 P1 — High
-Followers/following lists
-User search
-Post search
-Pagination
-Media/profile image
-Better feed ordering
-Notifications
-🟡 P2 — Medium
-Bookmarks
-Reposts
-Hashtags
-Trending
-Advanced feed
-🟢 P3 — Future
-Real-time messaging
-Real-time notifications
-Recommendation engine
-Advanced analytics
-Monetization
+      ↓
+Business Rules
+      ↓
+Application Logic
+      ↓
+Database
+```
 
-Priority can change during development if actual product requirements change.
+Security-sensitive functionality shall include:
 
-19. Assumptions
-Users have access to a modern web browser.
-Users must register before performing authenticated actions.
-The initial application is web-based.
-Users are responsible for content they publish.
-Exact content limits and media restrictions will be finalized before implementation.
-20. Constraints
+* Secure password hashing
+* Short-lived access credentials
+* Secure refresh-token handling
+* Refresh-token rotation
+* Session revocation
+* Server-side token verification
+* Ownership authorization
+* Input validation
+* Rate limiting
+* Generic sensitive recovery responses
+* Secure production transport
 
-At this stage, technology constraints are intentionally not finalized.
+---
 
-Technology decisions will be made after requirements analysis.
+# 21. Overall MVP Acceptance Criteria
 
-Other constraints such as:
+The MVP shall be considered functionally complete when:
 
-Hosting
-Storage
-Third-party services
-Development resources
-Cost
+### Authentication
 
-will be evaluated during architecture and technology selection.
+* A new user can register.
+* A registered user can log in.
+* A user can log out.
+* Google authentication works through the supported identity flow.
+* Authentication-protected operations reject unauthenticated requests.
+* Passwords are never stored in plaintext.
+* Refresh sessions can be revoked.
+* Email verification and password recovery work according to their defined requirements.
 
-21. Requirement Traceability
+### User Management
 
-Ye section particularly useful hai real engineering me.
+* Users can view permitted profiles.
+* Users can update their own profile.
+* Users cannot modify protected data belonging to another user.
+* Users can follow and unfollow other users.
+* Self-follow is rejected.
+* Duplicate follow relationships are rejected.
 
-Har requirement eventually implementation aur testing se connect hogi.
+### Posts
 
-Example:
+* Authenticated users can create posts.
+* Users can view posts.
+* Users can edit their own posts.
+* Users cannot edit another user's posts.
+* Users can delete their own posts.
+* Users cannot delete another user's posts.
 
+### Interactions
+
+* Users can like posts.
+* Duplicate likes are prevented.
+* Users can unlike posts.
+* Users can comment on posts.
+* Invalid comments are rejected.
+
+### Feed
+
+* Authenticated users can retrieve their relevant feed.
+* Feed results are predictably ordered.
+* Large result sets are paginated.
+
+### Security and Quality
+
+* Unauthorized operations are rejected.
+* Invalid input is rejected.
+* Major error scenarios are handled.
+* Sensitive implementation details are not exposed.
+* Application works responsively across supported device sizes.
+
+---
+
+# 22. Priority Backlog
+
+## 🔴 P0 — Critical
+
+* Email/password authentication
+* Google authentication
+* Secure session handling
+* Logout
+* User profile
+* Create post
+* View post
+* Edit own post
+* Delete own post
+* Follow
+* Unfollow
+* Like
+* Unlike
+* Comment
+* Basic feed
+* Authentication
+* Authorization
+* Ownership checks
+* Validation
+* Error handling
+* Core security controls
+
+---
+
+## 🟠 P1 — High
+
+* Email verification
+* Password recovery
+* Password reset
+* Followers/following lists
+* User search
+* Post search
+* Pagination
+* Media/profile images
+* Improved feed ordering
+* Notifications
+* Authentication abuse protection
+* Account-linking handling
+
+---
+
+## 🟡 P2 — Medium
+
+* Bookmarks
+* Reposts
+* Hashtags
+* Trending
+* Advanced feed
+* Rich media capabilities
+
+---
+
+## 🟢 P3 — Future
+
+* Real-time messaging
+* Real-time notifications
+* Recommendation engine
+* Advanced analytics
+* Monetization
+* Advertisement infrastructure
+* Advanced moderation
+
+Priority may be changed during development based on actual product requirements, user feedback, technical constraints, and business value.
+
+---
+
+# 23. Assumptions
+
+The initial system assumes:
+
+1. Users have access to a modern web browser.
+2. Users must establish an authenticated session before performing protected actions.
+3. The initial product is web-based.
+4. Users are responsible for the content they publish.
+5. Exact content limits will be defined before implementation.
+6. Media restrictions will be explicitly defined when media functionality is introduced.
+7. External authentication providers may be used for supported identity providers.
+8. Third-party service availability may affect dependent functionality.
+
+---
+
+# 24. Constraints
+
+The following constraints may influence implementation:
+
+* Development resources
+* Hosting costs
+* Database capacity
+* Third-party service limits
+* Media storage costs
+* Authentication provider constraints
+* Network reliability
+* Development timeline
+
+Technology and infrastructure decisions shall be documented separately in the architecture and technology design documents.
+
+---
+
+# 25. Requirement Traceability
+
+Requirement traceability ensures that every important requirement can be followed through the complete engineering lifecycle.
+
+For example:
+
+```text
 FR-POST-001
+    ↓
+Architecture
     ↓
 Database Design
     ↓
-API
+API Contract
     ↓
 Backend Implementation
     ↓
-Frontend UI
+Frontend Implementation
+    ↓
+Integration
     ↓
 Test Cases
     ↓
 Acceptance Criteria
+```
 
-Matlab agar koi requirement hai:
+Therefore:
 
-"User can create a post"
+> **Requirement → Design → Code → UI → Test**
 
-to hum later track kar sakte hain:
+This reduces the probability of implementing functionality that does not satisfy the original requirement or forgetting an important requirement during development.
 
-Requirement → DB → API → Code → UI → Test
+---
 
-Isse kuch miss hone ke chances bahut kam hote hain.
+# 26. Requirement Traceability Example
 
-22. SRS Change Management
+| Requirement | Architecture    | Database       | API                      | UI               | Testing              |
+| ----------- | --------------- | -------------- | ------------------------ | ---------------- | -------------------- |
+| Create Post | Post Service    | Posts          | `POST /posts`            | Create Post Form | Create Post Tests    |
+| Like Post   | Like Service    | Likes          | `POST /posts/:id/like`   | Like Button      | Like Tests           |
+| Follow User | Follow Service  | Follows        | `POST /users/:id/follow` | Follow Button    | Follow Tests         |
+| Edit Post   | Ownership Layer | Posts          | `PATCH /posts/:id`       | Edit Form        | Authorization Tests  |
+| Login       | Auth Layer      | Users/Sessions | `POST /auth/login`       | Login Form       | Authentication Tests |
 
-Ye document SRS v1.0 hai.
+This matrix shall grow as the product evolves.
 
-Requirements change ho sakti hain.
+---
 
-Agar minor clarification aaye:
+# 27. SRS Change Management
 
+This document follows controlled versioning.
+
+Minor clarifications or additions may increment the minor version:
+
+```text
 v1.0 → v1.1
+```
 
-Major requirement change aaye:
+Major scope or product changes may increment the major version:
 
-v1.1 → v2.0
+```text
+v1.x → v2.0
+```
 
-Poora SRS dobara zero se nahi banega.
+The complete SRS does not need to be recreated from scratch for every change.
 
-Existing SRS update hoga + change record maintain hoga.
+Changes should be documented and traceable.
 
-Example:
+### Change History
 
-Version	Change
-1.0	Initial requirements
-1.1	Added post media requirement
-1.2	Changed post validation rules
-2.0	Major product scope change
-🧠 Ab sabse important learning
+| Version | Change                                                                                                                                                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1.0** | Initial product requirements                                                                                                                            |
+| **1.1** | Added email/password + Google authentication, account recovery, email verification, secure session management, and authentication security requirements |
 
-Bhai, ye SRS final coding blueprint nahi hai.
+Future changes should record:
 
-Iske baad hum is document ko dekhkar questions poochhenge:
+* Version
+* Date
+* Requirement changed
+* Reason for change
+* Impact
+* Approval/decision where applicable
 
-Requirements ko technically satisfy karne ke liye system ka structure kya hona chahiye?
+---
 
-Wahan se niklega:
+# 28. Requirements-to-Engineering Lifecycle
 
+The SRS serves as the starting point of the engineering lifecycle.
+
+```text
 SRS
  ↓
-Architecture
+Requirements Analysis
  ↓
-Entities
+Architecture Design
  ↓
-Relationships
+Entity & Relationship Design
  ↓
 Database Design
  ↓
 API Design
  ↓
-Tech Stack
+Technology Decisions
  ↓
 Development Tasks
+ ↓
+Implementation
+ ↓
+Testing
+ ↓
+Security Review
+ ↓
+Deployment
+ ↓
+Monitoring
+ ↓
+Iteration
+```
 
+Each stage should remain traceable to the requirements defined here.
 
-SRS v1.1 — first updates
+---
 
-Version: 1.1
-Change reason: Email/Password + Google Authentication support, account recovery, email verification, and session management.
+# 29. Product Evolution Strategy
 
-1. Authentication requirements — updated
+The initial product intentionally focuses on core social-media functionality.
 
-P0 — Must Have
+The system should evolve incrementally rather than attempting to implement every possible Twitter/X feature simultaneously.
 
-User can register using Email + Password.
-User can log in using Email + Password.
-User can authenticate using Google Sign-In.
-User must receive appropriate authentication feedback for invalid credentials.
-Passwords must never be stored in plaintext.
-User must be able to log out.
-User sessions must support secure access-token and refresh-token handling.
-Refresh sessions must be revocable.
-Authentication-protected resources must require a valid authenticated session.
+### Phase 1 — Core Platform
 
-P1 — High
+* Authentication
+* Profiles
+* Posts
+* Follow system
+* Likes
+* Comments
+* Basic feed
 
-Email verification.
-Forgot-password flow.
-Password reset using a time-limited recovery token.
-Resend email verification.
-Protection against brute-force login attempts.
-Protection against user/account enumeration.
-Handling of Google account vs existing email/password account conflicts.
-2. Authentication business rules
+### Phase 2 — Product Enhancement
 
-New rules:
+* Search
+* Pagination improvements
+* Media
+* Notifications
+* Improved feed ordering
+* Bookmarks
+* Reposts
+* Hashtags
 
-Same email should represent one application user account.
-Email addresses should be normalized before comparison/storage.
-Passwords are stored only as secure hashes.
-Google authentication must be verified server-side.
-Firebase ID tokens must not be treated as the application's long-term API authentication token.
-After successful Google authentication, the backend establishes the application's own authenticated session.
-Existing email/password accounts must not be silently duplicated when the same email is used with Google.
-Password-reset and email-verification tokens must be time-limited and must not be stored in plaintext.
-Logout must invalidate/revoke the applicable session.
-Authentication alone does not grant permission to modify another user's resources.
-3. Security requirements — authentication addition
+### Phase 3 — Advanced Platform
 
-The system should protect authentication endpoints using:
+* Recommendation engine
+* Real-time functionality
+* Advanced moderation
+* Analytics
+* Monetization
+* Large-scale optimization
 
-Rate limiting
-Input validation
-Secure password hashing
-Short-lived access tokens
-Secure refresh-token mechanism
-HttpOnly + Secure cookie for refresh token
-Token rotation
-Session revocation
-Generic responses for sensitive recovery/login situations where necessary
-Server-side authentication and authorization checks
+Feature prioritization should be based on user value, technical complexity, dependencies, and system requirements.
+
+---
+
+# 30. Final SRS Definition
+
+This SRS establishes the baseline requirements for the Twitter/X-inspired social media platform.
+
+The most important engineering principle is:
+
+> **Do not start implementation simply because a feature sounds simple. First define what the feature must accomplish, what rules govern it, what can go wrong, and how success will be verified.**
+
+For example:
+
+```text
+Requirement
+   ↓
+"What does Create Post mean?"
+   ↓
+Validation Rules
+   ↓
+Authorization Rules
+   ↓
+Data Requirements
+   ↓
+API Contract
+   ↓
+Architecture
+   ↓
+Implementation
+   ↓
+Testing
+   ↓
+Acceptance
+```
+
+The SRS therefore acts as the **source of truth for product requirements**, while the Architecture Design, Database Design, API Design, and implementation documents define how those requirements are technically realized.
