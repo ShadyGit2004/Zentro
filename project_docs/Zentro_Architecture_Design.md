@@ -1,4 +1,4 @@
-# Software Architecture Design — v1.1
+# Software Architecture Design — v1
 
 **Project:** Zentro — Twitter/X-Inspired Social Media Platform
 **Document Type:** Software Architecture Design (SAD)
